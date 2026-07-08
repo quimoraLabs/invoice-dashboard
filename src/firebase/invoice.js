@@ -62,7 +62,7 @@ async function updateInvoiceStatusAndDueDate(id) {
       paid_date,
     });
 
-    console.log("Invoice updated:", id, { status, due_date });
+    // console.log("Invoice updated:", id, { status, due_date });
   } catch (error) {
     console.error("Error updating invoice:", error);
     throw error;
