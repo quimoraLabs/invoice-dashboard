@@ -152,7 +152,7 @@ function InVoice() {
               {invoice.status + " :: " + dateFormat(invoice.invoice_date)}
             </div>
             <div className="text-xl font-bold text-gray-800 mt-3">
-              ₹{invoice.total_price}
+              ₹{Number(invoice.total_price).toFixed(2)}
             </div>
 
             <div className="flex gap-2 mt-4">

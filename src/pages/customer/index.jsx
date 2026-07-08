@@ -3,17 +3,63 @@ import { deleteCustomer, listenToCustomers } from "../../firebase/customer";
 import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 import CustomerModal from "../../components/modals/CustomerForm";
 import toast from "react-hot-toast";
+import {
+  HiChevronLeft,
+  HiChevronRight,
+  HiOutlineEye,
+  HiOutlinePencil,
+  HiOutlineTrash,
+  HiSearch,
+  HiPlus,
+} from "react-icons/hi";
+import CustomerViewModal from "../../components/modals/CustomerViewModal";
+
+const ITEMS_PER_PAGE = 10;
 
 export default function CustomerDashboard() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customers, setCustomers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [viewMode, setViewMode] = useState("list");
 
   useEffect(() => {
     const unsubscribe = listenToCustomers(setCustomers);
     return () => unsubscribe();
   }, []);
+
+  const filteredCustomers = customers.filter((customer) => {
+    const query = searchTerm.toLowerCase();
+    if (!query) return true;
+    return [
+      customer.full_name,
+      customer.email,
+      customer.phone_number,
+      customer.address,
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query));
+  });
+
+  console.log("Filtered Customers:", filteredCustomers);
+
+  const totalPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE);
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedCustomers = filteredCustomers.slice(
+    startIdx,
+    startIdx + ITEMS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  function handleView(customer) {
+    setSelectedCustomer(customer);
+    setViewMode("detail");
+  }
 
   function handleEdit(customer) {
     setSelectedCustomer(customer);
@@ -41,90 +87,194 @@ export default function CustomerDashboard() {
       handleCloseDeleteModal();
       toast.success("Customer deleted successfully");
     } catch (error) {
-      toast.error("Error in deleting customer");
+      toast.error("Error deleting customer");
+      console.error("Error deleting customer:", error);
     }
   }
 
   return (
-    <div className="px-6 py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-        <span className="text-2xl font-bold  text-gray-600 dark:text-white ">
-          Customer Dashboard
-        </span>
-        <button
-          onClick={() => setIsOpen(true)}
-          className="mt-4 sm:mt-0 bg-indigo-600 text-white cursor-pointer px-4 py-2 rounded hover:bg-indigo-700 transition"
-        >
-          + Add Customer
-        </button>
+    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        {/* Header */}
+        <div className="mb-6 flex gap-4 items-center justify-between">
+          <h1 className="mt-2 text-2xl font-semibold text-slate-900">
+            Customer records
+          </h1>
+          <button
+            onClick={() => {
+              setSelectedCustomer(null);
+              setIsOpen(true);
+            }}
+            className="rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 flex items-center justify-center gap-2"
+          >
+            Add customer
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="mb-6">
+          <label className="relative block">
+            <HiSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search customers by name, email, or phone"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+            />
+          </label>
+        </div>
+
+        {/* Table */}
+        <div className="rounded-[22px] border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 sm:px-6">
+                    Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 sm:px-6">
+                    Email
+                  </th>
+                  <th className="hidden px-4 py-3 text-left text-xs font-semibold text-slate-700 md:table-cell md:px-6">
+                    Phone
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700 sm:px-6">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedCustomers.length > 0 ? (
+                  paginatedCustomers.map((customer) => (
+                    <tr
+                      key={customer.id}
+                      className="border-b border-slate-100 hover:bg-slate-50 transition"
+                    >
+                      <td className="px-4 py-4 text-sm text-slate-900 font-medium sm:px-6">
+                        <div className="flex items-center gap-3">
+                          {customer.profile ? (
+                            <img
+                              src={customer.profile}
+                              alt={customer.full_name}
+                              className="h-8 w-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
+                              {(customer.full_name || "C")
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
+                          )}
+                          {customer.full_name}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-slate-600 sm:px-6">
+                        {customer.email || "—"}
+                      </td>
+                      <td className="hidden px-4 py-4 text-sm text-slate-600 md:table-cell md:px-6">
+                        {customer.phone_number || "—"}
+                      </td>
+                      <td className="px-4 py-4 text-right sm:px-6">
+                        <div className="flex justify-end gap-2">
+                          <HiOutlineEye
+                            onClick={() => handleView(customer)}
+                            className="cursor-pointer text-blue-300 hover:text-blue-600"
+                          />
+                          <HiOutlinePencil
+                            onClick={() => handleEdit(customer)}
+                            className="cursor-pointer text-green-300 hover:text-green-600"
+                          />
+
+                          <HiOutlineTrash
+                            onClick={() => handleOpenDeleteModal(customer)}
+                            className="cursor-pointer text-red-300 hover:text-red-600"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="4"
+                      className="px-4 py-8 text-center text-sm text-slate-500 sm:px-6"
+                    >
+                      No customers found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-slate-200 px-4 py-4 sm:px-6">
+              <p className="text-sm text-slate-600">
+                Showing {startIdx + 1} to{" "}
+                {Math.min(startIdx + ITEMS_PER_PAGE, filteredCustomers.length)}{" "}
+                of {filteredCustomers.length}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-lg border border-slate-200 p-2 text-slate-600 transition disabled:opacity-50 hover:bg-slate-50"
+                >
+                  <HiChevronLeft size={16} />
+                </button>
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
+                          page === currentPage
+                            ? "bg-slate-900 text-white"
+                            : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ),
+                  )}
+                </div>
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg border border-slate-200 p-2 text-slate-600 transition disabled:opacity-50 hover:bg-slate-50"
+                >
+                  <HiChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 ">
-        {customers.map((user) => (
-         <div
-  key={user.id}
-  className="w-full max-w-sm sm:max-w-xs md:max-w-sm bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 mx-auto"
->
-  <div className="flex flex-col items-center pb-6 pt-4 px-4 sm:px-6">
-    <img
-      className="w-20 h-20 sm:w-24 sm:h-24 mb-3 rounded-full shadow-lg object-cover"
-      src={user.profile}
-      alt={user.full_name}
-    />
-    <h5 className="mb-1 text-lg sm:text-xl font-medium text-gray-900 dark:text-white text-center break-words">
-      {user.full_name}
-    </h5>
-    
-    {/* Email & phone stacked for small screens */}
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-3 mt-1">
-      <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 break-all text-center">
-        {user.email}
-      </span>
-      <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center">
-        {user.phone_number}
-      </span>
-    </div>
-    
-    <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 text-center break-words">
-      {user.address}
-    </span>
-
-    {/* Buttons stacked on mobile, inline on larger screens */}
-    <div className="flex flex-col sm:flex-row gap-2 mt-4 w-full sm:w-auto">
-      <button
-        className="flex-1 sm:flex-none relative inline-flex items-center justify-center p-0.5 overflow-hidden text-xs sm:text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-green-400 to-blue-600 hover:text-white dark:text-white focus:ring-2 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800"
-        onClick={() => handleEdit(user)}
-      >
-        <span className="relative w-full px-4 py-2 sm:px-5 sm:py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent text-center">
-          Update
-        </span>
-      </button>
-
-      <button
-        className="flex-1 sm:flex-none relative inline-flex items-center justify-center p-0.5 overflow-hidden text-xs sm:text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-2 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
-        onClick={() => handleOpenDeleteModal(user)}
-      >
-        <span className="relative w-full px-4 py-2 sm:px-5 sm:py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent text-center">
-          Delete
-        </span>
-      </button>
-    </div>
-  </div>
-</div>
-
-        ))}
-      </div>
-      {isOpen && (
-        <CustomerModal
-          onClose={handleCloseModal}
-          // isOpen={isOpen}
-          customer={selectedCustomer}
+      {/* Detail View Modal */}
+      {viewMode === "detail" && selectedCustomer && (
+        <CustomerViewModal
+          selectedCustomer={selectedCustomer}
+          setViewMode={setViewMode}
+          handleEdit={handleEdit}
         />
       )}
+
+      {/* Edit Modal */}
+      {isOpen && (
+        <CustomerModal onClose={handleCloseModal} customer={selectedCustomer} />
+      )}
+
+      {/* Delete Modal */}
       {isDeleteMode && (
         <ConfirmDeleteModal
           onClose={handleCloseDeleteModal}
-          // isOpen={isOpen}
           type="customer"
           onConfirm={handleDelete}
         />

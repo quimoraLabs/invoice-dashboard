@@ -69,7 +69,7 @@ export default function ProductDetailsModal({ products, onSelect, onClose }) {
                       </div>
                       
                       <div className="space-y-1 text-sm flex items-center justify-between">
-                          <span><strong>₹</strong>{product.price}</span>
+                          <span><strong>₹</strong>{Number(product.price).toFixed(2)}</span>
                           <span>{product.source}</span>
                       </div>
                     </div>
