@@ -13,6 +13,9 @@ export default function ProductModal({ onClose, product }) {
     imageUrl: "",
   });
 
+  // console.log(product);
+  
+
   useEffect(() => {
     if (isEditMode) {
       setFormData({
@@ -23,6 +26,9 @@ export default function ProductModal({ onClose, product }) {
       });
     }
   }, [isEditMode, product]);
+
+  console.log(formData);
+  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -85,7 +91,7 @@ export default function ProductModal({ onClose, product }) {
           {/* Modal body */}
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {/* Title Input */}
-            <ImageUploader onUpload={handleImageUpload} />
+            <ImageUploader onUpload={handleImageUpload} currentImage={formData?.imageUrl} />
             <div>
               <label
                 htmlFor="title"
