@@ -13,25 +13,30 @@ export default function ImageUploader({ onUpload, currentImage }) {
 
   const handleChange = async (event) => {
     const file = event.target.files[0];
+    if (!file) return;
     try {
       setLoading(true);
 
-      // Create a local URL for immediate preview.
       const localUrl = URL.createObjectURL(file);
       setPreviewUrl(localUrl);
 
       const imageUrl = await uploadToCloudinary(file);
       if (onUpload) onUpload(imageUrl);
     } catch (err) {
-      // If upload fails, revert to the original image.
       console.error("Image upload failed:", err);
       setPreviewUrl(currentImage || "");
     } finally {
       setLoading(false);
-      // Reset file input to allow re-uploading the same file
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  // Triggers input ONLY on mobile screens (window width under 640px)
+  const handleAvatarClick = () => {
+    if (window.innerWidth < 640 && fileInputRef.current && !loading) {
+      fileInputRef.current.click();
     }
   };
 
@@ -47,67 +52,71 @@ export default function ImageUploader({ onUpload, currentImage }) {
         ref={fileInputRef}
       />
 
-      {/* Responsive layout wrapper */}
-      <div className="flex flex-col items-center gap-4 md:flex-row md:items-center md:gap-6">
-        {/* Image preview circle */}
-        <label
-          htmlFor="image-uploader"
-
-          className={`relative group h-28 w-28 flex-shrink-0 rounded-full border-4 border-white bg-slate-100 shadow-md ring-1 ring-slate-200/60 overflow-hidden flex items-center justify-center pointer-events-none max-md:pointer-events-auto max-md:cursor-pointer ${
-            loading ? "animate-pulse ring-slate-300" : ""
-          }`}
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-6">
+        
+        {/* Changed from <label htmlFor="..."> to a standard <div> to drop built-in click actions */}
+        <div
+          onClick={handleAvatarClick}
+          className={`relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 rounded-full border-4 border-white bg-slate-50 shadow-md ring-1 ring-slate-200/80 overflow-hidden flex items-center justify-center transition-all ${
+            loading ? "animate-pulse ring-indigo-300" : ""
+          } 
+          /* 100% STRICT STYLING: Interactive only on mobile, completely dead layout on desktop */
+          cursor-pointer active:scale-95 sm:cursor-default sm:active:scale-100 group`}
         >
           {previewUrl ? (
-            <img
-              src={previewUrl}
-              alt="Profile preview"
-              className={`h-full w-full object-cover transition-all duration-300 ${
-                loading ? "opacity-40 blur-[2px]" : "max-md:group-hover:scale-105"
-              }`}
-            />
-          ) : (
-            // Show camera icon on mobile if no image
-            !loading && (
-              <IoCameraOutline
-                size={32}
-                className="text-slate-400 transition-colors max-md:group-hover:text-slate-600 md:hidden"
+            <>
+              <img
+                src={previewUrl}
+                alt="Profile preview"
+                className={`h-full w-full object-cover ${loading ? "opacity-40 blur-[1px]" : ""}`}
               />
+              {/* HOVER HOOK: Visible ONLY on mobile screens via max-sm: selector */}
+              {!loading && (
+                <div className="absolute inset-0 bg-slate-900/30 opacity-0 transition-opacity duration-200 max-sm:group-hover:opacity-100 flex items-center justify-center text-white sm:hidden">
+                  <IoCameraOutline size={20} />
+                </div>
+              )}
+            </>
+          ) : (
+            // Static placeholder camera graphic
+            !loading && (
+              <div className="flex flex-col items-center text-slate-300 transition-colors max-sm:group-hover:text-indigo-500">
+                <IoCameraOutline size={28} className="sm:size-[32px]" />
+              </div>
             )
           )}
 
-          {/* Hover overlay - ONLY WORKS ON MOBILE NOW */}
-          {previewUrl && !loading && (
-            <div className="absolute inset-0 bg-slate-950/40 text-white flex flex-col items-center justify-center opacity-0 transition-opacity duration-200 md:hidden max-md:group-hover:opacity-100">
-              <IoCameraOutline size={22} />
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-950/10">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
             </div>
           )}
-        </label>
+        </div>
 
-        {/* Upload button and text */}
-        <div className="flex flex-col items-center text-center md:items-start md:text-left">
+        {/* Side Text Controls: Hidden completely on mobile view */}
+        <div className="hidden sm:flex flex-col items-start text-left">
           {loading ? (
-            // Skeleton loader for loading state
-            <div className="flex flex-col items-center md:items-start gap-2 w-48">
-              <div className="h-9 w-36 animate-pulse rounded-xl bg-slate-200" />
+            <div className="flex flex-col items-start gap-2 w-44">
+              <div className="h-9 w-32 animate-pulse rounded-xl bg-slate-200" />
               <div className="h-3 w-full animate-pulse rounded bg-slate-100" />
-              <div className="h-3 w-3/4 animate-pulse rounded bg-slate-100" />
             </div>
           ) : (
-            // Default state with upload button and helper text
             <>
+              {/* Using a real target label here makes this the ONLY trigger path for desktop view */}
               <label
                 htmlFor="image-uploader"
-                className="hidden md:inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 cursor-pointer active:scale-95"
               >
                 <IoCloudUpload size={16} className="text-slate-500" />
                 <span>Upload Photo</span>
               </label>
-              <p className="mt-2 text-xs text-slate-500 hidden md:block">
-                PNG, JPG, or WEBP. 1:1 ratio recommended.
+              <p className="mt-2 text-xs text-slate-400">
+                PNG, JPG, or WEBP. 1:1 square ratio recommended.
               </p>
             </>
           )}
         </div>
+
       </div>
     </div>
   );

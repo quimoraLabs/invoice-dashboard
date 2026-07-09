@@ -43,7 +43,7 @@ function IncomeGraph() {
       </div>
 
       {invoices.length > 0 ? (
-        <div className="h-72">
+        <div className="h-60 lg:h-50">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={invoices}>
               <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />

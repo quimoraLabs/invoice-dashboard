@@ -1,0 +1,181 @@
+// import React from "react";
+import { HiX } from "react-icons/hi";
+import { useAuth } from "../../contexts/authContext/useAuth";
+import { updateProfile } from "firebase/auth";
+import { useState, useEffect } from "react";
+import ImageUploader from "../ImageUploader"; // Path to your image uploader component
+import { auth } from "../../firebase/firebaseConfig";
+
+export default function ProfileModal({ isOpen, onClose }) {
+  const { currentUser } = useAuth();
+  const [updating, setUpdating] = useState(false);
+
+  // Local states for the inputs
+  const [displayName, setDisplayName] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Sync profile details when the modal opens or currentUser updates
+  useEffect(() => {
+    if (currentUser && isOpen) {
+      setDisplayName(currentUser.displayName || "");
+    }
+  }, [currentUser, isOpen]);
+
+  if (!isOpen) return null;
+
+  // --- THE SMART CLEAN CHECK ---
+  // Compare current local input states with the original Firebase auth values
+  const originalName = currentUser?.displayName || "";
+
+  // The button is only clickable if something genuinely changed AND we aren't currently loading
+  const hasChanges = displayName.trim() !== originalName;
+  const isSaveDisabled = !hasChanges || updating;
+
+  const handleProfilePicUpdate = async (url) => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+
+    try {
+      setUpdating(true);
+      await updateProfile(firebaseUser, { photoURL: url });
+      showNotification("Profile picture updated!");
+    } catch (error) {
+      console.error("Error updating photo:", error);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const showNotification = (msg) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(""), 3000);
+  };
+
+  const handleSaveChanges = async (e) => {
+    e.preventDefault();
+
+    // Double safeguard to block accidental terminal hits or manual HTML inspections
+    if (!hasChanges) return;
+
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+
+    try {
+      setUpdating(true);
+
+      // Only fire the update profile API if the display name specifically changed
+      if (displayName.trim() !== originalName) {
+        await updateProfile(firebaseUser, {
+          displayName: displayName.trim(),
+        });
+      }
+      setTimeout(() => {
+        onClose();
+      }, 800);
+      showNotification("Profile updated successfully!");
+    } catch (error) {
+      console.error("Error updating profile details:", error);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      <div className="relative w-full max-w-md transform rounded-3xl bg-white p-6 shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">
+              Account Settings
+            </h3>
+            <p className="text-xs text-slate-400">
+              Update your public profile metadata
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
+          >
+            <HiX size={18} />
+          </button>
+        </div>
+
+        {successMessage && (
+          <div className="mt-4 rounded-xl bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-700 animate-in fade-in slide-in-from-top-1">
+            {successMessage}
+          </div>
+        )}
+
+        <form onSubmit={handleSaveChanges} className="py-6 flex flex-col gap-6">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+              Profile Image{" "}
+              {updating && (
+                <span className="text-indigo-600 normal-case font-normal ml-2">
+                  (Saving...)
+                </span>
+              )}
+            </label>
+
+            <ImageUploader
+              currentImage={currentUser?.photoURL}
+              onUpload={handleProfilePicUpdate}
+            />
+          </div>
+
+          <div className="space-y-4">
+            {/* Email Field - Kept strictly read-only and disabled */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">
+                Email Address (Unique ID)
+              </label>
+              <input
+                type="email"
+                disabled
+                value={currentUser?.email || ""}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-sm font-medium text-slate-400 cursor-not-allowed focus:outline-none"
+              />
+            </div>
+
+            {/* Editable Full Name */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Full Name
+              </label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Enter your full name"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 transition placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaveDisabled}
+              className="rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed disabled:shadow-none shadow-sm shadow-indigo-100"
+            >
+              {updating ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

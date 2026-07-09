@@ -1,5 +1,5 @@
 import { Navigate, Link } from "react-router-dom";
-import { useAuth } from "../contexts/authContext";
+import { useAuth } from "../contexts/authContext/useAuth";
 import { doCreateUserWithEmailAndPassword } from "../firebase/auth";
 
 import React, { useState } from "react";

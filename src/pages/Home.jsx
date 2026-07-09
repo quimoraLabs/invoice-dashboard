@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../contexts/authContext/index";
+import { useAuth } from "../contexts/authContext/useAuth";
 import IncomeGraph from "../components/GraphInvoice";
 import { listenToCustomers } from "../firebase/customer";
 import { listenToProducts } from "../firebase/product";
 import { listenToInvoices } from "../firebase/invoice";
+import StatCard from "../components/StatCard";
+import * as FiIcons from "react-icons/fi";
+
+// A clean dictionary to map icon name strings to React Icons components
 
 function Home() {
   const { currentUser } = useAuth();
@@ -21,9 +25,16 @@ function Home() {
 
   useEffect(() => {
     const unsubscribeInvoices = listenToInvoices((invoices) => {
-      const paidInvoices = invoices.filter((invoice) => invoice.status?.toLowerCase() === "paid");
-      const pendingInvoices = invoices.filter((invoice) => invoice.status?.toLowerCase() !== "paid");
-      const revenue = paidInvoices.reduce((sum, invoice) => sum + Number(invoice.total_price || 0), 0);
+      const paidInvoices = invoices.filter(
+        (invoice) => invoice.status?.toLowerCase() === "paid",
+      );
+      const pendingInvoices = invoices.filter(
+        (invoice) => invoice.status?.toLowerCase() !== "paid",
+      );
+      const revenue = paidInvoices.reduce(
+        (sum, invoice) => sum + Number(invoice.total_price || 0),
+        0,
+      );
 
       setStats((prev) => ({
         ...prev,
@@ -49,72 +60,146 @@ function Home() {
     };
   }, []);
 
-  const summaryCards = [
-    { title: "Invoices", value: stats.invoices, detail: "Total records" },
-    { title: "Customers", value: stats.customers, detail: "Active contacts" },
-    { title: "Products", value: stats.products, detail: "Available items" },
+  const cardsConfig = [
+    {
+      title: "Invoices",
+      value: stats.invoices,
+      detail: "Total records",
+      iconName: "FiFileText",
+      theme: "blue",
+    },
+    {
+      title: "Customers",
+      value: stats.customers,
+      detail: "Active contacts",
+      iconName: "FiUsers",
+      theme: "purple",
+    },
+    {
+      title: "Products",
+      value: stats.products,
+      detail: "Available items",
+      iconName: "FiBox",
+      theme: "amber",
+    },
+    {
+      title: "Collected Revenue",
+      value: `${stats.revenue.toLocaleString()}`,
+      detail: `From ${stats.paidInvoices} paid invoices`,
+      iconName: "FiDollarSign",
+      theme: "emerald",
+    },
   ];
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 p-6 text-white shadow-xl sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-200">Overview</p>
-              <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">
-                Hello, {userName}! Your workspace is ready.
+        {/* Sleek, Compact Welcome Banner */}
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 text-white shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+                Hello, {userName}!
               </h1>
-              <p className="mt-3 text-sm leading-7 text-slate-300 sm:text-base">
-                Track your invoices, keep customer records tidy, and stay focused on what matters most.
+              <p className="text-xs text-indigo-200/80 mt-0.5">
+                Your workspace is ready. Track your invoices, keep customer
+                records tidy, and stay focused.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Link to="/invoice" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">
+            <div className="flex gap-2.5">
+              <Link
+                to="/invoice"
+                className="rounded-xl bg-white px-4 py-2 text-xs font-semibold text-slate-900 transition hover:bg-slate-100 shadow-sm"
+              >
                 View invoices
               </Link>
-              <Link to="/invoice/create" className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20">
+              <Link
+                to="/invoice/create"
+                className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20"
+              >
                 New invoice
               </Link>
             </div>
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          {summaryCards.map((card) => (
-            <div key={card.title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">{card.title}</p>
-              <p className="mt-3 text-3xl font-semibold text-slate-900">{card.value}</p>
-              <p className="mt-2 text-sm text-slate-500">{card.detail}</p>
-            </div>
+        {/* Strict 4-Column Unified Grid (No stretching, beautiful hovers) */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {cardsConfig.map((card, idx) => (
+            <StatCard key={idx} {...card} />
           ))}
-
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm md:col-span-3 lg:col-span-1">
-            <p className="text-sm font-medium text-emerald-700">Collected revenue</p>
-            <p className="mt-3 text-3xl font-semibold text-emerald-900">${stats.revenue.toLocaleString()}</p>
-            <p className="mt-2 text-sm text-emerald-700">From {stats.paidInvoices} paid invoices</p>
-          </div>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
-          <IncomeGraph />
+        {/* Side-by-Side Graph & Quick Actions (Perfect Balanced Layout) */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          {/* Graph on Left (2 Columns wide) - Extra wrapper removed to eliminate double borders */}
+          <div className="lg:col-span-2">
+            <IncomeGraph />
+          </div>
 
-          <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">Quick actions</p>
-            <div className="mt-5 space-y-3">
-              <Link to="/customers" className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50">
-                <span>Manage customers</span>
-                <span className="text-indigo-600">→</span>
-              </Link>
-              <Link to="/products" className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50">
-                <span>Review products</span>
-                <span className="text-indigo-600">→</span>
-              </Link>
-              <Link to="/invoice" className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50">
-                <span>{stats.pendingInvoices} pending invoices</span>
-                <span className="text-indigo-600">→</span>
-              </Link>
+          {/* Quick Actions on Right (1 Column wide) - Compact & aligned properly at the top */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">
+                Actions
+              </p>
+              <h2 className="mt-0.5 text-lg font-bold text-slate-900">
+                Quick shortcuts
+              </h2>
+            </div>
+            <div className="mt-4 mb-3 space-y-2.5">
+              {[
+                {
+                  to: "/customers",
+                  label: "Manage customers",
+                  icon: "FiUsers",
+                  // Clean, explicit hover theme styles
+                  hoverBorder: "hover:border-blue-200 hover:bg-blue-50/40",
+                  iconBg:
+                    "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white",
+                },
+                {
+                  to: "/products",
+                  label: "Review products",
+                  icon: "FiBox",
+                  hoverBorder: "hover:border-amber-200 hover:bg-amber-50/40",
+                  iconBg:
+                    "bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white",
+                },
+                {
+                  to: "/invoice",
+                  label: `${stats.pendingInvoices} pending invoices`,
+                  icon: "FiAlertCircle",
+                  hoverBorder: "hover:border-rose-200 hover:bg-rose-50/40",
+                  iconBg:
+                    "bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white",
+                },
+              ].map((action, idx) => {
+                const StartIcon = FiIcons[action.icon] || FiIcons.FiLayers;
+
+                return (
+                  <Link
+                    key={idx}
+                    to={action.to}
+                    className={`group flex items-center justify-between rounded-xl border border-slate-200 p-3 text-sm font-medium text-slate-700 transition-all duration-200 shadow-sm hover:shadow-md ${action.hoverBorder}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Now the background turns dark and the icon turns white cleanly on hover */}
+                      <div
+                        className={`p-2 rounded-lg transition-all duration-200 shrink-0 ${action.iconBg}`}
+                      >
+                        <StartIcon className="w-4 h-4" />
+                      </div>
+                      <span className="transition-colors duration-200 group-hover:text-slate-900">
+                        {action.label}
+                      </span>
+                    </div>
+
+                    <FiIcons.FiChevronRight className="w-4 h-4 text-slate-400 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-slate-600" />
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
