@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import CustomerDetailsModal from "../../components/modals/CustomerDetails";
 import { listenToCustomers } from "../../firebase/customer";
 import { listenToProducts } from "../../firebase/product";
 import ProductDetailsModal from "../../components/modals/ProductDetails";
