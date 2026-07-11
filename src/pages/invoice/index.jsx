@@ -1,9 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
-
-// import { collection, doc, setDoc ,addDoc} from "firebase/firestore";
-// import { db } from "../../firebase/firebaseConfig";
-// import data from "../../assets/fake.json";
 import {
   deleteInvoice,
   listenToInvoices,
@@ -18,7 +14,6 @@ import InvoiceFilters from "../../components/invoice/InvoiceFilters";
 import InvoiceTable from "../../components/invoice/InvoiceTable";
 
 function InVoice() {
-
   const [invoices, setInvoices] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [deleteToggle, setDeleteToggle] = useState(false);
@@ -30,8 +25,6 @@ function InVoice() {
     const unsubscribe = listenToInvoices(setInvoices);
     return () => unsubscribe();
   }, []);
-
-  // console.log("invoices", invoices);
 
   function deleteToggleHandler(invoice) {
     setSelectedInvoice(invoice);

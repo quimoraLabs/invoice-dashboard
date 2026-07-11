@@ -5,6 +5,7 @@ import {
   doc,
   deleteDoc,
   updateDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
@@ -14,8 +15,14 @@ const customersCollection = collection(db, "customers");
 // Create a new customer
 async function createCustomer(customer) {
   try {
-    const docRef = await addDoc(customersCollection, customer);
-    console.log("Customer add with ID : ", docRef.id);
+    // Append the server timestamp automatically before inserting into Firestore
+    const customerWithTimestamp = {
+      ...customer,
+      created_at: serverTimestamp(),
+    };
+
+    const docRef = await addDoc(customersCollection, customerWithTimestamp);
+    console.log("Customer added with ID: ", docRef.id);
     return docRef;
   } catch (error) {
     console.error("Error adding customer: ", error);

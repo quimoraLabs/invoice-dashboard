@@ -1,74 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
-import { HiSearch, HiChevronDown, HiX } from "react-icons/hi";
+import { HiSearch, HiX } from "react-icons/hi";
+import CustomDropdown from "../CustomDropdown";
 
-// Custom Menu Component with fixed hover detection
-function CustomDropdown({ labelPrefix = "", value, onChange, options }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
-  const selectedOption = options.find((opt) => opt.value === value);
-  const displayLabel = selectedOption ? selectedOption.label : value;
-
-  return (
-    <div className="relative inline-block text-left" ref={dropdownRef}>
-      {/* Trigger Pill */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 rounded-full border bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 shadow-sm transition-all hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
-          isOpen ? "border-indigo-500 dark:border-indigo-500 ring-2 ring-indigo-500/10" : "border-slate-200 dark:border-slate-700"
-        }`}
-      >
-        <span className="capitalize">
-          {labelPrefix} {displayLabel}
-        </span>
-        <HiChevronDown
-          size={14}
-          className={`text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {/* Floating Menu Grid */}
-      {isOpen && (
-        <div className="absolute left-0 z-30 mt-2 w-52 origin-top-left rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-1.5 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="py-0.5 max-h-60 overflow-y-auto space-y-0.5">
-            {options.map((option) => {
-              const isSelected = option.value === value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }}
-                  //  Bug Fix 1: Added distinct background and text color changes on hover to trace selection tracking 
-                  className={`flex w-full items-center rounded-xl px-4 py-2.5 text-sm font-medium transition-colors capitalize text-left cursor-pointer ${
-                    isSelected
-                      ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400"
-                      : "text-slate-600 dark:text-slate-300 hover:bg-blue-100 dark:hover:bg-slate-700/60"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function ControlBar({
   searchQuery,
