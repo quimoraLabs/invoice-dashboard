@@ -15,7 +15,6 @@ Font.register({
   src: "/roboto.ttf", // path relative to /public
 });
 
-const borderStyle = "2px solid green";
 
 const styles = StyleSheet.create({
   page: { padding: 20, fontSize: 12, fontFamily: "Helvetica" },

@@ -39,7 +39,7 @@ const Header = () => {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-30 border-b border-slate-200 bg-white">
+      <header className="fixed inset-x-0 top-0 z-30 border-b border-slate-200 bg-white print:hidden">
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/home" className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-500 text-base font-semibold text-white shadow-sm">
@@ -47,7 +47,7 @@ const Header = () => {
             </div>
             <div className="leading-tight">
               <p className="text-sm font-semibold text-slate-900">Invomora</p>
-              <p className="text-xs text-slate-500">Invoice dashboard</p>
+              <p className="text-xs text-slate-500">Business dashboard</p>
             </div>
           </Link>
 

@@ -52,3 +52,9 @@ button:disabled {
 }
 
 
+@media print {
+  @page {
+    size: auto;
+    margin: 10mm; /* Browser default text ko wipe out kar dega */
+  }
+}

@@ -5,11 +5,13 @@ import { AuthProvider } from "./contexts/authContext";
 import Header from "./header";
 import Register from "./auth/Register";
 import Home from "./pages/Home";
-import InVoice from "./pages/invoice";
+import Invoice from "./pages/invoice";
 import AddInvoice from "./pages/invoice/AddInvoice";
 import Products from "./pages/product";
 import Customer from "./pages/customer";
 import { Toaster } from "react-hot-toast";
+import InvoiceDetailPage from "./pages/invoice/ViewInvoice";
+import InvoiceEditPage from "./pages/invoice/UpdateInvoice";
 
 function AppRoutes() {
   const routesArray = [
@@ -17,7 +19,9 @@ function AppRoutes() {
     { path: "/login", element: <Login /> },
     { path: "/register", element: <Register /> },
     { path: "/home", element: <Home /> },
-    { path: "/invoice", element: <InVoice /> },
+    { path: "/invoice", element: <Invoice /> },
+    { path: "/invoice/view/:invoiceId", element: <InvoiceDetailPage /> },
+    { path: "/invoice/update/:invoiceId", element: <InvoiceEditPage /> },
     { path: "/invoice/create", element: <AddInvoice /> },
     { path: "/customers", element: <Customer /> },
     { path: "/products", element: <Products /> },

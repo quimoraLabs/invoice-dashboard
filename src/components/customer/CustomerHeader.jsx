@@ -9,10 +9,9 @@ export default function DashboardHeader({ onAddClick }) {
       </h1>
       <button
         onClick={onAddClick}
-        className="rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 flex items-center justify-center gap-2"
+        className="inline-flex items-center justify-center rounded-xl bg-indigo-600 p-3 text-white shadow-md shadow-indigo-100 dark:shadow-none transition-all hover:bg-indigo-700 active:scale-95 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
         <HiPlus size={16} />
-        Add customer
       </button>
     </div>
   );
