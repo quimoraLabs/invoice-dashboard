@@ -268,24 +268,28 @@ function InvoiceForm({
               <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                 ₹{(item.quantity * item.price).toFixed(2)}
               </span>
-              {invoice.items.length > 1 && (
-                <div className="flex items-center gap-2">
+              {/* {invoice.items.length > 1 && (*/}
+              <div className="flex items-center gap-2">
+                {invoice.items.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeItem(index)}
+                    title="Delete item"
                     className="text-gray-400 hover:text-red-500 "
                   >
-                    <HiOutlineTrash size={20}/>
+                    <HiOutlineTrash size={20} />
                   </button>
+                )}
                   <button
                     type="button"
-                    onClick={addItem}
+                  onClick={addItem}
+                  title="add item"
                     className="hover:text-indigo-500 text-gray-400"
                   >
                    <HiOutlinePlusCircle size={20}/>
                   </button>
                 </div>
-              )}
+              {/* )}*/}
             </div>
           </div>
         ))}
