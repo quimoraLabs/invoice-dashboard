@@ -13,6 +13,9 @@ import * as FiIcons from "react-icons/fi";
 function Home() {
   const { currentUser } = useAuth();
   const userName = currentUser?.displayName || currentUser?.email || "there";
+  const [allInvoices, setAllInvoices] = useState([]);
+
+
 
   const [stats, setStats] = useState({
     invoices: 0,
@@ -27,6 +30,7 @@ function Home() {
     const unsubscribeInvoices = listenToInvoices((invoices) => {
       const paidInvoices = invoices.filter(
         (invoice) => invoice.status?.toLowerCase() === "paid",
+        
       );
       const pendingInvoices = invoices.filter(
         (invoice) => invoice.status?.toLowerCase() !== "paid",

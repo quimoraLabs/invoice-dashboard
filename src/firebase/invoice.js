@@ -35,6 +35,10 @@ async function getNextInvoiceNumber() {
 async function createInvoice(invoice, setLoading) {
   setLoading?.(true);
   try {
+    if (invoice.status === "Paid" && invoice.payment_type !== "") {
+      invoice.paid_date = invoice.invoice_date;
+    }
+
     const docRef = await addDoc(invoiceCollection, invoice);
     console.log("Invoice added with ID : ", docRef.id);
     return docRef;
@@ -102,7 +106,12 @@ async function updateInvoice(id, updatedData, setLoading) {
  * @param {string} type - Payment method used (e.g., "UPI", "Card", "Cash").
  * @param {Function} setLoading - Optional React state setter for loading states.
  */
-async function updateInvoiceStatusAndDueDate(id, status = "Paid", type = "", setLoading) {
+async function updateInvoiceStatusAndDueDate(
+  id,
+  status = "Paid",
+  type = "",
+  setLoading,
+) {
   setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);

@@ -5,6 +5,7 @@ import {
   HiOutlinePlusCircle,
   HiCurrencyRupee,
 } from "react-icons/hi";
+import toast from "react-hot-toast";
 
 function InvoiceForm({
   initialData,
@@ -12,6 +13,7 @@ function InvoiceForm({
   allCustomers,
   allProducts,
   isEditMode,
+  submitting,
 }) {
   const [invoice, setInvoice] = useState(initialData);
   const [customerSearch, setCustomerSearch] = useState("");
@@ -157,11 +159,17 @@ function InvoiceForm({
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
+    if (invoice.status === "Paid" && !invoice.payment_type) {
+      toast.error("Please select a payment method for paid invoices.");
+      return;
+    }
+
     onSubmit({
       ...invoice,
       subtotal,
-      tax_amount: taxAmount,
-      total_price: totalPrice,
+      tax_amount: taxAmount.toFixed(2),
+      total_price: totalPrice.toFixed(2),
+      paid_date: invoice.status === "Paid" ? new Date().toISOString() : null
     });
   };
 
@@ -305,7 +313,7 @@ function InvoiceForm({
             Settlement Status
           </label>
           <CustomDropdown
-          readOnly={isEditMode}
+            readOnly={isEditMode}
             value={invoice.status}
             onChange={(val) => setInvoice({ ...invoice, status: val })}
             options={statusOptions}
@@ -313,24 +321,20 @@ function InvoiceForm({
           />
         </div>
 
-        {invoice.status !== "Unpaid" &&
-          invoice.status !== "Pending" &&
-          invoice.status !== "" && (
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Payment Gateway
-              </label>
-              <CustomDropdown
-                readOnly={isEditMode}
-                value={invoice.payment_type}
-                onChange={(val) =>
-                  setInvoice({ ...invoice, payment_type: val })
-                }
-                options={paymentOptions}
-                labelPrefix="Type:"
-              />
-            </div>
-          )}
+        {invoice.status === "Paid" && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Payment Gateway
+            </label>
+            <CustomDropdown
+              readOnly={isEditMode}
+              value={invoice.payment_type}
+              onChange={(val) => setInvoice({ ...invoice, payment_type: val })}
+              options={paymentOptions}
+              labelPrefix="Type:"
+            />
+          </div>
+        )}
       </div>
 
       <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-end space-y-4">
@@ -361,9 +365,14 @@ function InvoiceForm({
         </div>
         <button
           type="submit"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-sm transition-all"
+          disabled={submitting}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-sm transition-all disabled:bg-emerald-400 disabled:cursor-not-allowed"
         >
-          {isEditMode ? "Update Invoice" : "Save Invoice"}
+          {submitting
+            ? "Saving..."
+            : isEditMode
+              ? "Update Invoice"
+              : "Save Invoice"}
         </button>
       </div>
     </form>

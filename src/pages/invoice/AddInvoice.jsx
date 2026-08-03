@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 export default function AddInvoice() {
   const [allCustomers, setAllCustomers] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate(); // Hook initialized
 
   useEffect(() => {
@@ -32,13 +33,12 @@ export default function AddInvoice() {
   };
 
   const handleCreateSubmit = async (finalInvoice) => {
+    setSubmitting(true);
     try {
       const nextNo = await getNextInvoiceNumber();
       finalInvoice.invoice_no = nextNo;
       await createInvoice(finalInvoice);
       toast.success("Invoice successfully created!");
-
-      // Add a micro-delay of 800ms so the user can easily see the visual success toast before navigation unmounts the view
       setTimeout(() => {
         navigate(-1);
       }, 800);
@@ -46,6 +46,8 @@ export default function AddInvoice() {
     } catch (error) {
       console.log(error);
       toast.error("Creation failed!");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -60,6 +62,7 @@ export default function AddInvoice() {
         allCustomers={allCustomers}
         allProducts={allProducts}
         isEditMode={false}
+        submitting={submitting}
       />
     </div>
   );

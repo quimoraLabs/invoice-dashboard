@@ -14,6 +14,7 @@ export default function EditInvoice() {
   const [allProducts, setAllProducts] = useState([]);
   const [invoiceData, setInvoiceData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const unsubCust = listenToCustomers(setAllCustomers);
@@ -47,26 +48,24 @@ export default function EditInvoice() {
   }, [invoiceId, navigate]);
 
   const handleUpdateSubmit = async (finalInvoice) => {
+    setSubmitting(true);
     try {
-      // Modify existing data document in collection with updated values
       await updateInvoice(invoiceId, finalInvoice);
-      
-      // Fire success notification alert first
       toast.success("Invoice successfully modified!");
-      
-      // Delay redirection slightly so the visual toast interaction completes smoothly
       setTimeout(() => {
         navigate(-1);
       }, 800);
     } catch (error) {
       console.error(error);
       toast.error("Modification routine execution failed!");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
+      <div className="flex justify-center items-center min-h-100">
         <span className="text-sm font-medium text-slate-500 animate-pulse">Loading target document configuration details...</span>
       </div>
     );
@@ -81,6 +80,7 @@ export default function EditInvoice() {
         allCustomers={allCustomers} 
         allProducts={allProducts} 
         isEditMode={true} 
+        submitting={submitting}
       />
     </div>
   );
