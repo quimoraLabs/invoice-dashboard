@@ -43,12 +43,17 @@ body {
   --breakpoint-xl: 1999px;
 }
 
-button {
+/* Universal Base States for Buttons */
+button,
+[role="button"] {
   cursor: pointer;
 }
 
-button:disabled {
-  cursor: not-allowed;
+button:disabled,
+button[aria-disabled="true"],
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed !important;
+  opacity: 0.6;
 }
 
 

@@ -2,19 +2,20 @@ import { IoClose } from "react-icons/io5";
 import { useState, useEffect } from "react";
 import { createProduct, updateProduct } from "../../firebase/product";
 import { toast } from "react-hot-toast";
-import ImageUploader from "../ImageUploader"; 
+import ImageUploader from "../ImageUploader";
 
 export default function ProductModal({ onClose, product }) {
   const isEditMode = !!product;
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     price: 0,
+    category: "",
     imageUrl: "",
   });
 
   // console.log(product);
-  
 
   useEffect(() => {
     if (isEditMode) {
@@ -23,12 +24,12 @@ export default function ProductModal({ onClose, product }) {
         description: product.description || "",
         price: product.price || 0,
         imageUrl: product.imageUrl || "",
+        category: product.category || "",
       });
     }
   }, [isEditMode, product]);
 
   console.log(formData);
-  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,14 +46,16 @@ export default function ProductModal({ onClose, product }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // The setLoading call is now handled inside the create/update functions.
     try {
       if (!isEditMode) {
-        await createProduct(formData);
+        await createProduct(formData, setLoading);
         toast.success("product added successfully!");
       } else {
-        await updateProduct(product.id, formData);
+        await updateProduct(product.id, formData, setLoading);
         toast.success("product updated successfully!");
       }
+      // Only close the modal on success.
       onClose();
     } catch (error) {
       toast.error(
@@ -91,7 +94,10 @@ export default function ProductModal({ onClose, product }) {
           {/* Modal body */}
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {/* Title Input */}
-            <ImageUploader onUpload={handleImageUpload} currentImage={formData?.imageUrl} />
+            <ImageUploader
+              onUpload={handleImageUpload}
+              currentImage={formData?.imageUrl}
+            />
             <div>
               <label
                 htmlFor="title"
@@ -130,6 +136,32 @@ export default function ProductModal({ onClose, product }) {
                 required
               />
             </div>
+            {/* Category Input */}
+            <div>
+              <label
+                htmlFor="category"
+                className="block mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+              >
+                Category
+              </label>
+              <select
+                name="category"
+                id="category"
+                value={formData.category}
+                onChange={handleChange}
+                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl px-3 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                required
+              >
+                <option value="" disabled>
+                  Select a category
+                </option>
+                <option value="food">Food</option>
+                <option value="clothing">Clothing</option>
+                <option value="electronics">Electronics</option>
+                <option value="books">Books</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
 
             {/* Price Input */}
             <div>
@@ -158,8 +190,6 @@ export default function ProductModal({ onClose, product }) {
               </div>
             </div>
 
-            
-
             {/* Modal Footer Actions */}
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
               <button
@@ -171,9 +201,16 @@ export default function ProductModal({ onClose, product }) {
               </button>
               <button
                 type="submit"
+                disabled={loading}
                 className="px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl transition-all shadow-sm shadow-blue-100 dark:shadow-none"
               >
-                {isEditMode ? "Update Product" : "Save Product"}
+                {loading
+                  ? isEditMode
+                    ? "Updating..."
+                    : "Saving..."
+                  : isEditMode
+                    ? "Update Product"
+                    : "Save Product"}
               </button>
             </div>
           </form>

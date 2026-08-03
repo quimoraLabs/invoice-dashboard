@@ -1,5 +1,5 @@
 import React from "react";
-import RowActionsMenu from "./RowActionsMenu";
+import RowActionsMenu from "../ActionMenu";
 
 export default function ProductTable({ products, onEdit, onDelete, onView }) {
   return (
@@ -8,10 +8,21 @@ export default function ProductTable({ products, onEdit, onDelete, onView }) {
         <table className="w-full min-w-[700px] text-sm text-left text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-400">
             <tr>
-              <th scope="col" className="px-6 py-3">Product</th>
-              <th scope="col" className="px-6 py-3 text-right">Price (₹)</th>
-              <th scope="col" className="px-6 py-3 hidden md:table-cell text-center">Category</th>
-              <th scope="col" className="px-6 py-3 text-right">Actions</th>
+              <th scope="col" className="px-6 py-3">
+                Product
+              </th>
+              <th scope="col" className="px-6 py-3 text-right">
+                Price (₹)
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 hidden md:table-cell text-center"
+              >
+                Category
+              </th>
+              <th scope="col" className="px-6 py-3 text-right">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
@@ -38,21 +49,32 @@ export default function ProductTable({ products, onEdit, onDelete, onView }) {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right font-medium text-slate-900 dark:text-white tabular-nums whitespace-nowrap">
-                    {Number(item.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {Number(item.price).toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </td>
                   <td className="hidden px-6 py-4 md:table-cell text-center">
                     <span className="inline-block rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 capitalize">
                       {item.category}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <RowActionsMenu product={item} onEdit={onEdit} onDelete={onDelete} onView={onView} />
+                  <td className="px-6 py-4 text-right z-50 relative">
+                    <RowActionsMenu
+                      data={item}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onView={onView}
+                    />
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="4" className="px-6 py-8 text-center text-sm text-slate-500">
+                <td
+                  colSpan="4"
+                  className="px-6 py-8 text-center text-sm text-slate-500"
+                >
                   No products found
                 </td>
               </tr>

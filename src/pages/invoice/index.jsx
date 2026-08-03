@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import InvoiceListHeader from "../../components/invoice/InvoiceListHeader";
 import InvoiceFilters from "../../components/invoice/InvoiceFilters";
 import InvoiceTable from "../../components/invoice/InvoiceTable";
+import Loader from "../../components/Loader";
 
 function Invoice() {
   const [invoices, setInvoices] = useState([]);
@@ -15,9 +16,17 @@ function Invoice() {
   const [deleteToggle, setDeleteToggle] = useState(false);
   const [filter, setFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
+
+
 
   // Establishes a real-time reactive pipeline with the Firebase database listener
   useEffect(() => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+    }, 400);
+
     const unsubscribe = listenToInvoices(setInvoices);
     return () => unsubscribe();
   }, []);
@@ -65,6 +74,11 @@ function Invoice() {
     setFilter("All");
     setSearchTerm("");
   }
+
+  if(loading){
+    return <Loader/>
+  }
+
 
   return (
     <div className="p-4 sm:p-6 md:p-10 space-y-6 mx-auto max-w-7xl">

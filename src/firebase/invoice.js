@@ -9,7 +9,7 @@ import {
   orderBy,
   limit,
   getDocs,
-  getDoc
+  getDoc,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import { formatCurrentDate } from "../components/helper";
@@ -32,7 +32,8 @@ async function getNextInvoiceNumber() {
 }
 
 // Create a completely new invoice document records entry
-async function createInvoice(invoice) {
+async function createInvoice(invoice, setLoading) {
+  setLoading?.(true);
   try {
     const docRef = await addDoc(invoiceCollection, invoice);
     console.log("Invoice added with ID : ", docRef.id);
@@ -40,6 +41,8 @@ async function createInvoice(invoice) {
   } catch (error) {
     console.error("Error adding invoice : ", error);
     throw error;
+  } finally {
+    setLoading?.(false);
   }
 }
 
@@ -73,41 +76,67 @@ async function getInvoiceById(id) {
 }
 
 // CORE ADDITION: Update entire modified values configuration dataset matching targeting entity properties
-async function updateInvoice(id, updatedData) {
+async function updateInvoice(id, updatedData, setLoading) {
+  setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
-    
+
     // Prevent document snapshot self-duplication by extracting redundant structural field tags
     const cleanData = { ...updatedData };
-    delete cleanData.id; 
+    delete cleanData.id;
 
     await updateDoc(docRef, cleanData);
     console.log("Invoice fields updated seamlessly for ID:", id);
   } catch (error) {
     console.error("Error performing updateInvoice routine execute:", error);
     throw error;
+  } finally {
+    setLoading?.(false);
   }
 }
 
-// Update basic quick indicators like settlement configurations parameter states
-async function updateInvoiceStatusAndDueDate(id) {
+/**
+ * Updates the payment status and settlement details for a given invoice.
+ * @param {string} id - The invoice document ID.
+ * @param {string} status - New status ("Paid", "Unpaid", or "Pending"). Defaults to "Paid".
+ * @param {string} type - Payment method used (e.g., "UPI", "Card", "Cash").
+ * @param {Function} setLoading - Optional React state setter for loading states.
+ */
+async function updateInvoiceStatusAndDueDate(id, status = "Paid", type = "", setLoading) {
+  setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
-    const status = "Paid";
-    const paid_date = formatCurrentDate();
 
-    await updateDoc(docRef, {
-      status,
-      paid_date,
-    });
+    // Build the dynamic payload based on payment status
+    let payload = {};
+
+    if (status === "Paid") {
+      payload = {
+        status: "Paid",
+        payment_type: type, // Fixed typo: payment_type instead of payemnt_type
+        paid_date: formatCurrentDate(),
+      };
+    } else {
+      // Clear payment metadata if invoice is marked as Unpaid or Pending
+      payload = {
+        status: status,
+        payment_type: null,
+        paid_date: null,
+      };
+    }
+
+    await updateDoc(docRef, payload);
   } catch (error) {
-    console.error("Error updating invoice status metrics details:", error);
+    console.error("Error updating invoice status details:", error);
     throw error;
+  } finally {
+    setLoading?.(false);
   }
 }
 
 // Permanently destroy targeting structural documents from targeted collection database matrices
-async function deleteInvoice(id) {
+async function deleteInvoice(id, setLoading) {
+  setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
     await deleteDoc(docRef);
@@ -115,6 +144,8 @@ async function deleteInvoice(id) {
   } catch (error) {
     console.error("Error deleting invoice : ", error);
     throw error;
+  } finally {
+    setLoading?.(false);
   }
 }
 

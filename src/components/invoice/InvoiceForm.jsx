@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import CustomDropdown from "../CustomDropdown";
-import { HiOutlineTrash, HiOutlinePlusCircle,HiCurrencyRupee } from "react-icons/hi";
+import {
+  HiOutlineTrash,
+  HiOutlinePlusCircle,
+  HiCurrencyRupee,
+} from "react-icons/hi";
 
 function InvoiceForm({
   initialData,
@@ -280,15 +284,15 @@ function InvoiceForm({
                     <HiOutlineTrash size={20} />
                   </button>
                 )}
-                  <button
-                    type="button"
+                <button
+                  type="button"
                   onClick={addItem}
                   title="add item"
-                    className="hover:text-indigo-500 text-gray-400"
-                  >
-                   <HiOutlinePlusCircle size={20}/>
-                  </button>
-                </div>
+                  className="hover:text-indigo-500 text-gray-400"
+                >
+                  <HiOutlinePlusCircle size={20} />
+                </button>
+              </div>
               {/* )}*/}
             </div>
           </div>
@@ -301,6 +305,7 @@ function InvoiceForm({
             Settlement Status
           </label>
           <CustomDropdown
+          readOnly={isEditMode}
             value={invoice.status}
             onChange={(val) => setInvoice({ ...invoice, status: val })}
             options={statusOptions}
@@ -308,19 +313,24 @@ function InvoiceForm({
           />
         </div>
 
-        {invoice.status !== "Unpaid" && invoice.status !== "" && (
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Payment Gateway
-            </label>
-            <CustomDropdown
-              value={invoice.payment_type}
-              onChange={(val) => setInvoice({ ...invoice, payment_type: val })}
-              options={paymentOptions}
-              labelPrefix="Type:"
-            />
-          </div>
-        )}
+        {invoice.status !== "Unpaid" &&
+          invoice.status !== "Pending" &&
+          invoice.status !== "" && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Payment Gateway
+              </label>
+              <CustomDropdown
+                readOnly={isEditMode}
+                value={invoice.payment_type}
+                onChange={(val) =>
+                  setInvoice({ ...invoice, payment_type: val })
+                }
+                options={paymentOptions}
+                labelPrefix="Type:"
+              />
+            </div>
+          )}
       </div>
 
       <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-end space-y-4">

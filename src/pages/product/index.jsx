@@ -7,18 +7,25 @@ import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 import { HiPlus } from "react-icons/hi";
 import ControlBar from "../../components/product/ControlBar";
 import ProductTable from "../../components/product/ProductTable";
+import Loader from "../../components/Loader";
 
 function ProductsDashboard() {
   const [products, setProducts] = useState([]);
-  
+
   // The unified modal manager
   const [activeModal, setActiveModal] = useState({ type: null, product: null });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("name-asc");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+    }, 400);
+
     const unsubscribe = listenToProducts(setProducts);
     return () => unsubscribe();
   }, []);
@@ -31,11 +38,16 @@ function ProductsDashboard() {
   const filteredAndSortedProducts = useMemo(() => {
     return products
       .filter((product) => {
-        const titleMatch = product.title?.toLowerCase().includes(searchQuery.toLowerCase());
-        const descMatch = product.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        const titleMatch = product.title
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase());
+        const descMatch = product.description
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase());
         const matchesSearch = titleMatch || descMatch;
-        
-        const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
+
+        const matchesCategory =
+          categoryFilter === "all" || product.category === categoryFilter;
         return matchesSearch && matchesCategory;
       })
       .sort((a, b) => {
@@ -59,7 +71,7 @@ function ProductsDashboard() {
   async function handleDelete() {
     const targetProduct = activeModal.product;
     if (!targetProduct?.id) return;
-    
+
     try {
       await deleteProduct(targetProduct.id);
       closeModal();
@@ -68,6 +80,10 @@ function ProductsDashboard() {
       toast.error("Error in deleting product");
       console.error(error);
     }
+  }
+
+  if (loading) {
+    return <Loader />;
   }
 
   return (
@@ -110,13 +126,17 @@ function ProductsDashboard() {
       {activeModal.type === "new" && (
         <ProductModal onClose={closeModal} product={null} />
       )}
-      
+
       {activeModal.type === "edit" && (
         <ProductModal onClose={closeModal} product={activeModal.product} />
       )}
-      
+
       {activeModal.type === "delete" && (
-        <ConfirmDeleteModal onClose={closeModal} type="product" onConfirm={handleDelete} />
+        <ConfirmDeleteModal
+          onClose={closeModal}
+          type="product"
+          onConfirm={handleDelete}
+        />
       )}
 
       {activeModal.type === "view" && (

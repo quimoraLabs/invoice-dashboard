@@ -7,7 +7,7 @@ import ImageUploader from "../ImageUploader";
 
 export default function CustomerModal({ onClose, customer }) {
   const isEditMode = !!customer;
-
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -69,10 +69,10 @@ export default function CustomerModal({ onClose, customer }) {
       };
 
       if (!isEditMode) {
-        await createCustomer(payload);
+        await createCustomer(payload,setLoading);
         toast.success("Customer added successfully!");
       } else {
-        await updateCustomer(customer.id, payload);
+        await updateCustomer(customer.id, payload,setLoading);
         toast.success("Customer updated successfully!");
       }
       onClose();
@@ -81,7 +81,7 @@ export default function CustomerModal({ onClose, customer }) {
         `Something went wrong while ${isEditMode ? "updating" : "saving"} the customer.`,
       );
       console.error(error);
-    }
+    } 
   };
 
   return (
@@ -102,7 +102,6 @@ export default function CustomerModal({ onClose, customer }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-5">
-
           <ImageUploader
             onUpload={handleImageUpload}
             currentImage={formData.profile}
@@ -199,9 +198,16 @@ export default function CustomerModal({ onClose, customer }) {
             </button>
             <button
               type="submit"
+              disabled={loading}
               className="rounded-2xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
-              {isEditMode ? "Save changes" : "Create customer"}
+              {loading
+                ? isEditMode
+                  ? "Updating..."
+                  : "Saving..."
+                : isEditMode
+                  ? "Update Customer"
+                  : "Save Customer"}
             </button>
           </div>
         </form>

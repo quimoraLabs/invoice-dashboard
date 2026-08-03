@@ -4,6 +4,8 @@ import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 import CustomerModal from "../../components/customer/CustomerForm";
 import CustomerViewModal from "../../components/customer/CustomerViewModal";
 import toast from "react-hot-toast";
+import Loader from "../../components/Loader";
+
 
 // New Sub-components Imports
 import DashboardHeader from "../../components/customer/CustomerHeader";
@@ -21,13 +23,22 @@ export default function CustomerDashboard() {
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [viewMode, setViewMode] = useState("list");
+  const [loading,setLoading]=useState(false);
+
+
+  useEffect(() => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = listenToCustomers(setCustomers);
     return () => unsubscribe();
   }, []);
 
-  console.log(customers);
+  // console.log(customers);
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, sortBy]);
@@ -114,6 +125,11 @@ export default function CustomerDashboard() {
       console.error(error);
     }
   }
+
+  if (loading) {
+    return < Loader/> ;
+  }
+
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
