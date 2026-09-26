@@ -16,12 +16,6 @@ export const doCreateUserWithEmailAndPassword = async (
   displayName,
   password
 ) => {
-  console.log(
-    "Registering user with email:",
-    email,
-    "and displayName:",
-    displayName
-  );
   const userCredential = await createUserWithEmailAndPassword(
     auth,
     email,
@@ -30,10 +24,8 @@ export const doCreateUserWithEmailAndPassword = async (
 
   // update profile with displayName
   await updateProfile(userCredential.user, {
-    displayName:displayName,
+    displayName: displayName,
   });
-
-  console.log("userCredential", userCredential);
 
   return userCredential;
 };

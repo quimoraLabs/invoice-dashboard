@@ -44,7 +44,7 @@ export default function AddInvoice() {
       }, 800);
       
     } catch (error) {
-      console.log(error);
+      console.error("Error creating invoice:", error);
       toast.error("Creation failed!");
     } finally {
       setSubmitting(false);

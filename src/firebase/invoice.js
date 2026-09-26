@@ -40,7 +40,6 @@ async function createInvoice(invoice, setLoading) {
     }
 
     const docRef = await addDoc(invoiceCollection, invoice);
-    console.log("Invoice added with ID : ", docRef.id);
     return docRef;
   } catch (error) {
     console.error("Error adding invoice : ", error);
@@ -70,7 +69,6 @@ async function getInvoiceById(id) {
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() };
     } else {
-      console.log("No such invoice found!");
       return null;
     }
   } catch (error) {
@@ -90,7 +88,6 @@ async function updateInvoice(id, updatedData, setLoading) {
     delete cleanData.id;
 
     await updateDoc(docRef, cleanData);
-    console.log("Invoice fields updated seamlessly for ID:", id);
   } catch (error) {
     console.error("Error performing updateInvoice routine execute:", error);
     throw error;
@@ -149,7 +146,6 @@ async function deleteInvoice(id, setLoading) {
   try {
     const docRef = doc(db, "invoices", id);
     await deleteDoc(docRef);
-    console.log("Invoice deleted : ", id);
   } catch (error) {
     console.error("Error deleting invoice : ", error);
     throw error;

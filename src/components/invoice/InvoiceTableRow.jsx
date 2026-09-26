@@ -67,8 +67,8 @@ function InvoiceTableRow({ invoice }) {
         {/* Invoice ID */}
         <td className="px-4 py-4 font-semibold text-slate-900 whitespace-nowrap sm:px-6">
           <Link
-            to={`/invoice/${invoice.id}`}
-            className="text-indigo-600 hover:text-indigo-800 transition-colors"
+            to={`/invoice/view/${invoice.id}`}
+            className="text-indigo-600 hover:text-indigo-800 transition-colors font-semibold"
           >
             {invoice.invoice_no || "INV-00"}
           </Link>

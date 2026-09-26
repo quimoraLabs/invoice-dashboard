@@ -23,7 +23,6 @@ async function createCustomer(customer, setLoading) {
     };
 
     const docRef = await addDoc(customersCollection, customerWithTimestamp);
-    console.log("Customer added with ID: ", docRef.id);
     return docRef;
   } catch (error) {
     console.error("Error adding customer: ", error);
@@ -51,10 +50,7 @@ async function updateCustomer(id, updatedData, setLoading) {
   try {
     const docRef = doc(db, "customers", id);
     await updateDoc(docRef, updatedData);
-    console.log("Customer updated:", id, updatedData);
   } catch (error) {
-    console.log(updatedData);
-
     console.error("Error updating customer:", error);
     throw error;
   } finally {
@@ -68,7 +64,6 @@ async function deleteCustomer(id, setLoading) {
   try {
     const docRef = doc(db, "customers", id);
     await deleteDoc(docRef);
-    console.log("Customer deleted : ", id);
   } catch (error) {
     console.error("Error deleteing customer : ", error);
     throw error;

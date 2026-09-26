@@ -16,7 +16,6 @@ async function createProduct(product, setLoading) {
   setLoading?.(true);
   try {
     const docRef = await addDoc(productsCollection, product);
-    console.log("product add with ID : ", docRef.id);
     return docRef;
   } catch (error) {
     console.error("Error adding product: ", error);
@@ -44,9 +43,7 @@ async function updateProduct(id, updatedData, setLoading) {
   try {
     const docRef = doc(db, "products", id);
     await updateDoc(docRef, updatedData);
-    console.log("Product updated:", id, updatedData);
   } catch (error) {
-    // console.log(updatedData);
     console.error("Error updating product:", error);
     throw error;
   } finally {
@@ -60,7 +57,6 @@ async function deleteProduct(id, setLoading) {
   try {
     const docRef = doc(db, "products", id);
     await deleteDoc(docRef);
-    console.log("Product deleted : ", id);
   } catch (error) {
     console.error("Error deleteing product : ", error);
     throw error;

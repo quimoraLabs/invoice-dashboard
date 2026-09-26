@@ -41,8 +41,6 @@ function InvoiceForm({
     setFilteredCustomers(allCustomers);
   }, [allCustomers]);
 
-  console.log(invoice);
-
   // Handle outside click to auto-close the customer dropdown
   useEffect(() => {
     function handleClickOutside(event) {

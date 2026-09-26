@@ -38,7 +38,6 @@ export default function CustomerDashboard() {
     return () => unsubscribe();
   }, []);
 
-  // console.log(customers);
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, sortBy]);
