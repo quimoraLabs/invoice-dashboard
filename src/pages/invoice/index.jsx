@@ -1,26 +1,27 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { listenToInvoices } from "../../firebase/invoice";
+import { useAuth } from "../../contexts/authContext/useAuth";
 import InvoiceListHeader from "../../components/invoice/InvoiceListHeader";
 import InvoiceFilters from "../../components/invoice/InvoiceFilters";
 import InvoiceTable from "../../components/invoice/InvoiceTable";
 import Loader from "../../components/Loader";
 
 function Invoice() {
+  const { currentUser } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [filter, setFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Establishes a real-time reactive pipeline with the Firebase database listener
   useEffect(() => {
+    if (!currentUser?.uid) return;
     setLoading(true);
-    setTimeout(() => {
+    const unsubscribe = listenToInvoices((data) => {
+      setInvoices(data);
       setLoading(false);
-    }, 400);
-
-    const unsubscribe = listenToInvoices(setInvoices);
+    }, currentUser.uid);
     return () => unsubscribe();
-  }, []);
+  }, [currentUser?.uid]);
 
   // Filters computed dynamically leveraging memoized dependencies for high-velocity rendering
   const filteredInvoices = useMemo(() => {

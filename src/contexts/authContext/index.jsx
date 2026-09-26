@@ -24,10 +24,18 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }
 
+  function reloadCurrentUser() {
+    if (auth.currentUser) {
+      setCurrentUser({ ...auth.currentUser });
+    }
+  }
+
   const value = {
     currentUser,
     userLoggedIn,
     loading,
+    setCurrentUser,
+    reloadCurrentUser,
   };
 
   return (

@@ -1,10 +1,12 @@
 import { IoClose } from "react-icons/io5";
 import { useState, useEffect } from "react";
 import { createProduct, updateProduct } from "../../firebase/product";
+import { useAuth } from "../../contexts/authContext/useAuth";
 import { toast } from "react-hot-toast";
 import ImageUploader from "../ImageUploader";
 
 export default function ProductModal({ onClose, product }) {
+  const { currentUser } = useAuth();
   const isEditMode = !!product;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -42,16 +44,19 @@ export default function ProductModal({ onClose, product }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // The setLoading call is now handled inside the create/update functions.
     try {
+      const payload = {
+        ...formData,
+        userId: currentUser?.uid,
+      };
+
       if (!isEditMode) {
-        await createProduct(formData, setLoading);
-        toast.success("product added successfully!");
+        await createProduct(payload, setLoading, currentUser?.uid);
+        toast.success("Product added successfully!");
       } else {
-        await updateProduct(product.id, formData, setLoading);
-        toast.success("product updated successfully!");
+        await updateProduct(product.id, payload, setLoading);
+        toast.success("Product updated successfully!");
       }
-      // Only close the modal on success.
       onClose();
     } catch (error) {
       toast.error(
@@ -151,11 +156,35 @@ export default function ProductModal({ onClose, product }) {
                 <option value="" disabled>
                   Select a category
                 </option>
-                <option value="food">Food</option>
-                <option value="clothing">Clothing</option>
-                <option value="electronics">Electronics</option>
-                <option value="books">Books</option>
-                <option value="other">Other</option>
+                <option value="Design Services">Design Services</option>
+                <option value="Development">Development</option>
+                <option value="Marketing">Marketing</option>
+                <option value="DevOps & Cloud">DevOps & Cloud</option>
+                <option value="Branding">Branding</option>
+                <option value="Database">Database</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Food">Food</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Books">Books</option>
+                <option value="Other">Other</option>
+                {formData.category &&
+                  ![
+                    "Design Services",
+                    "Development",
+                    "Marketing",
+                    "DevOps & Cloud",
+                    "Branding",
+                    "Database",
+                    "Maintenance",
+                    "Electronics",
+                    "Food",
+                    "Clothing",
+                    "Books",
+                    "Other",
+                  ].includes(formData.category) && (
+                    <option value={formData.category}>{formData.category}</option>
+                  )}
               </select>
             </div>
 

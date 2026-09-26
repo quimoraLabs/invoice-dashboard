@@ -1,26 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Imported for navigation
+import { useNavigate } from "react-router-dom";
 import InvoiceForm from "../../components/invoice/InvoiceForm";
 import { listenToCustomers } from "../../firebase/customer";
 import { listenToProducts } from "../../firebase/product";
 import { createInvoice, getNextInvoiceNumber } from "../../firebase/invoice";
 import { formatCurrentDate } from "../../components/helper";
+import { useAuth } from "../../contexts/authContext/useAuth";
 import toast from "react-hot-toast";
 
 export default function AddInvoice() {
+  const { currentUser } = useAuth();
   const [allCustomers, setAllCustomers] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const navigate = useNavigate(); // Hook initialized
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubCust = listenToCustomers(setAllCustomers);
-    const unsubProd = listenToProducts(setAllProducts);
+    if (!currentUser?.uid) return;
+    const unsubCust = listenToCustomers(setAllCustomers, currentUser.uid);
+    const unsubProd = listenToProducts(setAllProducts, currentUser.uid);
     return () => {
       unsubCust();
       unsubProd();
     };
-  }, []);
+  }, [currentUser?.uid]);
 
   const emptyInvoiceState = {
     invoice_no: "INV-00",
@@ -35,14 +38,14 @@ export default function AddInvoice() {
   const handleCreateSubmit = async (finalInvoice) => {
     setSubmitting(true);
     try {
-      const nextNo = await getNextInvoiceNumber();
+      const nextNo = await getNextInvoiceNumber(currentUser?.uid);
       finalInvoice.invoice_no = nextNo;
-      await createInvoice(finalInvoice);
+      finalInvoice.userId = currentUser?.uid;
+      await createInvoice(finalInvoice, setSubmitting, currentUser?.uid);
       toast.success("Invoice successfully created!");
       setTimeout(() => {
         navigate(-1);
       }, 800);
-      
     } catch (error) {
       console.error("Error creating invoice:", error);
       toast.error("Creation failed!");

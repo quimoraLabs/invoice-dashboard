@@ -46,22 +46,22 @@ export default function CustomerTable({
                       {customer.profile ? (
                         <img
                           src={customer.profile}
-                          alt={customer.full_name}
+                          alt={customer.full_name || customer.name}
                           className="h-8 w-8 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
-                          {(customer.full_name || "C").charAt(0).toUpperCase()}
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700">
+                          {(customer.full_name || customer.name || "C").charAt(0).toUpperCase()}
                         </div>
                       )}
-                      {customer.full_name}
+                      {customer.full_name || customer.name || "Unnamed Client"}
                     </div>
                   </td>
                   <td className="px-4 py-4 text-sm text-slate-600 sm:px-6">
                     {customer.email || "—"}
                   </td>
                   <td className="hidden px-4 py-4 text-sm text-slate-600 md:table-cell md:px-6">
-                    {customer.phone_number || "—"}
+                    {customer.phone_number || customer.phone || customer.phone_no || "—"}
                   </td>
                   <td className="px-4 py-4 text-right sm:px-6 relative">
                     <CustomerActionsMenu

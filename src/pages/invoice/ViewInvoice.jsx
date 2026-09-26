@@ -164,14 +164,28 @@ export default function InvoiceDetailPage() {
           <div className="sm:text-right text-xs sm:text-sm text-slate-500 space-y-1 w-full sm:w-auto">
             <div>
               <span className="font-semibold text-slate-700">Issue Date:</span>{" "}
-              {invoice?.invoice_date
-                ? dateFormat(invoice.invoice_date)?.split(",")[0]
-                : "N/A"}
+              {dateFormat(invoice?.invoice_date)
+                ? dateFormat(invoice.invoice_date).split(",")[0]
+                : invoice?.invoice_date || "N/A"}
             </div>
-            {invoice?.paid_date && (
+            {invoice?.status === "Paid" && invoice?.paid_date ? (
               <div>
-                <span className="font-semibold text-slate-700">Paid Date:</span>{" "}
-                {dateFormat(invoice.paid_date)?.split(",")[0]}
+                <span className="font-semibold text-emerald-700">Paid Date:</span>{" "}
+                {dateFormat(invoice.paid_date)
+                  ? dateFormat(invoice.paid_date).split(",")[0]
+                  : invoice.paid_date}
+              </div>
+            ) : (
+              <div>
+                <span className="font-semibold text-amber-700">
+                  {invoice?.status === "Unpaid" ? "Due Date:" : "Expected Date:"}
+                </span>{" "}
+                {dateFormat(invoice?.due_date)
+                  ? dateFormat(invoice.due_date).split(",")[0]
+                  : invoice?.due_date ||
+                    (dateFormat(invoice?.invoice_date)
+                      ? dateFormat(invoice.invoice_date).split(",")[0]
+                      : "N/A")}
               </div>
             )}
           </div>
@@ -199,7 +213,7 @@ export default function InvoiceDetailPage() {
               Billed To (Client)
             </h3>
             <div className="font-extrabold text-slate-800 text-base capitalize">
-              {invoice?.client?.name || "N/A"}
+              {invoice?.client?.name || invoice?.client?.full_name || "N/A"}
             </div>
             {invoice?.client?.address && (
               <p className="text-slate-500 leading-relaxed max-w-md md:ml-auto">
@@ -208,8 +222,10 @@ export default function InvoiceDetailPage() {
             )}
             <div className="text-slate-400 text-xs pt-1">
               {invoice?.client?.email}{" "}
-              {invoice?.client?.email && invoice?.client?.phone && "•"}{" "}
-              {invoice?.client?.phone}
+              {invoice?.client?.email &&
+                (invoice?.client?.phone || invoice?.client?.phone_number) &&
+                "•"}{" "}
+              {invoice?.client?.phone || invoice?.client?.phone_number}
             </div>
           </div>
         </div>

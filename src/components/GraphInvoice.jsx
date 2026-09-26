@@ -9,11 +9,14 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { listenToInvoices } from "../firebase/invoice";
+import { useAuth } from "../contexts/authContext/useAuth";
 
 function IncomeGraph() {
+  const { currentUser } = useAuth();
   const [invoices, setInvoices] = useState([]);
 
   useEffect(() => {
+    if (!currentUser?.uid) return;
     const unsubscribe = listenToInvoices((allInvoices) => {
       const paidInvoices = allInvoices.filter(
         (invoice) => invoice.status?.toLowerCase() === "paid",
@@ -21,7 +24,16 @@ function IncomeGraph() {
 
       // Group invoices by date and sum their amounts
       const aggregatedDataMap = paidInvoices.reduce((acc, invoice) => {
-        const date = invoice.paid_date?.split("T")[0] || "Unknown";
+        const rawDate = invoice.paid_date || invoice.invoice_date;
+        let date = "Unknown";
+        if (typeof rawDate === "string") {
+          date = rawDate.split("T")[0];
+        } else if (rawDate?.toDate) {
+          date = rawDate.toDate().toISOString().split("T")[0];
+        } else if (rawDate?.seconds) {
+          date = new Date(rawDate.seconds * 1000).toISOString().split("T")[0];
+        }
+
         // Ensure total_price is treated as a number, defaulting to 0 if invalid
         const amount = Number(invoice?.total_price) || 0;
 
@@ -41,9 +53,9 @@ function IncomeGraph() {
       );
 
       setInvoices(formattedData);
-    });
+    }, currentUser.uid);
     return () => unsubscribe();
-  }, []);
+  }, [currentUser?.uid]);
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

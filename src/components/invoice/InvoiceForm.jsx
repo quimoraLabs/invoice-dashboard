@@ -79,18 +79,22 @@ function InvoiceForm({
   ];
 
   const handleCustomerSelect = (customer) => {
-    // Keep all internal backend fields completely secure and intact
+    const custName = customer.full_name || customer.name || "";
+    const custPhone = customer.phone_number || customer.phone || customer.phone_no || "";
     setInvoice((prev) => ({
       ...prev,
       client: {
-        name: customer.full_name,
-        email: customer.email,
-        phone: customer.phone_number || "",
+        name: custName,
+        full_name: custName,
+        email: customer.email || "",
+        phone: custPhone,
+        phone_number: custPhone,
+        address: customer.address || "",
         id: customer.id,
       },
     }));
     // Visually update the input to show only the clean name
-    setCustomerSearch(customer.full_name);
+    setCustomerSearch(custName);
     setShowCustomerDropdown(false);
   };
 
@@ -104,7 +108,7 @@ function InvoiceForm({
     }
     const filtered = allCustomers.filter(
       (c) =>
-        c.full_name?.toLowerCase().includes(value.toLowerCase()) ||
+        (c.full_name || c.name)?.toLowerCase().includes(value.toLowerCase()) ||
         c.email?.toLowerCase().includes(value.toLowerCase()),
     );
     setFilteredCustomers(filtered);
@@ -210,13 +214,13 @@ function InvoiceForm({
             Invoice Issue Date
           </label>
           <input
-            type="datetime-local"
+            type="date"
             readOnly={isEditMode}
-            value={invoice.invoice_date}
+            value={invoice?.invoice_date ? String(invoice.invoice_date).split("T")[0] : ""}
             onChange={(e) =>
               setInvoice({ ...invoice, invoice_date: e.target.value })
             }
-            className="w-full p-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+            className="w-full p-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-800 dark:text-slate-200"
           />
         </div>
       </div>

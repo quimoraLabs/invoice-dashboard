@@ -6,23 +6,35 @@ import {
   deleteDoc,
   updateDoc,
   serverTimestamp,
+  query,
+  where,
 } from "firebase/firestore";
-import { db } from "./firebaseConfig";
+import { db, auth } from "./firebaseConfig";
 
 // Firestore collection reference
 const customersCollection = collection(db, "customers");
 
-// Create a new customer
-async function createCustomer(customer, setLoading) {
+// Create a new customer attached to current user ID
+async function createCustomer(customer, setLoading, userId) {
   setLoading?.(true);
   try {
-    // Append the server timestamp automatically before inserting into Firestore
-    const customerWithTimestamp = {
-      ...customer,
+    const targetUid = userId || customer.userId || auth.currentUser?.uid;
+    if (!targetUid) {
+      throw new Error("User authentication required to create customer.");
+    }
+    const customerPayload = {
+      full_name: (customer.full_name || customer.name || "").trim(),
+      email: (customer.email || "").trim(),
+      phone_number: String(customer.phone_number || customer.phone || "").trim(),
+      address: (customer.address || "").trim(),
+      company: (customer.company || "").trim(),
+      gstin: (customer.gstin || "").trim(),
+      profile: customer.profile || "",
+      userId: targetUid,
       created_at: serverTimestamp(),
     };
 
-    const docRef = await addDoc(customersCollection, customerWithTimestamp);
+    const docRef = await addDoc(customersCollection, customerPayload);
     return docRef;
   } catch (error) {
     console.error("Error adding customer: ", error);
@@ -32,24 +44,51 @@ async function createCustomer(customer, setLoading) {
   }
 }
 
-// Read (real-time listener for customers)
-function listenToCustomers(callback) {
-  return onSnapshot(customersCollection, (snapshot) => {
-    const customers = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    callback(customers);
-  });
+// Stream live customer snapshot data isolated per user ID
+function listenToCustomers(callback, userId) {
+  const targetUid = userId || auth.currentUser?.uid;
+
+  if (!targetUid) {
+    callback([]);
+    return () => {};
+  }
+
+  const q = query(customersCollection, where("userId", "==", targetUid));
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const customers = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      callback(customers);
+    },
+    (error) => {
+      console.error("Error listening to customers:", error);
+      callback([]);
+    }
+  );
 }
 
+// Update existing customer details
 async function updateCustomer(id, updatedData, setLoading) {
   if (!id) throw new Error("No customer ID provided");
   setLoading?.(true);
 
   try {
     const docRef = doc(db, "customers", id);
-    await updateDoc(docRef, updatedData);
+    const cleanData = { ...updatedData };
+    if (cleanData.full_name || cleanData.name) {
+      cleanData.full_name = (cleanData.full_name || cleanData.name).trim();
+    }
+    if (cleanData.phone_number || cleanData.phone) {
+      cleanData.phone_number = String(cleanData.phone_number || cleanData.phone).trim();
+    }
+    delete cleanData.name;
+    delete cleanData.phone;
+
+    await updateDoc(docRef, cleanData);
   } catch (error) {
     console.error("Error updating customer:", error);
     throw error;
@@ -58,7 +97,7 @@ async function updateCustomer(id, updatedData, setLoading) {
   }
 }
 
-// Delete a customer by ID
+// Delete customer by ID
 async function deleteCustomer(id, setLoading) {
   setLoading?.(true);
   try {

@@ -17,15 +17,15 @@ const CustomerViewModal = ({selectedCustomer,setViewMode,handleEdit}) => {
               )}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Name</p>
-                <p className="mt-1 text-sm font-medium text-slate-900">{selectedCustomer.full_name}</p>
+                <p className="mt-1 text-sm font-medium text-slate-900">{selectedCustomer?.full_name || selectedCustomer?.name || "Unnamed Client"}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Email</p>
-                <p className="mt-1 text-sm text-slate-700">{selectedCustomer.email || "—"}</p>
+                <p className="mt-1 text-sm text-slate-700">{selectedCustomer?.email || "—"}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Phone</p>
-                <p className="mt-1 text-sm text-slate-700">{selectedCustomer.phone_number || "—"}</p>
+                <p className="mt-1 text-sm text-slate-700">{selectedCustomer?.phone_number || selectedCustomer?.phone || selectedCustomer?.phone_no || "—"}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Address</p>

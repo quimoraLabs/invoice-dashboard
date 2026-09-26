@@ -1,11 +1,12 @@
 import { IoClose } from "react-icons/io5";
 import { useState, useEffect } from "react";
 import { createCustomer, updateCustomer } from "../../firebase/customer";
+import { useAuth } from "../../contexts/authContext/useAuth";
 import { toast } from "react-hot-toast";
 import ImageUploader from "../ImageUploader";
-// import emptyImage from "../../assets/fakeImage.png";
 
 export default function CustomerModal({ onClose, customer }) {
+  const { currentUser } = useAuth();
   const isEditMode = !!customer;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,10 +20,10 @@ export default function CustomerModal({ onClose, customer }) {
   useEffect(() => {
     if (isEditMode) {
       setFormData({
-        full_name: customer.full_name || "",
+        full_name: customer.full_name || customer.name || "",
         email: customer.email || "",
         profile: customer.profile || "",
-        phone_number: customer.phone_number || "",
+        phone_number: customer.phone_number || customer.phone || "",
         address: customer.address || "",
       });
     }
@@ -61,18 +62,19 @@ export default function CustomerModal({ onClose, customer }) {
 
     try {
       const payload = {
-        ...formData,
         full_name: formData.full_name.trim(),
         email: formData.email.trim(),
         phone_number: String(formData.phone_number).trim(),
         address: formData.address.trim(),
+        profile: formData.profile || "",
+        userId: currentUser?.uid,
       };
 
       if (!isEditMode) {
-        await createCustomer(payload,setLoading);
+        await createCustomer(payload, setLoading, currentUser?.uid);
         toast.success("Customer added successfully!");
       } else {
-        await updateCustomer(customer.id, payload,setLoading);
+        await updateCustomer(customer.id, payload, setLoading);
         toast.success("Customer updated successfully!");
       }
       onClose();

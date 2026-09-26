@@ -4,9 +4,11 @@ import InvoiceForm from "../../components/invoice/InvoiceForm";
 import { listenToCustomers } from "../../firebase/customer";
 import { listenToProducts } from "../../firebase/product";
 import { getInvoiceById, updateInvoice } from "../../firebase/invoice"; 
+import { useAuth } from "../../contexts/authContext/useAuth";
 import toast from "react-hot-toast";
 
 export default function EditInvoice() {
+  const { currentUser } = useAuth();
   const { invoiceId } = useParams(); 
   const navigate = useNavigate();
   
@@ -17,13 +19,14 @@ export default function EditInvoice() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const unsubCust = listenToCustomers(setAllCustomers);
-    const unsubProd = listenToProducts(setAllProducts);
+    if (!currentUser?.uid) return;
+    const unsubCust = listenToCustomers(setAllCustomers, currentUser.uid);
+    const unsubProd = listenToProducts(setAllProducts, currentUser.uid);
     return () => { 
       unsubCust(); 
       unsubProd(); 
     };
-  }, []);
+  }, [currentUser?.uid]);
 
   useEffect(() => {
     async function loadTargetInvoice() {

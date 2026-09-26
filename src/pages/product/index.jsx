@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { deleteProduct, listenToProducts } from "../../firebase/product";
+import { useAuth } from "../../contexts/authContext/useAuth";
 import ProductModal from "../../components/product/ProductForm";
 import ProductViewModal from "../../components/product/ProductViewModal";
 import toast from "react-hot-toast";
@@ -10,6 +11,7 @@ import ProductTable from "../../components/product/ProductTable";
 import Loader from "../../components/Loader";
 
 function ProductsDashboard() {
+  const { currentUser } = useAuth();
   const [products, setProducts] = useState([]);
 
   // The unified modal manager
@@ -21,14 +23,14 @@ function ProductsDashboard() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!currentUser?.uid) return;
     setLoading(true);
-    setTimeout(() => {
+    const unsubscribe = listenToProducts((data) => {
+      setProducts(data);
       setLoading(false);
-    }, 400);
-
-    const unsubscribe = listenToProducts(setProducts);
+    }, currentUser.uid);
     return () => unsubscribe();
-  }, []);
+  }, [currentUser?.uid]);
 
   const categories = useMemo(() => {
     const uniqueCategories = new Set(products.map((p) => p.category));

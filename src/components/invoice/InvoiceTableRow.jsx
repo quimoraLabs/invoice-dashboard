@@ -76,7 +76,7 @@ function InvoiceTableRow({ invoice }) {
 
         {/* Client Name */}
         <td className="hidden sm:table-cell px-6 py-4 text-slate-900 font-medium">
-          {invoice.client?.name || "Client Name"}
+          {invoice.client?.full_name || invoice.client?.name || "Client Name"}
         </td>
 
         {/* Date Column */}

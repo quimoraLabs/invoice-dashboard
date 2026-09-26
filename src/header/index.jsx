@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/authContext/useAuth";
 import { doSignOut } from "../firebase/auth";
+import { seedUserData, clearUserData } from "../firebase/seed";
+import toast from "react-hot-toast";
 import {
   HiMenu,
   HiX,
@@ -11,6 +13,8 @@ import {
   HiDocumentText,
   HiLogout,
   HiUser,
+  HiSparkles,
+  HiTrash,
 } from "react-icons/hi";
 import ProfileModal from "../components/modals/ProfileViewModal";
 
@@ -21,6 +25,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const dropdownRef = useRef(null);
   const timeoutRef = useRef(null);
@@ -36,6 +41,36 @@ const Header = () => {
     doSignOut().then(() => navigate("/login"));
     setIsMenuOpen(false);
     setIsDropdownOpen(false);
+  };
+
+  const handleSeedData = async () => {
+    if (!currentUser?.uid) return;
+    setIsSeeding(true);
+    try {
+      await seedUserData(currentUser.uid);
+      toast.success("Demo data seeded! 5 Customers, 10 Products, 5 Invoices loaded.");
+      setIsDropdownOpen(false);
+    } catch (err) {
+      console.error("Error seeding data:", err);
+      toast.error("Failed to seed demo data.");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  const handleClearData = async () => {
+    if (!currentUser?.uid) return;
+    setIsSeeding(true);
+    try {
+      await clearUserData(currentUser.uid);
+      toast.success("Demo data cleared successfully.");
+      setIsDropdownOpen(false);
+    } catch (err) {
+      console.error("Error clearing data:", err);
+      toast.error("Failed to clear data.");
+    } finally {
+      setIsSeeding(false);
+    }
   };
 
   const handleMouseEnter = () => {
@@ -121,29 +156,45 @@ const Header = () => {
                   )}
                 </button>
 
-                {/* Dropdown Menu */}
-                {isDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 origin-top-right rounded-2xl border border-slate-100 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
-                    <button
-                      onClick={() => {
-                        setIsProfileModalOpen(true);
-                        setIsDropdownOpen(false);
-                      }}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                    >
-                      <HiUser size={16} className="text-slate-400" />
-                      My Profile
-                    </button>
-                    <hr className="my-1 border-slate-100" />
-                    <button
-                      onClick={handleLogout}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50/60"
-                    >
-                      <HiLogout size={16} />
-                      Logout
-                    </button>
-                  </div>
-                )}
+                    {/* Dropdown Menu */}
+                    {isDropdownOpen && (
+                      <div className="absolute right-0 top-full mt-1 w-52 origin-top-right rounded-2xl border border-slate-100 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
+                        <button
+                          onClick={() => {
+                            setIsProfileModalOpen(true);
+                            setIsDropdownOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          <HiUser size={16} className="text-slate-400" />
+                          My Profile
+                        </button>
+                        <button
+                          onClick={handleSeedData}
+                          disabled={isSeeding}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                        >
+                          <HiSparkles size={16} className="text-emerald-500" />
+                          {isSeeding ? "Seeding..." : "Seed Demo Data (10 Products)"}
+                        </button>
+                        <button
+                          onClick={handleClearData}
+                          disabled={isSeeding}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-amber-700 transition hover:bg-amber-50"
+                        >
+                          <HiTrash size={16} className="text-amber-500" />
+                          Clear My Demo Data
+                        </button>
+                        <hr className="my-1 border-slate-100" />
+                        <button
+                          onClick={handleLogout}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50/60"
+                        >
+                          <HiLogout size={16} />
+                          Logout
+                        </button>
+                      </div>
+                    )}
               </div>
             </>
           ) : (
@@ -200,6 +251,28 @@ const Header = () => {
                 >
                   <HiUser size={18} />
                   My Profile
+                </button>
+                <button
+                  onClick={() => {
+                    handleSeedData();
+                    setIsMenuOpen(false);
+                  }}
+                  disabled={isSeeding}
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium text-emerald-700"
+                >
+                  <HiSparkles size={18} className="text-emerald-500" />
+                  {isSeeding ? "Seeding..." : "Seed Demo Data (10 Products)"}
+                </button>
+                <button
+                  onClick={() => {
+                    handleClearData();
+                    setIsMenuOpen(false);
+                  }}
+                  disabled={isSeeding}
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium text-amber-700"
+                >
+                  <HiTrash size={18} className="text-amber-500" />
+                  Clear My Demo Data
                 </button>
                 <button
                   onClick={handleLogout}

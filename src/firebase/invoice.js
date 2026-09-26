@@ -6,40 +6,59 @@ import {
   deleteDoc,
   updateDoc,
   query,
+  where,
   orderBy,
   limit,
   getDocs,
   getDoc,
+  serverTimestamp,
 } from "firebase/firestore";
-import { db } from "./firebaseConfig";
+import { db, auth } from "./firebaseConfig";
 import { formatCurrentDate } from "../components/helper";
 
 // Firestore collection reference
 const invoiceCollection = collection(db, "invoices");
 
-// Get the next serial invoice number based on the latest entry
-async function getNextInvoiceNumber() {
-  const q = query(invoiceCollection, orderBy("invoice_no", "desc"), limit(1));
-  const snapshot = await getDocs(q);
+// Get the next serial invoice number based on the current user's latest entry
+async function getNextInvoiceNumber(userId) {
+  const targetUid = userId || auth.currentUser?.uid;
+  try {
+    const q = targetUid
+      ? query(invoiceCollection, where("userId", "==", targetUid), orderBy("invoice_no", "desc"), limit(1))
+      : query(invoiceCollection, orderBy("invoice_no", "desc"), limit(1));
+    const snapshot = await getDocs(q);
 
-  if (!snapshot.empty) {
-    const lastInvoice = snapshot.docs[0].data();
-    const lastNumber = parseInt(lastInvoice.invoice_no.replace("INV-", ""), 10);
-    return `INV-${String(lastNumber + 1).padStart(3, "0")}`;
-  } else {
-    return "INV-001"; // Default start identifier for empty database
+    if (!snapshot.empty) {
+      const lastInvoice = snapshot.docs[0].data();
+      const lastNumber = parseInt(lastInvoice.invoice_no?.replace("INV-", "") || "0", 10);
+      return `INV-${String(lastNumber + 1).padStart(3, "0")}`;
+    }
+  } catch (error) {
+    console.warn("Fallback to sequential invoice number generation:", error);
   }
+  return "INV-001";
 }
 
-// Create a completely new invoice document records entry
-async function createInvoice(invoice, setLoading) {
+// Create a new invoice document attached to current user ID
+async function createInvoice(invoice, setLoading, userId) {
   setLoading?.(true);
   try {
-    if (invoice.status === "Paid" && invoice.payment_type !== "") {
-      invoice.paid_date = invoice.invoice_date;
+    const targetUid = userId || invoice.userId || auth.currentUser?.uid;
+    if (!targetUid) {
+      throw new Error("User authentication required to create invoice.");
     }
 
-    const docRef = await addDoc(invoiceCollection, invoice);
+    const invoicePayload = {
+      ...invoice,
+      userId: targetUid,
+      created_at: serverTimestamp(),
+    };
+
+    if (invoicePayload.status === "Paid" && invoicePayload.payment_type !== "") {
+      invoicePayload.paid_date = invoicePayload.invoice_date || formatCurrentDate();
+    }
+
+    const docRef = await addDoc(invoiceCollection, invoicePayload);
     return docRef;
   } catch (error) {
     console.error("Error adding invoice : ", error);
@@ -49,18 +68,34 @@ async function createInvoice(invoice, setLoading) {
   }
 }
 
-// Stream live snapshot data synchronization from database compilation arrays
-function listenToInvoices(callback) {
-  return onSnapshot(invoiceCollection, (snapshot) => {
-    const invoices = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    callback(invoices);
-  });
+// Stream live snapshot data isolated per user ID
+function listenToInvoices(callback, userId) {
+  const targetUid = userId || auth.currentUser?.uid;
+
+  if (!targetUid) {
+    callback([]);
+    return () => {};
+  }
+
+  const q = query(invoiceCollection, where("userId", "==", targetUid));
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const invoices = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      callback(invoices);
+    },
+    (error) => {
+      console.error("Error listening to invoices:", error);
+      callback([]);
+    }
+  );
 }
 
-// Fetch a specific unique single invoice configuration parameters payload by matching document ID
+// Fetch single invoice payload matching document ID
 async function getInvoiceById(id) {
   try {
     const docRef = doc(db, "invoices", id);
@@ -77,32 +112,24 @@ async function getInvoiceById(id) {
   }
 }
 
-// CORE ADDITION: Update entire modified values configuration dataset matching targeting entity properties
+// Update invoice fields
 async function updateInvoice(id, updatedData, setLoading) {
   setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
-
-    // Prevent document snapshot self-duplication by extracting redundant structural field tags
     const cleanData = { ...updatedData };
     delete cleanData.id;
 
     await updateDoc(docRef, cleanData);
   } catch (error) {
-    console.error("Error performing updateInvoice routine execute:", error);
+    console.error("Error performing updateInvoice:", error);
     throw error;
   } finally {
     setLoading?.(false);
   }
 }
 
-/**
- * Updates the payment status and settlement details for a given invoice.
- * @param {string} id - The invoice document ID.
- * @param {string} status - New status ("Paid", "Unpaid", or "Pending"). Defaults to "Paid".
- * @param {string} type - Payment method used (e.g., "UPI", "Card", "Cash").
- * @param {Function} setLoading - Optional React state setter for loading states.
- */
+// Update payment status and settlement details
 async function updateInvoiceStatusAndDueDate(
   id,
   status = "Paid",
@@ -112,21 +139,18 @@ async function updateInvoiceStatusAndDueDate(
   setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
-
-    // Build the dynamic payload based on payment status
     let payload = {};
 
     if (status === "Paid") {
       payload = {
         status: "Paid",
-        payment_type: type, // Fixed typo: payment_type instead of payemnt_type
+        payment_type: type || "UPI",
         paid_date: formatCurrentDate(),
       };
     } else {
-      // Clear payment metadata if invoice is marked as Unpaid or Pending
       payload = {
         status: status,
-        payment_type: null,
+        payment_type: "",
         paid_date: null,
       };
     }
@@ -140,7 +164,7 @@ async function updateInvoiceStatusAndDueDate(
   }
 }
 
-// Permanently destroy targeting structural documents from targeted collection database matrices
+// Delete invoice document
 async function deleteInvoice(id, setLoading) {
   setLoading?.(true);
   try {
@@ -158,7 +182,7 @@ export {
   createInvoice,
   getInvoiceById,
   listenToInvoices,
-  updateInvoice, // Newly added export integration to kill target import execution breaks
+  updateInvoice,
   updateInvoiceStatusAndDueDate,
   deleteInvoice,
   getNextInvoiceNumber,

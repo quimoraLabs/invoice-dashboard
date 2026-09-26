@@ -5,17 +5,30 @@ import {
   doc,
   deleteDoc,
   updateDoc,
+  serverTimestamp,
+  query,
+  where,
 } from "firebase/firestore";
-import { db } from "./firebaseConfig";
+import { db, auth } from "./firebaseConfig";
 
 // Firestore collection reference
 const productsCollection = collection(db, "products");
 
-// Create a new product
-async function createProduct(product, setLoading) {
+// Create a new product attached to current user ID
+async function createProduct(product, setLoading, userId) {
   setLoading?.(true);
   try {
-    const docRef = await addDoc(productsCollection, product);
+    const targetUid = userId || product.userId || auth.currentUser?.uid;
+    if (!targetUid) {
+      throw new Error("User authentication required to create product.");
+    }
+    const productPayload = {
+      ...product,
+      userId: targetUid,
+      created_at: serverTimestamp(),
+    };
+
+    const docRef = await addDoc(productsCollection, productPayload);
     return docRef;
   } catch (error) {
     console.error("Error adding product: ", error);
@@ -25,17 +38,34 @@ async function createProduct(product, setLoading) {
   }
 }
 
-// Read (real-time listener for products)
-function listenToProducts(callback) {
-  return onSnapshot(productsCollection, (snapshot) => {
-    const products = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    callback(products);
-  });
+// Stream live product snapshot data isolated per user ID
+function listenToProducts(callback, userId) {
+  const targetUid = userId || auth.currentUser?.uid;
+
+  if (!targetUid) {
+    callback([]);
+    return () => {};
+  }
+
+  const q = query(productsCollection, where("userId", "==", targetUid));
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const products = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      callback(products);
+    },
+    (error) => {
+      console.error("Error listening to products:", error);
+      callback([]);
+    }
+  );
 }
 
+// Update product details
 async function updateProduct(id, updatedData, setLoading) {
   if (!id) throw new Error("No product ID provided");
   setLoading?.(true);
@@ -51,7 +81,7 @@ async function updateProduct(id, updatedData, setLoading) {
   }
 }
 
-// Delete a product by ID
+// Delete product by ID
 async function deleteProduct(id, setLoading) {
   setLoading?.(true);
   try {

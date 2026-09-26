@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { deleteCustomer, listenToCustomers } from "../../firebase/customer";
+import { useAuth } from "../../contexts/authContext/useAuth";
 import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 import CustomerModal from "../../components/customer/CustomerForm";
 import CustomerViewModal from "../../components/customer/CustomerViewModal";
@@ -15,6 +16,7 @@ import CustomerTable from "../../components/customer/CustomerTable";
 const ITEMS_PER_PAGE = 10;
 
 export default function CustomerDashboard() {
+  const { currentUser } = useAuth();
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,16 +29,14 @@ export default function CustomerDashboard() {
 
 
   useEffect(() => {
+    if (!currentUser?.uid) return;
     setLoading(true);
-    setTimeout(() => {
+    const unsubscribe = listenToCustomers((data) => {
+      setCustomers(data);
       setLoading(false);
-    }, 2000);
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = listenToCustomers(setCustomers);
+    }, currentUser.uid);
     return () => unsubscribe();
-  }, []);
+  }, [currentUser?.uid]);
 
   useEffect(() => {
     setCurrentPage(1);

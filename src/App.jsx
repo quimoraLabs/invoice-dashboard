@@ -1,5 +1,4 @@
-// import "./App.css";
-import { BrowserRouter, useLocation, useRoutes } from "react-router-dom";
+import { BrowserRouter, Navigate, useLocation, useRoutes } from "react-router-dom";
 import Login from "./auth/Login";
 import { AuthProvider } from "./contexts/authContext";
 import Header from "./header";
@@ -12,19 +11,84 @@ import Customer from "./pages/customer";
 import { Toaster } from "react-hot-toast";
 import InvoiceDetailPage from "./pages/invoice/ViewInvoice";
 import InvoiceEditPage from "./pages/invoice/UpdateInvoice";
+import { ProtectedRoute, PublicOnlyRoute } from "./components/ProtectedRoute";
 
 function AppRoutes() {
   const routesArray = [
-    { path: "*", element: <Login /> },
-    { path: "/login", element: <Login /> },
-    { path: "/register", element: <Register /> },
-    { path: "/home", element: <Home /> },
-    { path: "/invoice", element: <Invoice /> },
-    { path: "/invoice/view/:invoiceId", element: <InvoiceDetailPage /> },
-    { path: "/invoice/update/:invoiceId", element: <InvoiceEditPage /> },
-    { path: "/invoice/create", element: <AddInvoice /> },
-    { path: "/customers", element: <Customer /> },
-    { path: "/products", element: <Products /> },
+    { path: "/", element: <Navigate to="/home" replace /> },
+    {
+      path: "/login",
+      element: (
+        <PublicOnlyRoute>
+          <Login />
+        </PublicOnlyRoute>
+      ),
+    },
+    {
+      path: "/register",
+      element: (
+        <PublicOnlyRoute>
+          <Register />
+        </PublicOnlyRoute>
+      ),
+    },
+    {
+      path: "/home",
+      element: (
+        <ProtectedRoute>
+          <Home />
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/invoice",
+      element: (
+        <ProtectedRoute>
+          <Invoice />
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/invoice/view/:invoiceId",
+      element: (
+        <ProtectedRoute>
+          <InvoiceDetailPage />
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/invoice/update/:invoiceId",
+      element: (
+        <ProtectedRoute>
+          <InvoiceEditPage />
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/invoice/create",
+      element: (
+        <ProtectedRoute>
+          <AddInvoice />
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/customers",
+      element: (
+        <ProtectedRoute>
+          <Customer />
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/products",
+      element: (
+        <ProtectedRoute>
+          <Products />
+        </ProtectedRoute>
+      ),
+    },
+    { path: "*", element: <Navigate to="/login" replace /> },
   ];
   return useRoutes(routesArray);
 }
@@ -55,3 +119,4 @@ function App() {
 }
 
 export default App;
+

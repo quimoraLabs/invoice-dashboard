@@ -1,60 +1,52 @@
-// import React from "react";
 import { HiX } from "react-icons/hi";
 import { useAuth } from "../../contexts/authContext/useAuth";
 import { updateProfile } from "firebase/auth";
 import { useState, useEffect } from "react";
-import ImageUploader from "../ImageUploader"; // Path to your image uploader component
+import ImageUploader from "../ImageUploader";
 import { auth } from "../../firebase/firebaseConfig";
+import toast from "react-hot-toast";
 
 export default function ProfileModal({ isOpen, onClose }) {
-  const { currentUser } = useAuth();
+  const { currentUser, reloadCurrentUser } = useAuth();
   const [updating, setUpdating] = useState(false);
 
-  // Local states for the inputs
+  // Local states for inputs and uploaded photo URL
   const [displayName, setDisplayName] = useState("");
+  const [photoURL, setPhotoURL] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
   // Sync profile details when the modal opens or currentUser updates
   useEffect(() => {
     if (currentUser && isOpen) {
       setDisplayName(currentUser.displayName || "");
+      setPhotoURL(currentUser.photoURL || "");
     }
   }, [currentUser, isOpen]);
 
   if (!isOpen) return null;
 
-  // --- THE SMART CLEAN CHECK ---
-  // Compare current local input states with the original Firebase auth values
   const originalName = currentUser?.displayName || "";
+  const originalPhoto = currentUser?.photoURL || "";
 
-  // The button is only clickable if something genuinely changed AND we aren't currently loading
-  const hasChanges = displayName.trim() !== originalName;
+  // The button is clickable if name or photo URL genuinely changed
+  const hasNameChanged = displayName.trim() !== originalName;
+  const hasPhotoChanged = photoURL !== originalPhoto;
+  const hasChanges = hasNameChanged || hasPhotoChanged;
   const isSaveDisabled = !hasChanges || updating;
 
-  const handleProfilePicUpdate = async (url) => {
-    const firebaseUser = auth.currentUser;
-    if (!firebaseUser) return;
-
-    try {
-      setUpdating(true);
-      await updateProfile(firebaseUser, { photoURL: url });
-      showNotification("Profile picture updated!");
-    } catch (error) {
-      console.error("Error updating photo:", error);
-    } finally {
-      setUpdating(false);
-    }
+  const handleImageUploaded = (uploadedUrl) => {
+    setPhotoURL(uploadedUrl);
+    showNotification("Image uploaded! Click 'Save Changes' to apply.");
   };
 
   const showNotification = (msg) => {
     setSuccessMessage(msg);
-    setTimeout(() => setSuccessMessage(""), 3000);
+    setTimeout(() => setSuccessMessage(""), 3500);
   };
 
   const handleSaveChanges = async (e) => {
     e.preventDefault();
 
-    // Double safeguard to block accidental terminal hits or manual HTML inspections
     if (!hasChanges) return;
 
     const firebaseUser = auth.currentUser;
@@ -62,19 +54,29 @@ export default function ProfileModal({ isOpen, onClose }) {
 
     try {
       setUpdating(true);
+      const updatePayload = {};
 
-      // Only fire the update profile API if the display name specifically changed
-      if (displayName.trim() !== originalName) {
-        await updateProfile(firebaseUser, {
-          displayName: displayName.trim(),
-        });
+      if (hasNameChanged) {
+        updatePayload.displayName = displayName.trim();
       }
+      if (hasPhotoChanged) {
+        updatePayload.photoURL = photoURL;
+      }
+
+      await updateProfile(firebaseUser, updatePayload);
+      if (reloadCurrentUser) {
+        reloadCurrentUser();
+      }
+
+      toast.success("Profile updated successfully!");
+      showNotification("Profile updated successfully!");
+
       setTimeout(() => {
         onClose();
-      }, 800);
-      showNotification("Profile updated successfully!");
+      }, 600);
     } catch (error) {
       console.error("Error updating profile details:", error);
+      toast.error("Failed to update profile details.");
     } finally {
       setUpdating(false);
     }
@@ -106,7 +108,7 @@ export default function ProfileModal({ isOpen, onClose }) {
         </div>
 
         {successMessage && (
-          <div className="mt-4 rounded-xl bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-700 animate-in fade-in slide-in-from-top-1">
+          <div className="mt-4 rounded-xl bg-indigo-50 px-4 py-2.5 text-xs font-semibold text-indigo-700 animate-in fade-in slide-in-from-top-1">
             {successMessage}
           </div>
         )}
@@ -123,13 +125,13 @@ export default function ProfileModal({ isOpen, onClose }) {
             </label>
 
             <ImageUploader
-              currentImage={currentUser?.photoURL}
-              onUpload={handleProfilePicUpdate}
+              currentImage={photoURL}
+              onUpload={handleImageUploaded}
             />
           </div>
 
           <div className="space-y-4">
-            {/* Email Field - Kept strictly read-only and disabled */}
+            {/* Email Field - Read-only */}
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">
                 Email Address (Unique ID)
