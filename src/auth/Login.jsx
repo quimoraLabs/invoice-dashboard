@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useAuth } from "../contexts/authContext/useAuth";
 import { doSignInWithEmailAndPassword, doSignInWithGoogle } from "../firebase/auth";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useNavigate } from "react-router-dom";
 
 function Login() {
   const { userLoggedIn } = useAuth();
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,10 +17,13 @@ function Login() {
     if (!isSigningIn) {
       setIsSigningIn(true);
       setErrorMessage("");
-      await doSignInWithEmailAndPassword(email, password).catch((err) => {
+      try {
+        await doSignInWithEmailAndPassword(email, password);
+        navigate("/home");
+      } catch (err) {
         setErrorMessage(err.message);
         setIsSigningIn(false);
-      });
+      }
     }
   };
 
@@ -29,7 +33,10 @@ function Login() {
       setIsSigningIn(true);
       setErrorMessage("");
       try {
-        await doSignInWithGoogle();
+        const res = await doSignInWithGoogle();
+        if (res?.user) {
+          navigate("/home");
+        }
       } catch (err) {
         if (err.code === "auth/popup-blocked") {
           setErrorMessage("Popup was blocked by your browser. Please allow popups for this site in your browser bar and try again.");

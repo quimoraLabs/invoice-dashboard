@@ -1,4 +1,4 @@
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/authContext/useAuth";
 import { doCreateUserWithEmailAndPassword, doSignInWithGoogle } from "../firebase/auth";
 
@@ -13,6 +13,7 @@ function Register() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const { userLoggedIn } = useAuth();
+  const navigate = useNavigate();
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -26,10 +27,13 @@ function Register() {
       const displayName = name.trim();
       setIsRegistering(true);
       setErrorMessage("");
-      await doCreateUserWithEmailAndPassword(email, displayName, password).catch((err) => {
+      try {
+        await doCreateUserWithEmailAndPassword(email, displayName, password);
+        navigate("/home");
+      } catch (err) {
         setErrorMessage(err.message);
         setIsRegistering(false);
-      });
+      }
     }
   };
 
@@ -39,7 +43,10 @@ function Register() {
       setIsRegistering(true);
       setErrorMessage("");
       try {
-        await doSignInWithGoogle();
+        const res = await doSignInWithGoogle();
+        if (res?.user) {
+          navigate("/home");
+        }
       } catch (err) {
         if (err.code === "auth/popup-blocked") {
           setErrorMessage("Popup was blocked by your browser. Please allow popups for this site in your browser bar and try again.");

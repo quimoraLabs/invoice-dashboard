@@ -11,39 +11,35 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    // Process Google OAuth redirect result first before finishing auth initialization
-    async function initAuth() {
-      try {
-        const redirectRes = await getRedirectResult(auth);
+    // 1. Register onAuthStateChanged listener immediately
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (mounted) {
+        if (user) {
+          setCurrentUser({ ...user });
+          setUserLoggedIn(true);
+        } else {
+          setCurrentUser(null);
+          setUserLoggedIn(false);
+        }
+        setLoading(false);
+      }
+    });
+
+    // 2. Process Google OAuth redirect result in background
+    getRedirectResult(auth)
+      .then((redirectRes) => {
         if (redirectRes?.user && mounted) {
           setCurrentUser({ ...redirectRes.user });
           setUserLoggedIn(true);
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         console.error("Error processing Google Auth redirect result:", err);
-      }
-
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        if (mounted) {
-          if (user) {
-            setCurrentUser({ ...user });
-            setUserLoggedIn(true);
-          } else {
-            setCurrentUser(null);
-            setUserLoggedIn(false);
-          }
-          setLoading(false);
-        }
       });
-
-      return unsubscribe;
-    }
-
-    const unsubPromise = initAuth();
 
     return () => {
       mounted = false;
-      unsubPromise.then((unsub) => unsub && unsub());
+      unsubscribe();
     };
   }, []);
 
