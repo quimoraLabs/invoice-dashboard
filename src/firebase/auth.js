@@ -3,6 +3,7 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   sendPasswordResetEmail,
   updatePassword,
   sendEmailVerification,
@@ -37,8 +38,14 @@ export const doSignInWithEmailAndPassword = async (email, password) => {
 export const doSignInWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
-  const result = await signInWithPopup(auth, provider);
-  return result;
+  try {
+    return await signInWithPopup(auth, provider);
+  } catch (error) {
+    if (error.code === "auth/popup-blocked") {
+      return await signInWithRedirect(auth, provider);
+    }
+    throw error;
+  }
 };
 
 export const doSignOut = () => {
