@@ -32,11 +32,11 @@ function Login() {
         await doSignInWithGoogle();
       } catch (err) {
         if (err.code === "auth/popup-blocked") {
-          setErrorMessage("Popup blocked. Redirecting to Google Login...");
+          setErrorMessage("Popup was blocked by your browser. Please allow popups for this site in your browser bar and try again.");
         } else {
           setErrorMessage(err.message || "Failed to sign in with Google.");
-          setIsSigningIn(false);
         }
+        setIsSigningIn(false);
       }
     }
   };
