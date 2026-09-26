@@ -3,6 +3,7 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   sendPasswordResetEmail,
   updatePassword,
   sendEmailVerification,
@@ -10,7 +11,7 @@ import {
 } from "firebase/auth";
 import { auth } from "./firebaseConfig";
 
-// now include displayName in the function
+// include displayName in the user creation process
 export const doCreateUserWithEmailAndPassword = async (
   email,
   displayName,
@@ -36,9 +37,23 @@ export const doSignInWithEmailAndPassword = async (email, password) => {
 
 export const doSignInWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
-  const result = await signInWithPopup(auth, provider);
-  // result.user
-  return result;
+  provider.setCustomParameters({ prompt: "select_account" });
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return result;
+  } catch (error) {
+    // If popup is blocked by browser/mobile policy, fallback seamlessly to redirect mode
+    if (
+      error.code === "auth/popup-blocked" ||
+      error.code === "auth/popup-closed-by-user" ||
+      error.code === "auth/cancelled-popup-request"
+    ) {
+      console.warn("Popup blocked by browser policy. Falling back to signInWithRedirect...");
+      await signInWithRedirect(auth, provider);
+      return;
+    }
+    throw error;
+  }
 };
 
 export const doSignOut = () => {

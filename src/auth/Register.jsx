@@ -41,8 +41,12 @@ function Register() {
       try {
         await doSignInWithGoogle();
       } catch (err) {
-        setErrorMessage(err.message || "Failed to sign up with Google.");
-        setIsRegistering(false);
+        if (err.code === "auth/popup-blocked") {
+          setErrorMessage("Popup blocked. Redirecting to Google Signup...");
+        } else {
+          setErrorMessage(err.message || "Failed to sign up with Google.");
+          setIsRegistering(false);
+        }
       }
     }
   };
