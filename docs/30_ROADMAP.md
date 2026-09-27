@@ -20,7 +20,11 @@ Phase 1: Foundation Docs & Structural Integrity (Current)
 - [x] Root `PRD.md` and `AGENTS.md` guidelines.
 - [x] Baseline React 19 + Firebase integration.
 
-### Phase 2 — Production Polish (In Progress)
+### Phase 2 — Production Polish & Architectural Migration (Completed & Active)
+- [x] Full migration to Clerk Auth (`@clerk/react`) for unified local & production authentication.
+- [x] Multi-tenant Firestore query isolation via Clerk `user.id`.
+- [x] Realtime `onSnapshot` synchronizers with `isDeletingRef` guards on view screens.
+- [x] Standardized `@headlessui/react` `CustomDropdown` filter & sort controls across Customer, Product, and Invoice ledgers.
 - [ ] Complete Business Profile persistence in Firestore (`business_profiles` collection).
 - [ ] Logo & Digital Signature upload functionality.
 - [ ] Dark Mode toggle persistence with Tailwind CSS v4 variables.

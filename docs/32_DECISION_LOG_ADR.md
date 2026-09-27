@@ -31,3 +31,19 @@
 * **Context:** Multi-tenant invoice dashboard security requirement.
 * **Decision:** Include `userId` field on every document across `invoices`, `customers`, `products`, `business_profiles` and enforce via `firestore.rules`.
 * **Consequences:** Guarantees absolute tenant data security and simple query patterns.
+
+---
+
+## ADR-005: Migration from Firebase Auth to Clerk Auth (`@clerk/react`)
+* **Status:** Accepted
+* **Context:** Firebase Auth introduced environment mismatches between local dev and production environments, complex OAuth redirect handling, and multi-tenant session fragmentation.
+* **Decision:** Adopt `@clerk/react` as the primary authentication engine while retaining Firebase Cloud Firestore and Storage for backend data. Wrap routes with `<ClerkProvider>` and use `clerkUser.id` for Firestore tenant isolation.
+* **Consequences:** Zero-friction Google Sign-In, consistent local & production authentication behavior, and zero manual backend OAuth configuration.
+
+---
+
+## ADR-006: Dual Headless UI Dropdowns for Invoice Ledger Filtering & Sorting
+* **Status:** Accepted
+* **Context:** Purging hardcoded status pills and single reset buttons in favor of reusable, scalable filter controls.
+* **Decision:** Standardize invoice filter controls in `InvoiceFilters.jsx` using the shared `@headlessui/react` `CustomDropdown` component (`CustomDropdown.jsx`), providing dedicated Status and Sort/New Arrivals dropdowns.
+* **Consequences:** Cohesive UI across Customer, Product, and Invoice list views, extensible sort options (Newest First, Oldest First, Amount, Name A-Z/Z-A), and clean search bar styling.

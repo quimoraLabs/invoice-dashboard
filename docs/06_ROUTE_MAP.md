@@ -7,8 +7,8 @@
 | Path | Component | Access Level | Layout Wrapper | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
 | `/` | `Login.jsx` | Public | Auth Shell | Default fallback / Sign in view |
-| `/login` | `Login.jsx` | Public | Auth Shell | Email/Password & Google Sign In |
-| `/register` | `Register.jsx` | Public | Auth Shell | Account registration view |
+| `/login/*` | `Login.jsx` | Public | Auth Shell | Clerk Sign-In (Email/Password, Google OAuth, Passkeys) |
+| `/register/*` | `Register.jsx` | Public | Auth Shell | Clerk Sign-Up & multi-step verification view |
 | `/home` | `Home.jsx` | Protected | Dashboard Header | Main Dashboard (Analytics & Overview) |
 | `/invoice` | `pages/invoice/index.jsx` | Protected | Dashboard Header | Invoice List & Management Table |
 | `/invoice/create` | `AddInvoice.jsx` | Protected | Dashboard Header | New Invoice Creation Form |

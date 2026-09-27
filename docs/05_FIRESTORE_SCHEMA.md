@@ -13,7 +13,7 @@ The Firestore Database uses a document collection model. Data segregation is enf
 * **Document ID:** Auto-generated Firestore ID (or custom string e.g., `inv_123456`)
 ```json
 {
-  "userId": "string (Firebase Auth UID)",
+  "userId": "string (Clerk User ID)",
   "invoiceNumber": "string (e.g. INV-2026-001)",
   "customerId": "string (Reference ID in customers collection)",
   "customerName": "string",
@@ -44,7 +44,7 @@ The Firestore Database uses a document collection model. Data segregation is enf
 ### B. Collection: `customers`
 ```json
 {
-  "userId": "string (Firebase Auth UID)",
+  "userId": "string (Clerk User ID)",
   "name": "string",
   "email": "string",
   "phone": "string",
@@ -58,7 +58,7 @@ The Firestore Database uses a document collection model. Data segregation is enf
 ### C. Collection: `products`
 ```json
 {
-  "userId": "string (Firebase Auth UID)",
+  "userId": "string (Clerk User ID)",
   "name": "string",
   "description": "string",
   "price": "number",
@@ -72,7 +72,7 @@ The Firestore Database uses a document collection model. Data segregation is enf
 * **Document ID:** Matching `userId` (1:1 mapping per user)
 ```json
 {
-  "userId": "string (Firebase Auth UID)",
+  "userId": "string (Clerk User ID)",
   "companyName": "string",
   "logoUrl": "string",
   "email": "string",

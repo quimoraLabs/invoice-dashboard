@@ -11,6 +11,7 @@ All client-side environment variables in Vite must be prefixed with `VITE_` to b
 
 | Variable Name | Required | Description | Example / Environment |
 | :--- | :---: | :--- | :--- |
+| `VITE_CLERK_PUBLISHABLE_KEY` | ✅ | Clerk Publishable Key for authentication | `pk_test_...` |
 | `VITE_FIREBASE_API_KEY` | ✅ | Firebase project Web API Key | `AIzaSyD-exampleKey...` |
 | `VITE_FIREBASE_AUTH_DOMAIN` | ✅ | Firebase Auth domain URL | `invoice-dashboard.firebaseapp.com` |
 | `VITE_FIREBASE_PROJECT_ID` | ✅ | Firebase Project Identifier | `invoice-dashboard-1234` |
@@ -25,6 +26,9 @@ All client-side environment variables in Vite must be prefixed with `VITE_` to b
 Copy the following template to create `.env` locally:
 
 ```env
+# Clerk Authentication Configuration
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_key_here
+
 # Firebase Configuration
 VITE_FIREBASE_API_KEY=your_api_key_here
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
