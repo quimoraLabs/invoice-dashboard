@@ -60,7 +60,7 @@ export default function ProductModal({ onClose, product }) {
         await createProduct(payload, setLoading, targetUid);
         toast.success("Product added successfully!");
       } else {
-        await updateProduct(product.id, payload, setLoading);
+        await updateProduct(product.id, payload, setLoading, targetUid);
         toast.success("Product updated successfully!");
       }
       onClose();

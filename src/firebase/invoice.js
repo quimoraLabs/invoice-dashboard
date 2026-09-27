@@ -97,13 +97,17 @@ function listenToInvoices(callback, userId) {
 }
 
 // Fetch single invoice payload matching document ID
-async function getInvoiceById(id) {
+async function getInvoiceById(id, userId) {
   try {
     const docRef = doc(db, "invoices", id);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
+      const data = docSnap.data();
+      if (userId && data.userId && data.userId !== userId) {
+        throw new Error("Unauthorized: You do not have permission to view this invoice.");
+      }
+      return { id: docSnap.id, ...data };
     } else {
       return null;
     }
@@ -114,10 +118,16 @@ async function getInvoiceById(id) {
 }
 
 // Update invoice fields
-async function updateInvoice(id, updatedData, setLoading) {
+async function updateInvoice(id, updatedData, setLoading, userId) {
   setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
+    if (userId) {
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists() && docSnap.data().userId && docSnap.data().userId !== userId) {
+        throw new Error("Unauthorized: You do not have permission to update this invoice.");
+      }
+    }
     const cleanData = { ...updatedData };
     delete cleanData.id;
 
@@ -136,10 +146,17 @@ async function updateInvoiceStatusAndDueDate(
   status = "Paid",
   type = "",
   setLoading,
+  userId,
 ) {
   setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
+    if (userId) {
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists() && docSnap.data().userId && docSnap.data().userId !== userId) {
+        throw new Error("Unauthorized: You do not have permission to modify this invoice status.");
+      }
+    }
     let payload = {};
 
     if (status === "Paid") {
@@ -166,10 +183,16 @@ async function updateInvoiceStatusAndDueDate(
 }
 
 // Delete invoice document
-async function deleteInvoice(id, setLoading) {
+async function deleteInvoice(id, setLoading, userId) {
   setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
+    if (userId) {
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists() && docSnap.data().userId && docSnap.data().userId !== userId) {
+        throw new Error("Unauthorized: You do not have permission to delete this invoice.");
+      }
+    }
     await deleteDoc(docRef);
   } catch (error) {
     console.error("Error deleting invoice : ", error);

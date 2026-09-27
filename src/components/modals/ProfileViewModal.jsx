@@ -1,18 +1,17 @@
 import { HiX } from "react-icons/hi";
 import { useAuth } from "../../contexts/authContext/useAuth";
-import { updateProfile } from "firebase/auth";
 import { useState, useEffect } from "react";
 import ImageUploader from "../ImageUploader";
-import { auth } from "../../firebase/firebaseConfig";
 import toast from "react-hot-toast";
 
 export default function ProfileModal({ isOpen, onClose }) {
   const { currentUser, reloadCurrentUser } = useAuth();
   const [updating, setUpdating] = useState(false);
 
-  // Local states for inputs and uploaded photo URL
+  // Local states for inputs and uploaded photo URL/file
   const [displayName, setDisplayName] = useState("");
   const [photoURL, setPhotoURL] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
 
   // Sync profile details when the modal opens or currentUser updates
@@ -20,6 +19,7 @@ export default function ProfileModal({ isOpen, onClose }) {
     if (currentUser && isOpen) {
       setDisplayName(currentUser.displayName || "");
       setPhotoURL(currentUser.photoURL || "");
+      setSelectedFile(null);
     }
   }, [currentUser, isOpen]);
 
@@ -30,13 +30,16 @@ export default function ProfileModal({ isOpen, onClose }) {
 
   // The button is clickable if name or photo URL genuinely changed
   const hasNameChanged = displayName.trim() !== originalName;
-  const hasPhotoChanged = photoURL !== originalPhoto;
+  const hasPhotoChanged = Boolean(selectedFile) || photoURL !== originalPhoto;
   const hasChanges = hasNameChanged || hasPhotoChanged;
   const isSaveDisabled = !hasChanges || updating;
 
-  const handleImageUploaded = (uploadedUrl) => {
+  const handleImageUploaded = (uploadedUrl, file) => {
     setPhotoURL(uploadedUrl);
-    showNotification("Image uploaded! Click 'Save Changes' to apply.");
+    if (file) {
+      setSelectedFile(file);
+    }
+    showNotification("Image selected! Click 'Save Changes' to update profile photo.");
   };
 
   const showNotification = (msg) => {
@@ -53,6 +56,12 @@ export default function ProfileModal({ isOpen, onClose }) {
       setUpdating(true);
 
       if (currentUser?.clerkUser) {
+        // 1. Upload & save profile image directly to Clerk user backend
+        if (selectedFile) {
+          await currentUser.clerkUser.setProfileImage({ file: selectedFile });
+        }
+
+        // 2. Update user names in Clerk backend
         const nameParts = displayName.trim().split(" ");
         const firstName = nameParts[0] || "";
         const lastName = nameParts.slice(1).join(" ") || "";

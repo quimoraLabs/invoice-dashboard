@@ -78,11 +78,11 @@ function ProductsDashboard() {
     if (!targetProduct?.id) return;
 
     try {
-      await deleteProduct(targetProduct.id);
+      await deleteProduct(targetProduct.id, null, targetUid);
       closeModal();
       toast.success("Product deleted successfully");
     } catch (error) {
-      toast.error("Error in deleting product");
+      toast.error(error?.message || "Error in deleting product");
       console.error(error);
     }
   }

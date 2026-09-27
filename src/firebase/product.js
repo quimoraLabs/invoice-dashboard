@@ -3,6 +3,7 @@ import {
   addDoc,
   onSnapshot,
   doc,
+  getDoc,
   deleteDoc,
   updateDoc,
   serverTimestamp,
@@ -67,12 +68,18 @@ function listenToProducts(callback, userId) {
 }
 
 // Update product details
-async function updateProduct(id, updatedData, setLoading) {
+async function updateProduct(id, updatedData, setLoading, userId) {
   if (!id) throw new Error("No product ID provided");
   setLoading?.(true);
 
   try {
     const docRef = doc(db, "products", id);
+    if (userId) {
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists() && docSnap.data().userId && docSnap.data().userId !== userId) {
+        throw new Error("Unauthorized: You do not have permission to update this product.");
+      }
+    }
     await updateDoc(docRef, updatedData);
   } catch (error) {
     console.error("Error updating product:", error);
@@ -83,10 +90,16 @@ async function updateProduct(id, updatedData, setLoading) {
 }
 
 // Delete product by ID
-async function deleteProduct(id, setLoading) {
+async function deleteProduct(id, setLoading, userId) {
   setLoading?.(true);
   try {
     const docRef = doc(db, "products", id);
+    if (userId) {
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists() && docSnap.data().userId && docSnap.data().userId !== userId) {
+        throw new Error("Unauthorized: You do not have permission to delete this product.");
+      }
+    }
     await deleteDoc(docRef);
   } catch (error) {
     console.error("Error deleteing product : ", error);

@@ -80,7 +80,7 @@ export default function CustomerModal({ onClose, customer }) {
         await createCustomer(payload, setLoading, targetUid);
         toast.success("Customer added successfully!");
       } else {
-        await updateCustomer(customer.id, payload, setLoading);
+        await updateCustomer(customer.id, payload, setLoading, targetUid);
         toast.success("Customer updated successfully!");
       }
       onClose();

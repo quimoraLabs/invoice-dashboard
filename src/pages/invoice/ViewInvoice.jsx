@@ -17,8 +17,11 @@ import { db } from "../../firebase/firebaseConfig";
 import toast from "react-hot-toast";
 import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 
+import { useAuth } from "../../contexts/authContext/useAuth";
+
 export default function InvoiceDetailPage() {
   const { invoiceId } = useParams();
+  const { currentUser } = useAuth();
 
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +31,7 @@ export default function InvoiceDetailPage() {
   const navigate = useNavigate();
 
   const isDeletingRef = useRef(false);
+  const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
 
   useEffect(() => {
     if (!invoiceId) return;
@@ -38,7 +42,13 @@ export default function InvoiceDetailPage() {
       docRef,
       (docSnap) => {
         if (docSnap.exists()) {
-          setInvoice({ id: docSnap.id, ...docSnap.data() });
+          const data = docSnap.data();
+          if (targetUid && data.userId && data.userId !== targetUid) {
+            toast.error("Unauthorized: You do not have permission to view this invoice.");
+            navigate("/invoice", { replace: true });
+            return;
+          }
+          setInvoice({ id: docSnap.id, ...data });
         } else {
           setInvoice(null);
           if (!isDeletingRef.current) {
@@ -55,7 +65,7 @@ export default function InvoiceDetailPage() {
     );
 
     return () => unsubscribe();
-  }, [invoiceId, navigate]);
+  }, [invoiceId, navigate, targetUid]);
 
   const statusColors = {
     Paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -99,10 +109,10 @@ export default function InvoiceDetailPage() {
   // Handles the update transaction locally inside the component
   async function handleMarkAsPaid() {
     try {
-      await updateInvoiceStatusAndDueDate(invoiceId);
+      await updateInvoiceStatusAndDueDate(invoiceId, "Paid", "", null, targetUid);
       toast.success("Invoice status updated to Paid");
     } catch (error) {
-      toast.error("Failed to update status");
+      toast.error(error?.message || "Failed to update status");
       console.error("Database update transaction failed:", error);
     }
   }
@@ -113,7 +123,7 @@ export default function InvoiceDetailPage() {
       setIsDeleting(true);
       setShowDeleteModal(false);
       navigate("/invoice", { replace: true });
-      await deleteInvoice(invoiceId);
+      await deleteInvoice(invoiceId, null, targetUid);
       toast.success("Invoice deleted successfully!");
     } catch (error) {
       isDeletingRef.current = false;

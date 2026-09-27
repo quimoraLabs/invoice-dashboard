@@ -1,13 +1,44 @@
-import React, { useMemo } from "react";
-import { useUser, useClerk } from "@clerk/react";
+import React, { useMemo, useEffect } from "react";
+import { useUser, useClerk, useSession } from "@clerk/react";
 import { AuthContext } from "./useAuth";
-
+import { auth } from "../../firebase/firebaseConfig";
+import { signInWithCustomToken, signInAnonymously, signOut as firebaseSignOut } from "firebase/auth";
 
 export function AuthProvider({ children }) {
   const { isLoaded, isSignedIn, user } = useUser();
+  const { session } = useSession();
   const { signOut } = useClerk();
 
+  useEffect(() => {
+    async function syncFirebaseWithClerk() {
+      if (isSignedIn && user) {
+        try {
+          // Attempt to fetch Clerk Firebase JWT Token if template is configured
+          let token = null;
+          if (session?.getToken) {
+            try {
+              token = await session.getToken({ template: "firebase" });
+            } catch {
+              // Template optional fallback
+            }
+          }
 
+          if (token) {
+            await signInWithCustomToken(auth, token);
+          } else if (!auth.currentUser) {
+            await signInAnonymously(auth);
+          }
+        } catch (error) {
+          console.warn("Firebase Auth sync status:", error);
+        }
+      } else {
+        if (auth.currentUser) {
+          await firebaseSignOut(auth).catch(() => {});
+        }
+      }
+    }
+    syncFirebaseWithClerk();
+  }, [isSignedIn, user, session]);
 
   const currentUser = useMemo(() => {
     if (!isSignedIn || !user) return null;
@@ -41,7 +72,7 @@ export function AuthProvider({ children }) {
       <div className="flex h-screen items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
           <div className="h-9 w-9 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-          <p className="text-xs font-semibold text-slate-500">Initializing Clerk Auth...</p>
+          <p className="text-xs font-semibold text-slate-500">Initializing Authentication...</p>
         </div>
       </div>
     );
@@ -53,4 +84,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
-

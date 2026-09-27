@@ -21,7 +21,7 @@ export default function ImageUploader({ onUpload, currentImage }) {
       setPreviewUrl(localUrl);
 
       const imageUrl = await uploadToCloudinary(file);
-      if (onUpload) onUpload(imageUrl);
+      if (onUpload) onUpload(imageUrl, file);
     } catch (err) {
       console.error("Image upload failed:", err);
       setPreviewUrl(currentImage || "");

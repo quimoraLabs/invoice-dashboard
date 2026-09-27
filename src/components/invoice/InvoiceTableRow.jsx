@@ -10,6 +10,8 @@ import toast from "react-hot-toast";
 import ConfirmDeleteModal from "../modals/ConfirmDeleteModal";
 import UpdateStatusModal from "../invoice/UpdateStatusModal"; // Headless UI Modal
 
+import { useAuth } from "../../contexts/authContext/useAuth";
+
 const statusColorMap = {
   Paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
   Unpaid: "bg-rose-50 text-rose-700 border-rose-200",
@@ -17,10 +19,13 @@ const statusColorMap = {
 };
 
 function InvoiceTableRow({ invoice }) {
+  const { currentUser } = useAuth();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
 
   const statusClasses =
     statusColorMap[invoice.status] ||
@@ -36,11 +41,11 @@ function InvoiceTableRow({ invoice }) {
 
   async function handleDeleteInvoice() {
     try {
-      await deleteInvoice(invoice.id);
+      await deleteInvoice(invoice.id, null, targetUid);
       toast.success("Invoice deleted successfully");
       setIsDeleteModalOpen(false);
     } catch (error) {
-      toast.error("Failed to delete invoice");
+      toast.error(error?.message || "Failed to delete invoice");
       console.error("Error executing dynamic backend deletion:", error);
     }
   }
@@ -53,10 +58,11 @@ function InvoiceTableRow({ invoice }) {
         status,
         paymentMethod,
         setLoading,
+        targetUid,
       );
       toast.success(`Invoice status updated to ${status}`);
     } catch (error) {
-      toast.error("Failed to update status");
+      toast.error(error?.message || "Failed to update status");
       console.error("Database update transaction failed:", error);
     }
   };

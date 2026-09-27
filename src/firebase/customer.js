@@ -3,6 +3,7 @@ import {
   addDoc,
   onSnapshot,
   doc,
+  getDoc,
   deleteDoc,
   updateDoc,
   serverTimestamp,
@@ -73,12 +74,18 @@ function listenToCustomers(callback, userId) {
 }
 
 // Update existing customer details
-async function updateCustomer(id, updatedData, setLoading) {
+async function updateCustomer(id, updatedData, setLoading, userId) {
   if (!id) throw new Error("No customer ID provided");
   setLoading?.(true);
 
   try {
     const docRef = doc(db, "customers", id);
+    if (userId) {
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists() && docSnap.data().userId && docSnap.data().userId !== userId) {
+        throw new Error("Unauthorized: You do not have permission to update this customer.");
+      }
+    }
     const cleanData = { ...updatedData };
     if (cleanData.full_name || cleanData.name) {
       cleanData.full_name = (cleanData.full_name || cleanData.name).trim();
@@ -99,10 +106,16 @@ async function updateCustomer(id, updatedData, setLoading) {
 }
 
 // Delete customer by ID
-async function deleteCustomer(id, setLoading) {
+async function deleteCustomer(id, setLoading, userId) {
   setLoading?.(true);
   try {
     const docRef = doc(db, "customers", id);
+    if (userId) {
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists() && docSnap.data().userId && docSnap.data().userId !== userId) {
+        throw new Error("Unauthorized: You do not have permission to delete this customer.");
+      }
+    }
     await deleteDoc(docRef);
   } catch (error) {
     console.error("Error deleteing customer : ", error);

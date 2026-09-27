@@ -11,6 +11,8 @@ export default function EditInvoice() {
   const { currentUser } = useAuth();
   const { invoiceId } = useParams(); 
   const navigate = useNavigate();
+
+  const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
   
   const [allCustomers, setAllCustomers] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
@@ -19,21 +21,21 @@ export default function EditInvoice() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!currentUser?.uid) return;
-    const unsubCust = listenToCustomers(setAllCustomers, currentUser.uid);
-    const unsubProd = listenToProducts(setAllProducts, currentUser.uid);
+    if (!targetUid) return;
+    const unsubCust = listenToCustomers(setAllCustomers, targetUid);
+    const unsubProd = listenToProducts(setAllProducts, targetUid);
     return () => { 
       unsubCust(); 
       unsubProd(); 
     };
-  }, [currentUser?.uid]);
+  }, [targetUid]);
 
   useEffect(() => {
     async function loadTargetInvoice() {
-      if (!invoiceId) return;
+      if (!invoiceId || !targetUid) return;
       try {
         setLoading(true);
-        const data = await getInvoiceById(invoiceId);
+        const data = await getInvoiceById(invoiceId, targetUid);
         if (data) {
           setInvoiceData(data);
         } else {
@@ -42,25 +44,26 @@ export default function EditInvoice() {
         }
       } catch (error) {
         console.error("Failed to load invoice:", error);
-        toast.error("Error retrieving target record details.");
+        toast.error(error?.message || "Error retrieving target record details.");
+        navigate("/invoice", { replace: true });
       } finally {
         setLoading(false);
       }
     }
     loadTargetInvoice();
-  }, [invoiceId, navigate]);
+  }, [invoiceId, navigate, targetUid]);
 
   const handleUpdateSubmit = async (finalInvoice) => {
     setSubmitting(true);
     try {
-      await updateInvoice(invoiceId, finalInvoice);
+      await updateInvoice(invoiceId, finalInvoice, setSubmitting, targetUid);
       toast.success("Invoice successfully modified!");
       setTimeout(() => {
         navigate(-1);
       }, 800);
     } catch (error) {
       console.error(error);
-      toast.error("Modification routine execution failed!");
+      toast.error(error?.message || "Modification routine execution failed!");
     } finally {
       setSubmitting(false);
     }

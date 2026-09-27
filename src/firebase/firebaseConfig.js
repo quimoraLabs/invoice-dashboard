@@ -17,6 +17,3 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-
-// Enable detailed Firestore debug logs in Browser DevTools Console
-setLogLevel("debug");

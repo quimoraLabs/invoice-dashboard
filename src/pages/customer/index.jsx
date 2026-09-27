@@ -118,12 +118,12 @@ export default function CustomerDashboard() {
 
   async function handleDelete() {
     try {
-      await deleteCustomer(selectedCustomer.id);
+      await deleteCustomer(selectedCustomer.id, null, targetUid);
       setIsDeleteMode(false);
       setSelectedCustomer(null);
       toast.success("Customer deleted successfully");
     } catch (error) {
-      toast.error("Error deleting customer");
+      toast.error(error?.message || "Error deleting customer");
       console.error(error);
     }
   }
