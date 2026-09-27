@@ -28,15 +28,18 @@ export default function CustomerDashboard() {
   const [loading,setLoading]=useState(false);
 
 
+  const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!targetUid) return;
     setLoading(true);
     const unsubscribe = listenToCustomers((data) => {
       setCustomers(data);
       setLoading(false);
-    }, currentUser.uid);
+    }, targetUid);
     return () => unsubscribe();
-  }, [currentUser?.uid]);
+  }, [targetUid]);
+
 
   useEffect(() => {
     setCurrentPage(1);

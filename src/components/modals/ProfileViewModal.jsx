@@ -49,21 +49,20 @@ export default function ProfileModal({ isOpen, onClose }) {
 
     if (!hasChanges) return;
 
-    const firebaseUser = auth.currentUser;
-    if (!firebaseUser) return;
-
     try {
       setUpdating(true);
-      const updatePayload = {};
 
-      if (hasNameChanged) {
-        updatePayload.displayName = displayName.trim();
-      }
-      if (hasPhotoChanged) {
-        updatePayload.photoURL = photoURL;
+      if (currentUser?.clerkUser) {
+        const nameParts = displayName.trim().split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+
+        await currentUser.clerkUser.update({
+          firstName,
+          lastName,
+        });
       }
 
-      await updateProfile(firebaseUser, updatePayload);
       if (reloadCurrentUser) {
         reloadCurrentUser();
       }
@@ -76,11 +75,12 @@ export default function ProfileModal({ isOpen, onClose }) {
       }, 600);
     } catch (error) {
       console.error("Error updating profile details:", error);
-      toast.error("Failed to update profile details.");
+      toast.error(error.message || "Failed to update profile details.");
     } finally {
       setUpdating(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

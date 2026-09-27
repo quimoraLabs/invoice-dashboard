@@ -4,7 +4,7 @@
 ---
 
 ## 🎯 1. Mission Statement
-This repository is a production-grade SaaS application built with **React 19**, **Vite**, **Tailwind CSS v4**, and **Firebase (Firestore & Auth)**. 
+This repository is a production-grade SaaS application built with **React 19**, **Vite**, **Tailwind CSS v4**, **Clerk Auth (`@clerk/react`)**, and **Firebase (Firestore & Storage)**. 
 
 Every AI Agent and Human Contributor MUST adhere strictly to the rules, coding conventions, architectural boundaries, and documentation specs defined in this document and the `/docs` directory.
 
@@ -12,9 +12,10 @@ Every AI Agent and Human Contributor MUST adhere strictly to the rules, coding c
 
 ## 🧱 2. Core Architectural Invariants (Non-Negotiables)
 
-1. **Strict Firestore Data Isolation:**
-   * Every document stored in Firestore (`invoices`, `customers`, `products`, `business_profiles`) MUST include a `userId` field matching `auth.currentUser.uid`.
-   * Queries MUST filter by `where("userId", "==", user.uid)`. No unbounded collection reads allowed.
+1. **Strict Firestore Data Isolation with Clerk User IDs:**
+   * Every document stored in Firestore (`invoices`, `customers`, `products`, `business_profiles`) MUST include a `userId` field matching Clerk's `user.id`.
+   * Queries MUST filter by `where("userId", "==", user.id)`. No unbounded collection reads allowed.
+
 
 2. **Tailwind CSS v4 Standard:**
    * Styled using CSS variables and modern utility classes `@tailwindcss/vite` in `src/index.css`.

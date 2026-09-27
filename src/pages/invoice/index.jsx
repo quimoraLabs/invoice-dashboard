@@ -11,21 +11,25 @@ function Invoice() {
   const [invoices, setInvoices] = useState([]);
   const [filter, setFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const [loading, setLoading] = useState(false);
 
+  const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!targetUid) return;
     setLoading(true);
     const unsubscribe = listenToInvoices((data) => {
       setInvoices(data);
       setLoading(false);
-    }, currentUser.uid);
+    }, targetUid);
     return () => unsubscribe();
-  }, [currentUser?.uid]);
+  }, [targetUid]);
 
-  // Filters computed dynamically leveraging memoized dependencies for high-velocity rendering
+
+  // Filters and sorting computed dynamically leveraging memoized dependencies
   const filteredInvoices = useMemo(() => {
-    return invoices.filter((invoice) => {
+    let result = invoices.filter((invoice) => {
       const statusMatch =
         filter === "All" ||
         invoice.status?.toLowerCase() === filter.toLowerCase();
@@ -36,13 +40,37 @@ function Invoice() {
 
       return statusMatch && searchMatch;
     });
-  }, [invoices, filter, searchTerm]);
 
-  // Flushes state metrics returning filter workflows to raw baselines
-  function resetFilters() {
-    setFilter("All");
-    setSearchTerm("");
-  }
+    return result.sort((a, b) => {
+      if (sortBy === "newest") {
+        const dateA = new Date(a.invoice_date || a.created_at || 0).getTime();
+        const dateB = new Date(b.invoice_date || b.created_at || 0).getTime();
+        return dateB - dateA;
+      }
+      if (sortBy === "oldest") {
+        const dateA = new Date(a.invoice_date || a.created_at || 0).getTime();
+        const dateB = new Date(b.invoice_date || b.created_at || 0).getTime();
+        return dateA - dateB;
+      }
+      if (sortBy === "amount-desc") {
+        return (Number(b.total_price) || 0) - (Number(a.total_price) || 0);
+      }
+      if (sortBy === "amount-asc") {
+        return (Number(a.total_price) || 0) - (Number(b.total_price) || 0);
+      }
+      if (sortBy === "name-asc") {
+        const nameA = a.client?.name || a.client?.full_name || "";
+        const nameB = b.client?.name || b.client?.full_name || "";
+        return nameA.localeCompare(nameB);
+      }
+      if (sortBy === "name-desc") {
+        const nameA = a.client?.name || a.client?.full_name || "";
+        const nameB = b.client?.name || b.client?.full_name || "";
+        return nameB.localeCompare(nameA);
+      }
+      return 0;
+    });
+  }, [invoices, filter, searchTerm, sortBy]);
 
   if (loading) {
     return <Loader />;
@@ -58,7 +86,8 @@ function Invoice() {
         setFilter={setFilter}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
-        resetFilters={resetFilters}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
       />
 
       {/* Render core table array structure */}

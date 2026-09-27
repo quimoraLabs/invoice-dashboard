@@ -134,7 +134,7 @@ const SAMPLE_PRODUCTS = [
  * @param {string} targetUserId - Target User UID
  */
 export async function clearUserData(targetUserId) {
-  const uid = targetUserId || auth.currentUser?.uid;
+  const uid = targetUserId;
   if (!uid) {
     throw new Error("Cannot clear data: No authenticated user ID found.");
   }
@@ -142,13 +142,10 @@ export async function clearUserData(targetUserId) {
   const collectionsToClear = ["invoices", "customers", "products"];
   for (const collName of collectionsToClear) {
     try {
-      const snap = await getDocs(collection(db, collName));
-      const docsToDelete = snap.docs.filter((d) => {
-        const data = d.data();
-        return !data.userId || data.userId === uid;
-      });
+      const q = query(collection(db, collName), where("userId", "==", uid));
+      const snap = await getDocs(q);
 
-      const deletePromises = docsToDelete.map((docSnap) =>
+      const deletePromises = snap.docs.map((docSnap) =>
         deleteDoc(doc(db, collName, docSnap.id)).catch((err) =>
           console.warn(`Failed deleting ${collName}/${docSnap.id}:`, err)
         )
@@ -165,10 +162,11 @@ export async function clearUserData(targetUserId) {
  * @param {string} targetUserId - Target User UID (defaults to current logged in user)
  */
 export async function seedUserData(targetUserId) {
-  const uid = targetUserId || auth.currentUser?.uid;
+  const uid = targetUserId;
   if (!uid) {
     throw new Error("Cannot seed data: No authenticated user ID found.");
   }
+
 
   // 1. Clear existing seed data first to avoid duplicates
   await clearUserData(uid);

@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@ag-media/react-pdf-table": "^2.0.3",
+    "@clerk/clerk-react": "^5.61.10",
+    "@clerk/react": "^6.17.2",
     "@headlessui/react": "^2.2.10",
     "@react-pdf/renderer": "^4.5.1",
     "@tailwindcss/vite": "^4.3.3",

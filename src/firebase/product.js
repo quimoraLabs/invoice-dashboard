@@ -18,7 +18,7 @@ const productsCollection = collection(db, "products");
 async function createProduct(product, setLoading, userId) {
   setLoading?.(true);
   try {
-    const targetUid = userId || product.userId || auth.currentUser?.uid;
+    const targetUid = userId || product.userId;
     if (!targetUid) {
       throw new Error("User authentication required to create product.");
     }
@@ -40,12 +40,13 @@ async function createProduct(product, setLoading, userId) {
 
 // Stream live product snapshot data isolated per user ID
 function listenToProducts(callback, userId) {
-  const targetUid = userId || auth.currentUser?.uid;
+  const targetUid = userId;
 
   if (!targetUid) {
     callback([]);
     return () => {};
   }
+
 
   const q = query(productsCollection, where("userId", "==", targetUid));
 

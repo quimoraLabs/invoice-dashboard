@@ -1,72 +1,56 @@
-import React, { useEffect, useState } from "react";
-import { auth } from "../../firebase/firebaseConfig";
-import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
+import React, { useMemo } from "react";
+import { useUser, useClerk } from "@clerk/react";
 import { AuthContext } from "./useAuth";
 
+
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userLoggedIn, setUserLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { signOut } = useClerk();
 
-  useEffect(() => {
-    let mounted = true;
 
-    // 1. Register onAuthStateChanged listener immediately
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (mounted) {
-        if (user) {
-          setCurrentUser({ ...user });
-          setUserLoggedIn(true);
-        } else {
-          setCurrentUser(null);
-          setUserLoggedIn(false);
-        }
-        setLoading(false);
-      }
-    });
 
-    // 2. Process Google OAuth redirect result in background
-    getRedirectResult(auth)
-      .then((redirectRes) => {
-        if (redirectRes?.user && mounted) {
-          setCurrentUser({ ...redirectRes.user });
-          setUserLoggedIn(true);
-        }
-      })
-      .catch((err) => {
-        console.error("Error processing Google Auth redirect result:", err);
-      });
-
-    return () => {
-      mounted = false;
-      unsubscribe();
+  const currentUser = useMemo(() => {
+    if (!isSignedIn || !user) return null;
+    return {
+      uid: user.id,
+      id: user.id,
+      email: user.primaryEmailAddress?.emailAddress || "",
+      displayName:
+        user.fullName ||
+        [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+        user.username ||
+        "User",
+      photoURL: user.imageUrl || "",
+      clerkUser: user,
     };
-  }, []);
+  }, [isSignedIn, user]);
 
-  function reloadCurrentUser() {
-    if (auth.currentUser) {
-      setCurrentUser({ ...auth.currentUser });
-      setUserLoggedIn(true);
-    }
+  const value = useMemo(
+    () => ({
+      currentUser,
+      userLoggedIn: Boolean(isSignedIn),
+      loading: !isLoaded,
+      signOut: () => signOut({ redirectUrl: "/login" }),
+      reloadCurrentUser: () => {},
+    }),
+    [currentUser, isSignedIn, isLoaded, signOut]
+  );
+
+  if (!isLoaded) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-9 w-9 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+          <p className="text-xs font-semibold text-slate-500">Initializing Clerk Auth...</p>
+        </div>
+      </div>
+    );
   }
-
-  const value = {
-    currentUser,
-    userLoggedIn,
-    loading,
-    setCurrentUser,
-    reloadCurrentUser,
-  };
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? (
-        <div className="flex h-screen items-center justify-center bg-slate-50">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-        </div>
-      ) : (
-        children
-      )}
+      {children}
     </AuthContext.Provider>
   );
 }
+

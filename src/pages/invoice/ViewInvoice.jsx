@@ -3,42 +3,59 @@ import { dateFormat } from "../../components/helper";
 import {
   HiOutlineArrowLeft,
   HiOutlinePrinter,
-  HiOutlineDocumentArrowDown,
   HiOutlinePencil,
   HiOutlineCheckCircle,
+  HiOutlineTrash,
 } from "react-icons/hi2";
 import {
-  getInvoiceById,
   updateInvoiceStatusAndDueDate,
+  deleteInvoice,
 } from "../../firebase/invoice";
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast/headless";
+import { useEffect, useState, useRef } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../../firebase/firebaseConfig";
+import toast from "react-hot-toast";
+import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 
 export default function InvoiceDetailPage() {
   const { invoiceId } = useParams();
 
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const navigate = useNavigate();
 
+  const isDeletingRef = useRef(false);
+
   useEffect(() => {
-    async function fetchInvoice() {
-      try {
-        setLoading(true);
-        const data = await getInvoiceById(invoiceId);
-        setInvoice(data);
-      } catch (error) {
-        console.error("Failed to load invoice details:", error);
-      } finally {
+    if (!invoiceId) return;
+
+    setLoading(true);
+    const docRef = doc(db, "invoices", invoiceId);
+    const unsubscribe = onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setInvoice({ id: docSnap.id, ...docSnap.data() });
+        } else {
+          setInvoice(null);
+          if (!isDeletingRef.current) {
+            toast.error("Invoice no longer exists or was cleared.");
+            navigate("/invoice", { replace: true });
+          }
+        }
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error listening to invoice detail:", error);
         setLoading(false);
       }
-    }
+    );
 
-    if (invoiceId) {
-      fetchInvoice();
-    }
-  }, [invoiceId]);
+    return () => unsubscribe();
+  }, [invoiceId, navigate]);
 
   const statusColors = {
     Paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -46,33 +63,36 @@ export default function InvoiceDetailPage() {
     Pending: "bg-amber-50 text-amber-700 border-amber-200",
   };
 
-  if (loading) {
+  if (loading || isDeleting) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-slate-500 font-medium animate-pulse">
-          Loading invoice tracking details...
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+          <p className="text-sm font-medium text-slate-500">
+            {isDeleting ? "Deleting invoice..." : "Loading invoice details..."}
+          </p>
         </div>
       </div>
     );
   }
 
-  if (!invoice) {
+  if (!invoice && !isDeletingRef.current) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <div className="text-slate-600 font-bold text-lg">
-          Invoice not found
+          Invoice not found or deleted
         </div>
         <button
-          onClick={() => navigate(-1)}
-          className="px-4 py-2 text-sm bg-slate-800 text-white rounded-xl font-semibold"
+          onClick={() => navigate("/invoice", { replace: true })}
+          className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition shadow-sm"
         >
-          Go Back
+          Back to Invoices
         </button>
       </div>
     );
   }
 
-  const totalAmount = invoice.total_price || 0;
+  const totalAmount = invoice?.total_price || 0;
   const subtotal = totalAmount / 1.18;
   const taxAmount = totalAmount - subtotal;
 
@@ -87,19 +107,46 @@ export default function InvoiceDetailPage() {
     }
   }
 
+  async function handleDeleteInvoice() {
+    try {
+      isDeletingRef.current = true;
+      setIsDeleting(true);
+      setShowDeleteModal(false);
+      navigate("/invoice", { replace: true });
+      await deleteInvoice(invoiceId);
+      toast.success("Invoice deleted successfully!");
+    } catch (error) {
+      isDeletingRef.current = false;
+      setIsDeleting(false);
+      toast.error(error?.message || "Failed to delete invoice");
+      console.error("Error deleting invoice:", error);
+    }
+  }
+
+
+
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* 1. Control Toolbar — Completely invisible during native printing */}
       <div className="flex items-center justify-between gap-4 bg-white p-4 rounded-[22px] border border-slate-200 shadow-sm print:hidden">
         <button
-          onClick={() => navigate(-1)}
-          title="Back to invoice"
+          onClick={() => navigate("/invoice")}
+          title="Back to invoices"
           className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition"
         >
           <HiOutlineArrowLeft className="w-4 h-4" />
         </button>
 
         <div className="flex items-center gap-2 self-end sm:self-auto">
+          {/* Delete Action */}
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            title="Delete Invoice"
+            className="p-2.5 text-rose-600 bg-white border border-slate-200 rounded-xl hover:bg-rose-50 hover:border-rose-200 transition shadow-sm"
+          >
+            <HiOutlineTrash className="w-5 h-5" />
+          </button>
+
           {/* Print Action */}
           <button
             onClick={() => window.print()}
@@ -129,6 +176,15 @@ export default function InvoiceDetailPage() {
           )}
         </div>
       </div>
+
+      {showDeleteModal && (
+        <ConfirmDeleteModal
+          onClose={() => setShowDeleteModal(false)}
+          type="invoice"
+          onConfirm={handleDeleteInvoice}
+        />
+      )}
+
 
       {/* 2. Main Printable Invoice Canvas */}
       <div className="bg-white rounded-[22px] border border-slate-200 shadow-sm p-6 sm:p-10 space-y-8 print:border-none print:shadow-none print:p-0">

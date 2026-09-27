@@ -26,8 +26,10 @@ function Home() {
     revenue: 0,
   });
 
+  const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!targetUid) return;
 
     const unsubscribeInvoices = listenToInvoices((invoices) => {
       const paidInvoices = invoices.filter(
@@ -48,22 +50,23 @@ function Home() {
         pendingInvoices: pendingInvoices.length,
         revenue,
       }));
-    }, currentUser.uid);
+    }, targetUid);
 
     const unsubscribeCustomers = listenToCustomers((customers) => {
       setStats((prev) => ({ ...prev, customers: customers.length }));
-    }, currentUser.uid);
+    }, targetUid);
 
     const unsubscribeProducts = listenToProducts((products) => {
       setStats((prev) => ({ ...prev, products: products.length }));
-    }, currentUser.uid);
+    }, targetUid);
 
     return () => {
       unsubscribeInvoices();
       unsubscribeCustomers();
       unsubscribeProducts();
     };
-  }, [currentUser?.uid]);
+  }, [targetUid]);
+
 
   const cardsConfig = [
     {

@@ -17,7 +17,7 @@ function AppRoutes() {
   const routesArray = [
     { path: "/", element: <Navigate to="/home" replace /> },
     {
-      path: "/login",
+      path: "/login/*",
       element: (
         <PublicOnlyRoute>
           <Login />
@@ -25,7 +25,7 @@ function AppRoutes() {
       ),
     },
     {
-      path: "/register",
+      path: "/register/*",
       element: (
         <PublicOnlyRoute>
           <Register />
@@ -95,7 +95,10 @@ function AppRoutes() {
 
 function AppShell() {
   const location = useLocation();
-  const isAuthPage = ["/", "/login", "/register"].includes(location.pathname);
+  const isAuthPage =
+    location.pathname === "/" ||
+    location.pathname.startsWith("/login") ||
+    location.pathname.startsWith("/register");
 
   return (
     <>
@@ -107,6 +110,7 @@ function AppShell() {
     </>
   );
 }
+
 
 function App() {
   return (

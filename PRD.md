@@ -4,20 +4,23 @@
 ---
 
 ## 1. Executive Summary
-**Invoice Dashboard** is a full-stack B2B/B2C invoicing and financial analytics SaaS application built with **React 19**, **Vite**, **Tailwind CSS v4**, and **Firebase (Auth & Firestore)**. It enables freelancers, agencies, and small business owners to create, manage, track, and export professional PDF invoices instantly.
+**Invoice Dashboard** is a full-stack B2B/B2C invoicing and financial analytics SaaS application built with **React 19**, **Vite**, **Tailwind CSS v4**, **Clerk Authentication (`@clerk/react`)**, and **Firebase (Cloud Firestore & Storage)**. It enables freelancers, agencies, and small business owners to create, manage, track, and export professional PDF invoices instantly.
 
 ---
 
 ## 2. Strategic Product Goals
 1. **Speed & Efficiency:** Enable users to generate and download branded PDF invoices in under 60 seconds.
-2. **Financial Visibility:** Provide real-time revenue analytics, status breakdowns (Paid, Pending, Overdue), and client payment metrics.
-3. **Data Security & Isolation:** Enforce multi-tenant data isolation at the Firestore query level using strict `userId` document ownership.
-4. **Zero-Cost PDF Delivery:** Render pixel-perfect A4 invoice PDFs on the client side (`@react-pdf/renderer`) without backend server costs.
+2. **Seamless Single Sign-On:** Provide hassle-free authentication (Google, Email, Passwordless) via Clerk Auth with zero backend OAuth overhead.
+3. **Financial Visibility:** Provide real-time revenue analytics, status breakdowns (Paid, Pending, Overdue), and client payment metrics.
+4. **Data Security & Isolation:** Enforce multi-tenant data isolation at the Firestore query level using strict Clerk `user.id` document ownership.
+5. **Zero-Cost PDF Delivery:** Render pixel-perfect A4 invoice PDFs on the client side (`@react-pdf/renderer`) without backend server costs.
 
 ---
 
 ## 3. High-Level Feature Architecture
-* **Auth System:** Firebase Auth (Google Sign-In & Email/Password).
+* **Auth System:** Clerk Auth (`@clerk/react`) — Single Sign-On, Google Auth, Passkeys, Email & User Profile.
+* **Database & Storage:** Firebase Cloud Firestore & Storage.
+
 * **Analytics Dashboard:** Recharts monthly revenue trends & stat cards.
 * **Invoice Module:** Full CRUD, dynamic line item calculation, PDF download, and status updates.
 * **Client & Product Catalogs:** Directory for instant customer lookup and 1-click product billing insertion.

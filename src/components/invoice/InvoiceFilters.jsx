@@ -1,57 +1,72 @@
 import React from "react";
-import { FaTimes } from "react-icons/fa";
+import { HiSearch, HiX } from "react-icons/hi";
+import CustomDropdown from "../CustomDropdown";
 
 function InvoiceFilters({
   filter,
   setFilter,
   searchTerm,
   setSearchTerm,
-  resetFilters,
+  sortBy,
+  setSortBy,
 }) {
-  return (
-    <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-        {/* Search Bar */}
-        <div className="relative md:col-span-1">
-          <input
-            type="text"
-            placeholder="Search by name or invoice #"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-4 pr-10 py-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
-            >
-              <FaTimes />
-            </button>
-          )}
-        </div>
+  const statusOptions = [
+    { value: "All", label: "All Statuses" },
+    { value: "Paid", label: "Paid" },
+    { value: "Unpaid", label: "Unpaid" },
+    { value: "Pending", label: "Pending" },
+  ];
 
-        {/* Status Filters */}
-        <div className="flex flex-wrap items-center gap-2 md:col-span-2 justify-start md:justify-end">
-          {["All", "Paid", "Unpaid", "Pending"].map((status) => (
-            <button
-              key={status}
-              className={`px-4 py-2 text-sm font-medium rounded-full border transition-colors duration-200 ${
-                filter === status
-                  ? "bg-indigo-600 text-white border-indigo-600"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-              }`}
-              onClick={() => setFilter(status)}
-            >
-              {status}
-            </button>
-          ))}
+  const sortOptions = [
+    { value: "newest", label: "Newest First" },
+    { value: "oldest", label: "Oldest First" },
+    { value: "amount-desc", label: "Amount: High to Low" },
+    { value: "amount-asc", label: "Amount: Low to High" },
+    { value: "name-asc", label: "Client: A to Z" },
+    { value: "name-desc", label: "Client: Z to A" },
+  ];
+
+  return (
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Search Input */}
+      <div className="relative flex-1">
+        <HiSearch
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+          size={18}
+        />
+        <input
+          type="text"
+          placeholder="Search invoices..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-11 pr-10 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+        />
+        {searchTerm && (
           <button
-            onClick={resetFilters}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+            type="button"
+            onClick={() => setSearchTerm("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
           >
-            Reset
+            <HiX size={16} />
           </button>
-        </div>
+        )}
+      </div>
+
+      {/* Interactive Dropdowns Group */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <CustomDropdown
+          value={filter}
+          onChange={setFilter}
+          options={statusOptions}
+        />
+
+        <CustomDropdown
+          labelPrefix="Sort:"
+          value={sortBy}
+          onChange={setSortBy}
+          options={sortOptions}
+          align="right"
+        />
       </div>
     </div>
   );

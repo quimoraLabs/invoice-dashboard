@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/authContext/useAuth";
-import { doSignOut } from "../firebase/auth";
+import { UserButton } from "@clerk/react";
 import { seedUserData, clearUserData } from "../firebase/seed";
 import toast from "react-hot-toast";
 import {
@@ -21,7 +21,7 @@ import ProfileModal from "../components/modals/ProfileViewModal";
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userLoggedIn, currentUser } = useAuth();
+  const { userLoggedIn, currentUser, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -37,41 +37,54 @@ const Header = () => {
     { to: "/invoice", label: "Invoices", icon: <HiDocumentText size={18} /> },
   ];
 
-  const handleLogout = () => {
-    doSignOut().then(() => navigate("/login"));
+  const handleLogout = async () => {
+    if (signOut) {
+      await signOut();
+    }
     setIsMenuOpen(false);
     setIsDropdownOpen(false);
+    navigate("/login");
   };
 
+
   const handleSeedData = async () => {
-    if (!currentUser?.uid) return;
+    const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+    if (!targetUid) {
+      toast.error("User authentication required to seed data.");
+      return;
+    }
     setIsSeeding(true);
     try {
-      await seedUserData(currentUser.uid);
+      await seedUserData(targetUid);
       toast.success("Demo data seeded! 5 Customers, 10 Products, 5 Invoices loaded.");
       setIsDropdownOpen(false);
     } catch (err) {
       console.error("Error seeding data:", err);
-      toast.error("Failed to seed demo data.");
+      toast.error(err?.message || "Failed to seed demo data.");
     } finally {
       setIsSeeding(false);
     }
   };
 
   const handleClearData = async () => {
-    if (!currentUser?.uid) return;
+    const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+    if (!targetUid) {
+      toast.error("User authentication required to clear data.");
+      return;
+    }
     setIsSeeding(true);
     try {
-      await clearUserData(currentUser.uid);
+      await clearUserData(targetUid);
       toast.success("Demo data cleared successfully.");
       setIsDropdownOpen(false);
     } catch (err) {
       console.error("Error clearing data:", err);
-      toast.error("Failed to clear data.");
+      toast.error(err?.message || "Failed to clear data.");
     } finally {
       setIsSeeding(false);
     }
   };
+
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);

@@ -15,15 +15,17 @@ export default function AddInvoice() {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
+  const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+
   useEffect(() => {
-    if (!currentUser?.uid) return;
-    const unsubCust = listenToCustomers(setAllCustomers, currentUser.uid);
-    const unsubProd = listenToProducts(setAllProducts, currentUser.uid);
+    if (!targetUid) return;
+    const unsubCust = listenToCustomers(setAllCustomers, targetUid);
+    const unsubProd = listenToProducts(setAllProducts, targetUid);
     return () => {
       unsubCust();
       unsubProd();
     };
-  }, [currentUser?.uid]);
+  }, [targetUid]);
 
   const emptyInvoiceState = {
     invoice_no: "INV-00",
@@ -36,23 +38,28 @@ export default function AddInvoice() {
   };
 
   const handleCreateSubmit = async (finalInvoice) => {
+    if (!targetUid) {
+      toast.error("User authentication required to create invoice.");
+      return;
+    }
     setSubmitting(true);
     try {
-      const nextNo = await getNextInvoiceNumber(currentUser?.uid);
+      const nextNo = await getNextInvoiceNumber(targetUid);
       finalInvoice.invoice_no = nextNo;
-      finalInvoice.userId = currentUser?.uid;
-      await createInvoice(finalInvoice, setSubmitting, currentUser?.uid);
+      finalInvoice.userId = targetUid;
+      await createInvoice(finalInvoice, setSubmitting, targetUid);
       toast.success("Invoice successfully created!");
       setTimeout(() => {
         navigate(-1);
       }, 800);
     } catch (error) {
       console.error("Error creating invoice:", error);
-      toast.error("Creation failed!");
+      toast.error(error?.message || "Creation failed!");
     } finally {
       setSubmitting(false);
     }
   };
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">

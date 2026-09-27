@@ -18,7 +18,7 @@ const customersCollection = collection(db, "customers");
 async function createCustomer(customer, setLoading, userId) {
   setLoading?.(true);
   try {
-    const targetUid = userId || customer.userId || auth.currentUser?.uid;
+    const targetUid = userId || customer.userId;
     if (!targetUid) {
       throw new Error("User authentication required to create customer.");
     }
@@ -46,12 +46,13 @@ async function createCustomer(customer, setLoading, userId) {
 
 // Stream live customer snapshot data isolated per user ID
 function listenToCustomers(callback, userId) {
-  const targetUid = userId || auth.currentUser?.uid;
+  const targetUid = userId;
 
   if (!targetUid) {
     callback([]);
     return () => {};
   }
+
 
   const q = query(customersCollection, where("userId", "==", targetUid));
 

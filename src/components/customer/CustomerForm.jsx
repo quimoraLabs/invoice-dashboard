@@ -61,17 +61,23 @@ export default function CustomerModal({ onClose, customer }) {
     if (!validatePhoneNumber(formData.phone_number)) return;
 
     try {
+      const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+      if (!targetUid) {
+        toast.error("User authentication required to save customer.");
+        return;
+      }
+
       const payload = {
         full_name: formData.full_name.trim(),
         email: formData.email.trim(),
         phone_number: String(formData.phone_number).trim(),
         address: formData.address.trim(),
         profile: formData.profile || "",
-        userId: currentUser?.uid,
+        userId: targetUid,
       };
 
       if (!isEditMode) {
-        await createCustomer(payload, setLoading, currentUser?.uid);
+        await createCustomer(payload, setLoading, targetUid);
         toast.success("Customer added successfully!");
       } else {
         await updateCustomer(customer.id, payload, setLoading);
@@ -80,11 +86,12 @@ export default function CustomerModal({ onClose, customer }) {
       onClose();
     } catch (error) {
       toast.error(
-        `Something went wrong while ${isEditMode ? "updating" : "saving"} the customer.`,
+        error?.message || `Something went wrong while ${isEditMode ? "updating" : "saving"} the customer.`
       );
-      console.error(error);
+      console.error("Error saving customer:", error);
     } 
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">

@@ -8,7 +8,7 @@
 graph TD
     Client[Browser / React 19 Single Page App]
     Router[React Router v7]
-    Auth[Firebase Authentication]
+    Auth[Clerk Authentication System]
     Firestore[(Cloud Firestore DB)]
     PDF[Client-Side @react-pdf Engine]
     UI[Tailwind CSS v4 + Recharts]
@@ -24,7 +24,9 @@ graph TD
 * **Frontend Framework:** React 19 (`react`, `react-dom`)
 * **Build System:** Vite 8 (`@vitejs/plugin-react-swc`)
 * **Styling Engine:** Tailwind CSS v4 (`@tailwindcss/vite`) via `@import "tailwindcss"` in `src/index.css`
-* **Backend as a Service (BaaS):** Firebase v12 (`firebase/app`, `firebase/auth`, `firebase/firestore`)
+* **Authentication Engine:** Clerk React SDK (`@clerk/react`) — Single Sign-On, Google Auth, Passwordless, & Session Tokens
+* **Database & Storage:** Firebase v12 Cloud Firestore (`firebase/app`, `firebase/firestore`)
+
 * **Routing:** React Router v7 (`react-router-dom`)
 * **Document Export:** `@react-pdf/renderer` v4 & `@ag-media/react-pdf-table`
 * **Data Visualization:** Recharts v3

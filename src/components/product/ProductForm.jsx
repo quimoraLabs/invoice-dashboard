@@ -45,13 +45,19 @@ export default function ProductModal({ onClose, product }) {
     e.preventDefault();
 
     try {
+      const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+      if (!targetUid) {
+        toast.error("User authentication required to save product.");
+        return;
+      }
+
       const payload = {
         ...formData,
-        userId: currentUser?.uid,
+        userId: targetUid,
       };
 
       if (!isEditMode) {
-        await createProduct(payload, setLoading, currentUser?.uid);
+        await createProduct(payload, setLoading, targetUid);
         toast.success("Product added successfully!");
       } else {
         await updateProduct(product.id, payload, setLoading);
@@ -60,13 +66,15 @@ export default function ProductModal({ onClose, product }) {
       onClose();
     } catch (error) {
       toast.error(
+        error?.message ||
         `Something went wrong while ${
           isEditMode ? "updating" : "saving"
-        } the product.`,
+        } the product.`
       );
-      console.error(error);
+      console.error("Error saving product:", error);
     }
   };
+
 
   return (
     <div

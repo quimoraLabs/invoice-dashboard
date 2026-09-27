@@ -21,7 +21,7 @@ const invoiceCollection = collection(db, "invoices");
 
 // Get the next serial invoice number based on the current user's latest entry
 async function getNextInvoiceNumber(userId) {
-  const targetUid = userId || auth.currentUser?.uid;
+  const targetUid = userId;
   try {
     const q = targetUid
       ? query(invoiceCollection, where("userId", "==", targetUid), orderBy("invoice_no", "desc"), limit(1))
@@ -43,7 +43,7 @@ async function getNextInvoiceNumber(userId) {
 async function createInvoice(invoice, setLoading, userId) {
   setLoading?.(true);
   try {
-    const targetUid = userId || invoice.userId || auth.currentUser?.uid;
+    const targetUid = userId || invoice.userId;
     if (!targetUid) {
       throw new Error("User authentication required to create invoice.");
     }
@@ -70,12 +70,13 @@ async function createInvoice(invoice, setLoading, userId) {
 
 // Stream live snapshot data isolated per user ID
 function listenToInvoices(callback, userId) {
-  const targetUid = userId || auth.currentUser?.uid;
+  const targetUid = userId;
 
   if (!targetUid) {
     callback([]);
     return () => {};
   }
+
 
   const q = query(invoiceCollection, where("userId", "==", targetUid));
 

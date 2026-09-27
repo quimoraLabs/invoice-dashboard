@@ -22,15 +22,18 @@ function ProductsDashboard() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [loading, setLoading] = useState(false);
 
+  const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!targetUid) return;
     setLoading(true);
     const unsubscribe = listenToProducts((data) => {
       setProducts(data);
       setLoading(false);
-    }, currentUser.uid);
+    }, targetUid);
     return () => unsubscribe();
-  }, [currentUser?.uid]);
+  }, [targetUid]);
+
 
   const categories = useMemo(() => {
     const uniqueCategories = new Set(products.map((p) => p.category));
