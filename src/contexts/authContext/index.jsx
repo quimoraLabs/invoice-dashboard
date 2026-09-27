@@ -2,7 +2,7 @@ import React, { useMemo, useEffect } from "react";
 import { useUser, useClerk, useSession } from "@clerk/react";
 import { AuthContext } from "./useAuth";
 import { auth } from "../../firebase/firebaseConfig";
-import { signInWithCustomToken, signInAnonymously, signOut as firebaseSignOut } from "firebase/auth";
+import { signInWithCustomToken, signOut as firebaseSignOut } from "firebase/auth";
 
 export function AuthProvider({ children }) {
   const { isLoaded, isSignedIn, user } = useUser();
@@ -13,23 +13,17 @@ export function AuthProvider({ children }) {
     async function syncFirebaseWithClerk() {
       if (isSignedIn && user) {
         try {
-          // Attempt to fetch Clerk Firebase JWT Token if template is configured
-          let token = null;
           if (session?.getToken) {
-            try {
-              token = await session.getToken({ template: "firebase" });
-            } catch {
-              // Template optional fallback
+            const token = await session.getToken({ template: "firebase" });
+            if (token) {
+              await signInWithCustomToken(auth, token);
             }
           }
-
-          if (token) {
-            await signInWithCustomToken(auth, token);
-          } else if (!auth.currentUser) {
-            await signInAnonymously(auth);
-          }
         } catch (error) {
-          console.warn("Firebase Auth sync status:", error);
+          console.warn(
+            "Clerk-Firebase Auth Sync Notice: Configure JWT Template named 'firebase' in Clerk Dashboard -> JWT Templates for custom token exchange.",
+            error
+          );
         }
       } else {
         if (auth.currentUser) {
