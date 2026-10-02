@@ -17,6 +17,9 @@ import {
   HiTrash,
 } from "react-icons/hi";
 import ProfileModal from "../components/modals/ProfileViewModal";
+import WorkspaceSwitcher from "../components/workspace/WorkspaceSwitcher";
+
+
 
 const Header = () => {
   const navigate = useNavigate();
@@ -114,15 +117,19 @@ const Header = () => {
     <>
       <header className="fixed inset-x-0 top-0 z-30 border-b border-slate-200 bg-white print:hidden">
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link to="/home" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-500 text-base font-semibold text-white shadow-sm">
-              I
-            </div>
-            <div className="leading-tight">
-              <p className="text-sm font-semibold text-slate-900">Invomora</p>
-              <p className="text-xs text-slate-500">Business dashboard</p>
-            </div>
-          </Link>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Link to="/home" className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-600 to-violet-500 text-base font-semibold text-white shadow-sm">
+                I
+              </div>
+              <div className="leading-tight">
+                <p className="text-sm font-semibold text-slate-900">Invomora</p>
+                <p className="text-xs text-slate-500">Business dashboard</p>
+              </div>
+            </Link>
+
+            {userLoggedIn && <WorkspaceSwitcher />}
+          </div>
 
           {userLoggedIn ? (
             <>
@@ -169,45 +176,47 @@ const Header = () => {
                   )}
                 </button>
 
-                    {/* Dropdown Menu */}
-                    {isDropdownOpen && (
-                      <div className="absolute right-0 top-full mt-1 w-52 origin-top-right rounded-2xl border border-slate-100 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
-                        <button
-                          onClick={() => {
-                            setIsProfileModalOpen(true);
-                            setIsDropdownOpen(false);
-                          }}
-                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                        >
-                          <HiUser size={16} className="text-slate-400" />
-                          My Profile
-                        </button>
-                        <button
-                          onClick={handleSeedData}
-                          disabled={isSeeding}
-                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
-                        >
-                          <HiSparkles size={16} className="text-emerald-500" />
-                          {isSeeding ? "Seeding..." : "Seed Demo Data (10 Products)"}
-                        </button>
-                        <button
-                          onClick={handleClearData}
-                          disabled={isSeeding}
-                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-amber-700 transition hover:bg-amber-50"
-                        >
-                          <HiTrash size={16} className="text-amber-500" />
-                          Clear My Demo Data
-                        </button>
-                        <hr className="my-1 border-slate-100" />
-                        <button
-                          onClick={handleLogout}
-                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50/60"
-                        >
-                          <HiLogout size={16} />
-                          Logout
-                        </button>
-                      </div>
-                    )}
+                {/* Dropdown Menu */}
+                {isDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-52 origin-top-right rounded-2xl border border-slate-100 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
+                    <button
+                      onClick={() => {
+                        setIsProfileModalOpen(true);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <HiUser size={16} className="text-slate-400" />
+                      My Profile
+                    </button>
+                    <button
+                      onClick={handleSeedData}
+                      disabled={isSeeding}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                    >
+                      <HiSparkles size={16} className="text-emerald-500" />
+                      {isSeeding
+                        ? "Seeding..."
+                        : "Seed Demo Data (10 Products)"}
+                    </button>
+                    <button
+                      onClick={handleClearData}
+                      disabled={isSeeding}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-amber-700 transition hover:bg-amber-50"
+                    >
+                      <HiTrash size={16} className="text-amber-500" />
+                      Clear My Demo Data
+                    </button>
+                    <hr className="my-1 border-slate-100" />
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50/60"
+                    >
+                      <HiLogout size={16} />
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           ) : (

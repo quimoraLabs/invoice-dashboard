@@ -62,3 +62,19 @@ When `isSignedIn` becomes true:
 1. `session.getToken({ template: "firebase" })` requests a custom JWT minted by Clerk.
 2. `signInWithCustomToken(auth, token)` signs the user into Firebase SDK.
 3. Firestore security rules evaluate `request.auth.uid` against document `userId`.
+
+---
+
+## 5. Workspace Service API (`src/firebase/workspace.js`)
+
+| Function | Parameters | Return Type | Description |
+| :--- | :--- | :--- | :--- |
+| `createWorkspace` | `name: string, ownerUser: object` | `Promise<object>` | Creates workspace document, sets owner membership in `workspace_members`, returns workspace object. |
+| `listenToUserWorkspaces` | `userId: string, callback: (workspaces: Array<object>) => void` | `() => void` (Unsubscribe) | Real-time listener streaming all workspaces where user is an active member with their assigned role. |
+| `listenToWorkspaceMembers` | `workspaceId: string, callback: (members: Array<object>) => void` | `() => void` (Unsubscribe) | Streams all active members (`owner`, `accountant`) belonging to the selected workspace. |
+| `inviteMemberToWorkspace` | `{ workspaceId, workspaceName, invitedEmail, role, invitedBy }` | `Promise<string>` | Validates uniqueness and creates a pending invitation document in `workspace_invites`. |
+| `listenToWorkspaceInvites` | `workspaceId: string, callback: (invites: Array<object>) => void` | `() => void` (Unsubscribe) | Streams all pending email invitations for the selected workspace. |
+| `revokeWorkspaceInvite` | `inviteId: string` | `Promise<void>` | Deletes the invitation record, invalidating pending join requests. |
+| `removeWorkspaceMember` | `workspaceId: string, memberUserId: string` | `Promise<void>` | Removes member from `workspace_members` collection. |
+| `checkAndAcceptPendingInvites` | `user: object` | `Promise<number>` | Queries pending invites for user's email, automatically joins workspaces, and marks invites accepted. |
+

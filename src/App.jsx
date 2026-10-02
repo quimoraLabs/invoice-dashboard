@@ -1,4 +1,9 @@
-import { BrowserRouter, Navigate, useLocation, useRoutes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  useLocation,
+  useRoutes,
+} from "react-router-dom";
 import Login from "./auth/Login";
 import { AuthProvider } from "./contexts/authContext";
 import Header from "./header";
@@ -12,7 +17,7 @@ import { Toaster } from "react-hot-toast";
 import InvoiceDetailPage from "./pages/invoice/ViewInvoice";
 import InvoiceEditPage from "./pages/invoice/UpdateInvoice";
 import { ProtectedRoute, PublicOnlyRoute } from "./components/ProtectedRoute";
-
+import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 function AppRoutes() {
   const routesArray = [
     { path: "/", element: <Navigate to="/home" replace /> },
@@ -111,16 +116,16 @@ function AppShell() {
   );
 }
 
-
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppShell />
-      </BrowserRouter>
+      <WorkspaceProvider>
+        <BrowserRouter>
+          <AppShell />
+        </BrowserRouter>
+      </WorkspaceProvider>
     </AuthProvider>
   );
 }
 
 export default App;
-
