@@ -81,20 +81,20 @@ export default function ProductModal({ onClose, product }) {
       id="crud-modal"
       tabIndex={-1}
       aria-hidden="true"
-      className="fixed inset-0 z-50 flex justify-center items-center bg-slate-900/40 backdrop-blur-sm transition-all duration-200"
+      className="fixed inset-0 z-50 flex justify-center items-center bg-black/40 backdrop-blur-sm transition-all duration-200"
     >
       <div className="relative p-4 w-full max-w-md max-h-[90vh] overflow-y-auto scrollbar-thin scroll-smooth animate-in fade-in zoom-in-95 duration-200">
         {/* Modal content */}
-        <div className="relative bg-white rounded-2xl shadow-xl border border-slate-100 dark:bg-slate-800 dark:border-slate-700">
+        <div className="relative bg-surface-elevated rounded-2xl shadow-xl border border-border">
           {/* Modal header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <h3 className="text-lg font-semibold text-foreground">
               {isEditMode ? "Update Product" : "New Product"}
             </h3>
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-colors"
+              className="p-1.5 rounded-xl text-muted-foreground hover:bg-surface hover:text-foreground transition-colors"
             >
               <IoClose className="text-xl" title="close" />
             </button>
@@ -110,7 +110,7 @@ export default function ProductModal({ onClose, product }) {
             <div>
               <label
                 htmlFor="title"
-                className="block mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+                className="block mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
                 Title
               </label>
@@ -120,7 +120,7 @@ export default function ProductModal({ onClose, product }) {
                 id="title"
                 value={formData.title}
                 onChange={handleChange}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl px-3 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-slate-700 dark:border-slate-600 dark:text-white placeholder:text-slate-400"
+                className="w-full bg-surface border border-border text-foreground text-sm rounded-xl px-3 py-2.5 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10 placeholder:text-muted-foreground"
                 placeholder="Tomato"
                 required
               />
@@ -130,7 +130,7 @@ export default function ProductModal({ onClose, product }) {
             <div>
               <label
                 htmlFor="description"
-                className="block mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+                className="block mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
                 Description
               </label>
@@ -140,7 +140,7 @@ export default function ProductModal({ onClose, product }) {
                 rows={3}
                 value={formData.description}
                 onChange={handleChange}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl px-3 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-slate-700 dark:border-slate-600 dark:text-white placeholder:text-slate-400 resize-none"
+                className="w-full bg-surface border border-border text-foreground text-sm rounded-xl px-3 py-2.5 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10 placeholder:text-muted-foreground resize-none"
                 placeholder="product stock location"
                 required
               />
@@ -149,7 +149,7 @@ export default function ProductModal({ onClose, product }) {
             <div>
               <label
                 htmlFor="category"
-                className="block mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+                className="block mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
                 Category
               </label>
@@ -158,7 +158,7 @@ export default function ProductModal({ onClose, product }) {
                 id="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl px-3 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                className="w-full bg-surface border border-border text-foreground text-sm rounded-xl px-3 py-2.5 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
                 required
               >
                 <option value="" disabled>
@@ -200,12 +200,12 @@ export default function ProductModal({ onClose, product }) {
             <div>
               <label
                 htmlFor="price"
-                className="block mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+                className="block mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
                 Price (INR)
               </label>
               <div className="relative flex items-center">
-                <span className="absolute left-3 text-slate-400 text-sm pointer-events-none">
+                <span className="absolute left-3 text-muted-foreground text-sm pointer-events-none">
                   ₹
                 </span>
                 <input
@@ -217,25 +217,25 @@ export default function ProductModal({ onClose, product }) {
                   placeholder="140"
                   value={formData.price}
                   onChange={handleChange}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl pl-7 pr-3 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                  className="w-full bg-surface border border-border text-foreground text-sm rounded-xl pl-7 pr-3 py-2.5 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
                   required
                 />
               </div>
             </div>
 
             {/* Modal Footer Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-xl transition-colors border border-slate-200 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700"
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface rounded-xl transition-colors border border-border"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl transition-all shadow-sm shadow-blue-100 dark:shadow-none"
+                className="px-5 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary-hover active:scale-95 rounded-xl transition-all shadow-sm"
               >
                 {loading
                   ? isEditMode

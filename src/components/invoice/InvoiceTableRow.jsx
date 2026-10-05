@@ -13,9 +13,9 @@ import UpdateStatusModal from "../invoice/UpdateStatusModal"; // Headless UI Mod
 import { useAuth } from "../../contexts/authContext/useAuth";
 
 const statusColorMap = {
-  Paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Unpaid: "bg-rose-50 text-rose-700 border-rose-200",
-  Pending: "bg-amber-50 text-amber-700 border-amber-200",
+  Paid: "bg-success-muted text-success border-success/30",
+  Unpaid: "bg-danger-muted text-danger border-danger/30",
+  Pending: "bg-warning-muted text-warning border-warning/30",
 };
 
 function InvoiceTableRow({ invoice }) {
@@ -29,7 +29,7 @@ function InvoiceTableRow({ invoice }) {
 
   const statusClasses =
     statusColorMap[invoice.status] ||
-    "bg-gray-50 text-gray-700 border-gray-200";
+    "bg-surface text-muted-foreground border-border";
 
   const onView = () => {
     navigate(`/invoice/view/${invoice.id}`);
@@ -69,31 +69,31 @@ function InvoiceTableRow({ invoice }) {
 
   return (
     <>
-      <tr className="border-b border-slate-100 bg-white hover:bg-slate-50 transition duration-200">
+      <tr className="border-b border-border bg-surface-elevated hover:bg-surface transition duration-200">
         {/* Invoice ID */}
-        <td className="px-4 py-4 font-semibold text-slate-900 whitespace-nowrap sm:px-6">
+        <td className="px-4 py-4 font-semibold text-foreground whitespace-nowrap sm:px-6">
           <Link
             to={`/invoice/view/${invoice.id}`}
-            className="text-indigo-600 hover:text-indigo-800 transition-colors font-semibold"
+            className="text-primary hover:opacity-80 transition-colors font-semibold"
           >
             {invoice.invoice_no || "INV-00"}
           </Link>
         </td>
 
         {/* Client Name */}
-        <td className="hidden sm:table-cell px-6 py-4 text-slate-900 font-medium">
+        <td className="hidden sm:table-cell px-6 py-4 text-foreground font-medium">
           {invoice.client?.full_name || invoice.client?.name || "Client Name"}
         </td>
 
         {/* Date Column */}
-        <td className="hidden md:table-cell px-6 py-4 text-slate-600">
-          <div className="text-sm font-medium text-slate-800">
+        <td className="hidden md:table-cell px-6 py-4 text-muted-foreground">
+          <div className="text-sm font-medium text-foreground">
             {dateFormat(invoice.invoice_date)?.split(",")[0] || "N/A"}
           </div>
         </td>
 
         {/* Amount */}
-        <td className="px-4 py-4 text-right font-semibold text-slate-900 tabular-nums whitespace-nowrap sm:px-6">
+        <td className="px-4 py-4 text-right font-semibold text-foreground tabular-nums whitespace-nowrap sm:px-6">
           ₹
           {Number(invoice.total_price).toLocaleString("en-IN", {
             minimumFractionDigits: 2,

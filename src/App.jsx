@@ -109,7 +109,7 @@ function AppShell() {
     <>
       {!isAuthPage && <Header />}
       <Toaster position="top-right" />
-      <main className={isAuthPage ? "min-h-screen" : "pt-14 min-h-screen"}>
+      <main className={isAuthPage ? "min-h-screen" : "pt-16 min-h-screen"}>
         <AppRoutes />
       </main>
     </>

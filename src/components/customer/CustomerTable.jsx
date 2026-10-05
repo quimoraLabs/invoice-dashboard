@@ -15,33 +15,33 @@ export default function CustomerTable({
   onDelete,
 }) {
   return (
-    <div className="rounded-[22px] border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-[22px] border border-border bg-surface-elevated shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full text-sm text-left text-muted-foreground">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 sm:px-6">
+            <tr className="border-b border-border bg-surface">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider sm:px-6">
                 Name
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 sm:px-6">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider sm:px-6">
                 Email
               </th>
-              <th className="hidden px-4 py-3 text-left text-xs font-semibold text-slate-700 md:table-cell md:px-6">
+              <th className="hidden px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider md:table-cell md:px-6">
                 Phone
               </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700 sm:px-6">
+              <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider sm:px-6">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border">
             {customers.length > 0 ? (
               customers.map((customer) => (
                 <tr
                   key={customer.id}
-                  className="border-b border-slate-100 hover:bg-slate-50 transition"
+                  className="border-b border-border hover:bg-surface transition duration-200"
                 >
-                  <td className="px-4 py-4 text-sm text-slate-900 font-medium sm:px-6">
+                  <td className="px-4 py-4 text-sm text-foreground font-medium sm:px-6">
                     <div className="flex items-center gap-3">
                       {customer.profile ? (
                         <img
@@ -50,20 +50,20 @@ export default function CustomerTable({
                           className="h-8 w-8 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-muted text-xs font-semibold text-primary">
                           {(customer.full_name || customer.name || "C").charAt(0).toUpperCase()}
                         </div>
                       )}
                       {customer.full_name || customer.name || "Unnamed Client"}
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-sm text-slate-600 sm:px-6">
+                  <td className="px-4 py-4 text-sm text-muted-foreground sm:px-6">
                     {customer.email || "—"}
                   </td>
-                  <td className="hidden px-4 py-4 text-sm text-slate-600 md:table-cell md:px-6">
+                  <td className="hidden px-4 py-4 text-sm text-muted-foreground md:table-cell md:px-6">
                     {customer.phone_number || customer.phone || customer.phone_no || "—"}
                   </td>
-                  <td className="px-4 py-4 text-right sm:px-6 relative">
+                  <td className="px-4 py-4 text-right sm:px-6">
                     <CustomerActionsMenu
                       data={customer}
                       onEdit={onEdit}
@@ -77,7 +77,7 @@ export default function CustomerTable({
               <tr>
                 <td
                   colSpan="4"
-                  className="px-4 py-8 text-center text-sm text-slate-500 sm:px-6"
+                  className="px-4 py-8 text-center text-sm text-muted-foreground sm:px-6"
                 >
                   No customers found
                 </td>
@@ -89,8 +89,8 @@ export default function CustomerTable({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-200 px-4 py-4 sm:px-6">
-          <p className="text-sm text-slate-600">
+        <div className="flex items-center justify-between border-t border-border px-4 py-4 sm:px-6">
+          <p className="text-sm text-muted-foreground">
             Showing {startIdx + 1} to{" "}
             {Math.min(startIdx + itemsPerPage, totalCount)} of {totalCount}
           </p>
@@ -98,7 +98,7 @@ export default function CustomerTable({
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="rounded-lg border border-slate-200 p-2 text-slate-600 transition disabled:opacity-50 hover:bg-slate-50"
+              className="rounded-lg border border-border p-2 text-muted-foreground transition disabled:opacity-50 hover:bg-surface"
             >
               <HiChevronLeft size={16} />
             </button>
@@ -110,8 +110,8 @@ export default function CustomerTable({
                     onClick={() => setCurrentPage(page)}
                     className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
                       page === currentPage
-                        ? "bg-slate-900 text-white"
-                        : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border text-foreground hover:bg-surface"
                     }`}
                   >
                     {page}
@@ -122,7 +122,7 @@ export default function CustomerTable({
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="rounded-lg border border-slate-200 p-2 text-slate-600 transition disabled:opacity-50 hover:bg-slate-50"
+              className="rounded-lg border border-border p-2 text-muted-foreground transition disabled:opacity-50 hover:bg-surface"
             >
               <HiChevronRight size={16} />
             </button>

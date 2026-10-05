@@ -94,17 +94,17 @@ export default function CustomerModal({ onClose, customer }) {
 
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
-      <div className="w-full max-w-2xl rounded-[24px] border border-slate-200 bg-white shadow-2xl">
-        {/* Modern Clean Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 p-5">
-          <h3 className="text-xl font-semibold text-slate-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+      <div className="w-full max-w-2xl rounded-[24px] border border-border bg-surface-elevated shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border p-5">
+          <h3 className="text-xl font-semibold text-foreground">
             {isEditMode ? "Update Customer Details" : "Add New Customer"}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100"
+            className="rounded-full p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
           >
             <IoClose size={20} />
           </button>
@@ -121,7 +121,7 @@ export default function CustomerModal({ onClose, customer }) {
             <div className="md:col-span-2">
               <label
                 htmlFor="full_name"
-                className="text-sm font-medium text-slate-700"
+                className="text-sm font-medium text-foreground"
               >
                 Full name
               </label>
@@ -131,7 +131,7 @@ export default function CustomerModal({ onClose, customer }) {
                 id="full_name"
                 value={formData.full_name}
                 onChange={handleChange}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:bg-white"
+                className="mt-2 w-full rounded-2xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 placeholder="Alex John"
                 required
               />
@@ -140,7 +140,7 @@ export default function CustomerModal({ onClose, customer }) {
             <div>
               <label
                 htmlFor="email"
-                className="text-sm font-medium text-slate-700"
+                className="text-sm font-medium text-foreground"
               >
                 Email
               </label>
@@ -150,7 +150,7 @@ export default function CustomerModal({ onClose, customer }) {
                 id="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:bg-white"
+                className="mt-2 w-full rounded-2xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 placeholder="abc@mail.com"
                 required
               />
@@ -159,7 +159,7 @@ export default function CustomerModal({ onClose, customer }) {
             <div>
               <label
                 htmlFor="phone_number"
-                className="text-sm font-medium text-slate-700"
+                className="text-sm font-medium text-foreground"
               >
                 Phone number
               </label>
@@ -171,7 +171,7 @@ export default function CustomerModal({ onClose, customer }) {
                 id="phone_number"
                 value={formData.phone_number}
                 onChange={handleChange}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:bg-white"
+                className="mt-2 w-full rounded-2xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 placeholder="10-digit number"
                 required
               />
@@ -180,7 +180,7 @@ export default function CustomerModal({ onClose, customer }) {
             <div className="md:col-span-2">
               <label
                 htmlFor="address"
-                className="text-sm font-medium text-slate-700"
+                className="text-sm font-medium text-foreground"
               >
                 Address
               </label>
@@ -190,7 +190,7 @@ export default function CustomerModal({ onClose, customer }) {
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:bg-white"
+                className="mt-2 w-full rounded-2xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 placeholder="Customer address"
               />
             </div>
@@ -201,14 +201,14 @@ export default function CustomerModal({ onClose, customer }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-2xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="rounded-2xl border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-surface hover:text-foreground"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="rounded-2xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover active:scale-95 shadow-sm"
             >
               {loading
                 ? isEditMode

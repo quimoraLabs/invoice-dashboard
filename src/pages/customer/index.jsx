@@ -7,8 +7,7 @@ import CustomerViewModal from "../../components/customer/CustomerViewModal";
 import toast from "react-hot-toast";
 import Loader from "../../components/Loader";
 
-
-// New Sub-components Imports
+// Sub-components Imports
 import DashboardHeader from "../../components/customer/CustomerHeader";
 import CustomerControlBar from "../../components/customer/CustomerControlBar";
 import CustomerTable from "../../components/customer/CustomerTable";
@@ -20,13 +19,12 @@ export default function CustomerDashboard() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("name-asc"); // Default sorting state
+  const [sortBy, setSortBy] = useState("name-asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [viewMode, setViewMode] = useState("list");
-  const [loading,setLoading]=useState(false);
-
+  const [loading, setLoading] = useState(false);
 
   const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
 
@@ -39,7 +37,6 @@ export default function CustomerDashboard() {
     }, targetUid);
     return () => unsubscribe();
   }, [targetUid]);
-
 
   useEffect(() => {
     setCurrentPage(1);
@@ -59,7 +56,7 @@ export default function CustomerDashboard() {
       .some((value) => String(value).toLowerCase().includes(query));
   });
 
-  // Sort the filtered array using secure fallback checks for both SDK objects and raw JSON structures
+  // Sort the filtered array
   const sortedCustomers = [...filteredCustomers].sort((a, b) => {
     if (sortBy === "name-asc") {
       return (a.full_name || "").localeCompare(b.full_name || "");
@@ -68,7 +65,6 @@ export default function CustomerDashboard() {
       return (b.full_name || "").localeCompare(a.full_name || "");
     }
 
-    // Extract timestamp in seconds, safely checking methods and nested structures
     if (sortBy === "newest") {
       const timeA = a.created_at?.toDate
         ? a.created_at.toDate().getTime()
@@ -129,12 +125,11 @@ export default function CustomerDashboard() {
   }
 
   if (loading) {
-    return < Loader/> ;
+    return <Loader />;
   }
 
-
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         {/* 1. Header Component */}
         <DashboardHeader onAddClick={handleAddClick} />
@@ -162,7 +157,7 @@ export default function CustomerDashboard() {
         />
       </div>
 
-      {/* Modals remain clean at the bottom */}
+      {/* Modals */}
       {viewMode === "detail" && selectedCustomer && (
         <CustomerViewModal
           selectedCustomer={selectedCustomer}

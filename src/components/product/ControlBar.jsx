@@ -1,9 +1,6 @@
 import { HiSearch, HiX } from "react-icons/hi";
 import CustomDropdown from "../CustomDropdown";
 
-
-
-
 export default function ControlBar({
   searchQuery,
   setSearchQuery,
@@ -40,7 +37,7 @@ export default function ControlBar({
       {/* Search Bar Wrapper Container */}
       <div className="relative flex-grow md:max-w-md">
         <HiSearch
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
           size={20}
         />
         <input
@@ -48,7 +45,7 @@ export default function ControlBar({
           placeholder="Search by product name..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-2.5 pl-11 pr-10 text-sm transition placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:text-white"
+          className="w-full rounded-2xl border border-border bg-surface-elevated py-2.5 pl-11 pr-10 text-sm text-foreground transition placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
         
         {/* Bug Fix 4: Smooth interactive absolute click action clear mechanism on string data triggers */}
@@ -56,7 +53,7 @@ export default function ControlBar({
           <button
             type="button"
             onClick={() => setSearchQuery("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-muted-foreground hover:bg-surface hover:text-foreground transition-colors"
           >
             <HiX size={16} />
           </button>
@@ -85,7 +82,7 @@ export default function ControlBar({
           <button
             type="button"
             onClick={handleResetAll}
-            className="text-sm font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 transition-colors px-2 py-1.5 focus:outline-none"
+            className="text-sm font-semibold text-danger hover:opacity-80 transition-colors px-2 py-1.5 focus:outline-none"
           >
             Reset Filters
           </button>

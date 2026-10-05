@@ -94,40 +94,40 @@ export default function ProfileModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-xs"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-md transform rounded-3xl bg-white p-6 shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div className="relative w-full max-w-md transform rounded-3xl bg-surface-elevated border border-border p-6 shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between pb-4 border-b border-border">
           <div>
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-base font-bold text-foreground">
               Account Settings
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               Update your public profile metadata
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
+            className="rounded-full p-1.5 text-muted-foreground transition hover:bg-surface hover:text-foreground"
           >
             <HiX size={18} />
           </button>
         </div>
 
         {successMessage && (
-          <div className="mt-4 rounded-xl bg-indigo-50 px-4 py-2.5 text-xs font-semibold text-indigo-700 animate-in fade-in slide-in-from-top-1">
+          <div className="mt-4 rounded-xl bg-primary-muted px-4 py-2.5 text-xs font-semibold text-primary animate-in fade-in slide-in-from-top-1">
             {successMessage}
           </div>
         )}
 
         <form onSubmit={handleSaveChanges} className="py-6 flex flex-col gap-6">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+            <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
               Profile Image{" "}
               {updating && (
-                <span className="text-indigo-600 normal-case font-normal ml-2">
+                <span className="text-primary normal-case font-normal ml-2">
                   (Saving...)
                 </span>
               )}
@@ -142,20 +142,20 @@ export default function ProfileModal({ isOpen, onClose }) {
           <div className="space-y-4">
             {/* Email Field - Read-only */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">
                 Email Address (Unique ID)
               </label>
               <input
                 type="email"
                 disabled
                 value={currentUser?.email || ""}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-sm font-medium text-slate-400 cursor-not-allowed focus:outline-none"
+                className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm font-medium text-muted-foreground cursor-not-allowed focus:outline-none"
               />
             </div>
 
             {/* Editable Full Name */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Full Name
               </label>
               <input
@@ -163,24 +163,24 @@ export default function ProfileModal({ isOpen, onClose }) {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Enter your full name"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 transition placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm font-medium text-foreground transition placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 required
               />
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-100 flex justify-end gap-2">
+          <div className="pt-4 border-t border-border flex justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              className="rounded-xl border border-border bg-surface px-4 py-2.5 text-xs font-semibold text-muted-foreground transition hover:bg-surface-elevated hover:text-foreground"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSaveDisabled}
-              className="rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed disabled:shadow-none shadow-sm shadow-indigo-100"
+              className="rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {updating ? "Saving..." : "Save Changes"}
             </button>

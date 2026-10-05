@@ -53,7 +53,19 @@ Configure the following variables in the **Vercel Project Settings → Environme
 | `VITE_FIREBASE_APP_ID` | Production / Dev | Firebase Web Application ID |
 
 > [!IMPORTANT]
-> All variables begin with `VITE_`. Any variable omitted or lacking this prefix will not be exposed to the browser client runtime. Never put secret service account keys or private Clerk keys in client variables.
+> All client variables begin with `VITE_`. Any variable omitted or lacking this prefix will not be exposed to the browser client runtime. Never put secret service account keys or private Clerk keys in client variables.
+
+### 3.1 Server-Side Migration Environment Variables
+
+For running backend migration scripts (`scripts/migrate-to-b2b.js`), Cloud Functions, or CI administrative jobs, the following server-side environment variables are required:
+
+| Variable Name | Environment | Description |
+| :--- | :---: | :--- |
+| `CLERK_SECRET_KEY` | Server / CLI (`scripts/`) | Clerk Secret Key (`sk_live_...` or `sk_test_...`) for server-side private_metadata updates and user iteration |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Server / CLI (`scripts/`) | Absolute path to the Firebase Admin Service Account JSON key file for privileged Firestore operations |
+
+> [!CAUTION]
+> Server-side variables and service account credentials MUST NEVER be prefixed with `VITE_` and MUST NEVER be committed to Git or exposed in client bundles. Ensure `*.json` service accounts and `.env` are listed in `.gitignore`.
 
 ---
 

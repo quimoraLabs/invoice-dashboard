@@ -26,8 +26,7 @@ function Invoice() {
     return () => unsubscribe();
   }, [targetUid]);
 
-
-  // Filters and sorting computed dynamically leveraging memoized dependencies
+  // Filters and sorting computed dynamically
   const filteredInvoices = useMemo(() => {
     let result = invoices.filter((invoice) => {
       const statusMatch =
@@ -77,7 +76,7 @@ function Invoice() {
   }
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 space-y-6 mx-auto max-w-7xl">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-10 space-y-6 mx-auto max-w-7xl">
       {/* Structural dashboard layout container blocks */}
       <InvoiceListHeader />
 

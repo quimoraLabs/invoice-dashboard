@@ -1,0 +1,63 @@
+/* 1. Base light mode tokens (Zinc-based) */
+:root {
+  /* Backgrounds */
+  --background: #ffffff;
+  --surface: #fafafa;          /* light neutral background */
+  --surface-elevated: #ffffff; /* cards, modals, dropdown panels */
+  --muted: #f4f4f5;            /* muted backgrounds */
+  
+  /* Text */
+  --foreground: #18181b;       /* primary text (zinc-900) */
+  --muted-foreground: #71717a;   /* secondary/subtle text (zinc-500) */
+  
+  /* Borders & Inputs */
+  --border: #e4e4e7;           /* zinc-200 */
+  --input: #e4e4e7;            /* input borders */
+  --ring: #6366f1;             /* focus ring (indigo-500) */
+  
+  /* Brand Accent (Indigo) */
+  --primary: #4f46e5;          /* indigo-600 */
+  --primary-hover: #4338ca;    /* indigo-700 */
+  --primary-foreground: #ffffff;
+  --primary-muted: #eef2ff;
+  
+  /* Status Colors (Semantic) */
+  --success: #059669;          /* emerald-600 */
+  --success-muted: #ecfdf5;
+  --warning: #d97706;          /* amber-600 */
+  --warning-muted: #fffbeb;
+  --danger: #e11d48;           /* rose-600 */
+  --danger-muted: #fff1f2;
+}
+
+/* 2. Dark mode tokens (Zinc-based, inverted) */
+.dark {
+  /* Backgrounds */
+  --background: #0f1419;
+  --surface: #1a1f26;
+  --surface-elevated: #252b33;
+  --muted: #1a1f26;
+
+  /* Text */
+  --foreground: #e6edf3;
+  --muted-foreground: #8b949e;
+
+  /* Borders & Inputs */
+  --border: #2d353e;
+  --input: #2d353e;
+  --ring: #818cf8;
+
+  /* Brand Accent */
+  --primary: #6366f1;
+  --primary-hover: #818cf8;
+  --primary-foreground: #ffffff;
+  --primary-muted: #1e1b4b;
+
+  /* Status Colors */
+  --success: #34d399;
+  --success-muted: #064e3b;
+  --warning: #fbbf24;
+  --warning-muted: #78350f;
+  --danger: #f87171;
+  --danger-muted: #881337;
+}

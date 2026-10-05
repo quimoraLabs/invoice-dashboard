@@ -68,17 +68,17 @@ export default function InvoiceDetailPage() {
   }, [invoiceId, navigate, targetUid]);
 
   const statusColors = {
-    Paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Unpaid: "bg-rose-50 text-rose-700 border-rose-200",
-    Pending: "bg-amber-50 text-amber-700 border-amber-200",
+    Paid: "bg-success-muted text-success border-success/30",
+    Unpaid: "bg-danger-muted text-danger border-danger/30",
+    Pending: "bg-warning-muted text-warning border-warning/30",
   };
 
   if (loading || isDeleting) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-          <p className="text-sm font-medium text-slate-500">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm font-medium text-muted-foreground">
             {isDeleting ? "Deleting invoice..." : "Loading invoice details..."}
           </p>
         </div>
@@ -89,12 +89,12 @@ export default function InvoiceDetailPage() {
   if (!invoice && !isDeletingRef.current) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="text-slate-600 font-bold text-lg">
+        <div className="text-foreground font-bold text-lg">
           Invoice not found or deleted
         </div>
         <button
           onClick={() => navigate("/invoice", { replace: true })}
-          className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition shadow-sm"
+          className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary-hover transition shadow-sm"
         >
           Back to Invoices
         </button>
@@ -106,7 +106,6 @@ export default function InvoiceDetailPage() {
   const subtotal = totalAmount / 1.18;
   const taxAmount = totalAmount - subtotal;
 
-  // Handles the update transaction locally inside the component
   async function handleMarkAsPaid() {
     try {
       await updateInvoiceStatusAndDueDate(invoiceId, "Paid", "", null, targetUid);
@@ -133,16 +132,14 @@ export default function InvoiceDetailPage() {
     }
   }
 
-
-
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* 1. Control Toolbar — Completely invisible during native printing */}
-      <div className="flex items-center justify-between gap-4 bg-white p-4 rounded-[22px] border border-slate-200 shadow-sm print:hidden">
+    <div className="min-h-screen bg-background max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* 1. Control Toolbar */}
+      <div className="flex items-center justify-between gap-4 bg-surface-elevated p-4 rounded-[22px] border border-border shadow-sm print:hidden">
         <button
           onClick={() => navigate("/invoice")}
           title="Back to invoices"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition"
         >
           <HiOutlineArrowLeft className="w-4 h-4" />
         </button>
@@ -152,7 +149,7 @@ export default function InvoiceDetailPage() {
           <button
             onClick={() => setShowDeleteModal(true)}
             title="Delete Invoice"
-            className="p-2.5 text-rose-600 bg-white border border-slate-200 rounded-xl hover:bg-rose-50 hover:border-rose-200 transition shadow-sm"
+            className="p-2.5 text-danger bg-surface border border-border rounded-xl hover:bg-danger-muted transition shadow-sm"
           >
             <HiOutlineTrash className="w-5 h-5" />
           </button>
@@ -161,7 +158,7 @@ export default function InvoiceDetailPage() {
           <button
             onClick={() => window.print()}
             title="Print Invoice"
-            className="p-2.5 text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm"
+            className="p-2.5 text-muted-foreground bg-surface border border-border rounded-xl hover:bg-surface-elevated hover:text-foreground transition shadow-sm"
           >
             <HiOutlinePrinter className="w-5 h-5" />
           </button>
@@ -170,15 +167,15 @@ export default function InvoiceDetailPage() {
           <Link
             to={`/invoice/update/${invoiceId}`}
             title="edit invoice"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-foreground bg-surface border border-border rounded-xl hover:bg-surface-elevated transition shadow-sm"
           >
             <HiOutlinePencil className="w-4 h-4" />
           </Link>
 
           {invoice?.status !== "Paid" && (
             <button
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition shadow-sm"
-              title="Paid you bill"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-success rounded-xl hover:opacity-90 transition shadow-sm"
+              title="Mark as Paid"
               onClick={handleMarkAsPaid}
             >
               <HiOutlineCheckCircle className="w-4 h-4" />
@@ -195,21 +192,20 @@ export default function InvoiceDetailPage() {
         />
       )}
 
-
       {/* 2. Main Printable Invoice Canvas */}
-      <div className="bg-white rounded-[22px] border border-slate-200 shadow-sm p-6 sm:p-10 space-y-8 print:border-none print:shadow-none print:p-0">
+      <div className="bg-surface-elevated rounded-[22px] border border-border shadow-sm p-6 sm:p-10 space-y-8 print:border-none print:shadow-none print:p-0 print:bg-white print:text-black">
         {/* Top Header Details Area */}
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-slate-100 pb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-border pb-6">
           <div className="space-y-1.5">
-            <div className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+            <div className="text-xs font-bold text-primary uppercase tracking-widest">
               Tax Invoice
             </div>
             <div className="flex flex-wrap items-baseline gap-3">
-              <h1 className="text-2xl font-black text-slate-900">
+              <h1 className="text-2xl font-black text-foreground">
                 {invoice?.invoice_no}
               </h1>
-              <span className="text-xl font-bold text-slate-400">/</span>
-              <div className="text-xl font-extrabold text-indigo-600 tabular-nums">
+              <span className="text-xl font-bold text-muted-foreground">/</span>
+              <div className="text-xl font-extrabold text-primary tabular-nums">
                 ₹
                 {Number(totalAmount).toLocaleString("en-IN", {
                   minimumFractionDigits: 2,
@@ -217,33 +213,33 @@ export default function InvoiceDetailPage() {
               </div>
             </div>
             <span
-              className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border shadow-sm ${statusColors[invoice?.status] || "bg-slate-100"}`}
+              className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border shadow-sm ${statusColors[invoice?.status] || "bg-muted text-muted-foreground border-border"}`}
             >
               {invoice?.status}
             </span>
             {invoice?.payment_type && (
-              <span className="ml-2 text-xs text-slate-400 font-medium">
+              <span className="ml-2 text-xs text-muted-foreground font-medium">
                 via {invoice.payment_type}
               </span>
             )}
           </div>
-          <div className="sm:text-right text-xs sm:text-sm text-slate-500 space-y-1 w-full sm:w-auto">
+          <div className="sm:text-right text-xs sm:text-sm text-muted-foreground space-y-1 w-full sm:w-auto">
             <div>
-              <span className="font-semibold text-slate-700">Issue Date:</span>{" "}
+              <span className="font-semibold text-foreground">Issue Date:</span>{" "}
               {dateFormat(invoice?.invoice_date)
                 ? dateFormat(invoice.invoice_date).split(",")[0]
                 : invoice?.invoice_date || "N/A"}
             </div>
             {invoice?.status === "Paid" && invoice?.paid_date ? (
               <div>
-                <span className="font-semibold text-emerald-700">Paid Date:</span>{" "}
+                <span className="font-semibold text-success">Paid Date:</span>{" "}
                 {dateFormat(invoice.paid_date)
                   ? dateFormat(invoice.paid_date).split(",")[0]
                   : invoice.paid_date}
               </div>
             ) : (
               <div>
-                <span className="font-semibold text-amber-700">
+                <span className="font-semibold text-warning">
                   {invoice?.status === "Unpaid" ? "Due Date:" : "Expected Date:"}
                 </span>{" "}
                 {dateFormat(invoice?.due_date)
@@ -258,35 +254,35 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* Billed Stack Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm border-b border-slate-50 pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm border-b border-border pb-8">
           <div className="space-y-2">
-            <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase">
+            <h3 className="text-xs font-bold text-muted-foreground tracking-wider uppercase">
               Billed From (Sender)
             </h3>
-            <div className="font-extrabold text-slate-800 text-base">
+            <div className="font-extrabold text-foreground text-base">
               Invomora Solutions Private Limited
             </div>
-            <p className="text-slate-500 leading-relaxed max-w-md">
+            <p className="text-muted-foreground leading-relaxed max-w-md">
               123 Innovation Hub, Electronic City, Phase 1, Bengaluru, KA,
               560100
             </p>
-            <div className="text-slate-400 text-xs pt-1">
+            <div className="text-muted-foreground text-xs pt-1">
               billing@invomora.com • +91 80 4433 2211
             </div>
           </div>
           <div className="space-y-2 md:text-right md:justify-items-end">
-            <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase">
+            <h3 className="text-xs font-bold text-muted-foreground tracking-wider uppercase">
               Billed To (Client)
             </h3>
-            <div className="font-extrabold text-slate-800 text-base capitalize">
+            <div className="font-extrabold text-foreground text-base capitalize">
               {invoice?.client?.name || invoice?.client?.full_name || "N/A"}
             </div>
             {invoice?.client?.address && (
-              <p className="text-slate-500 leading-relaxed max-w-md md:ml-auto">
+              <p className="text-muted-foreground leading-relaxed max-w-md md:ml-auto">
                 {invoice.client.address}
               </p>
             )}
-            <div className="text-slate-400 text-xs pt-1">
+            <div className="text-muted-foreground text-xs pt-1">
               {invoice?.client?.email}{" "}
               {invoice?.client?.email &&
                 (invoice?.client?.phone || invoice?.client?.phone_number) &&
@@ -297,9 +293,9 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* Line Items Table View */}
-        <div className="overflow-x-auto border border-slate-100 rounded-xl">
-          <table className="w-full text-sm text-left text-slate-500">
-            <thead className="text-xs text-slate-700 uppercase bg-slate-50/70 border-b border-slate-100 font-bold">
+        <div className="overflow-x-auto border border-border rounded-xl">
+          <table className="w-full text-sm text-left text-muted-foreground">
+            <thead className="text-xs text-muted-foreground uppercase bg-surface border-b border-border font-bold">
               <tr>
                 <th scope="col" className="px-4 py-3.5">
                   Item Description
@@ -315,7 +311,7 @@ export default function InvoiceDetailPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-border bg-surface-elevated">
               {invoice?.items?.map((item, index) => {
                 const itemRate = Number(item.price || 0).toFixed(2);
                 const itemQuantity = Number(item.quantity || 1);
@@ -324,9 +320,9 @@ export default function InvoiceDetailPage() {
                 return (
                   <tr
                     key={item.id || index}
-                    className="text-slate-700 hover:bg-slate-50/50 transition-colors"
+                    className="text-foreground hover:bg-surface transition-colors"
                   >
-                    <td className="px-4 py-4 font-semibold text-slate-900">
+                    <td className="px-4 py-4 font-semibold text-foreground">
                       {item.title}
                     </td>
                     <td className="px-4 py-4 text-center tabular-nums">
@@ -338,7 +334,7 @@ export default function InvoiceDetailPage() {
                         minimumFractionDigits: 2,
                       })}
                     </td>
-                    <td className="px-4 py-4 text-right font-bold text-slate-900 tabular-nums">
+                    <td className="px-4 py-4 text-right font-bold text-foreground tabular-nums">
                       ₹
                       {itemTotal.toLocaleString("en-IN", {
                         minimumFractionDigits: 2,
@@ -354,39 +350,39 @@ export default function InvoiceDetailPage() {
         {/* Financial Breakdown Summary */}
         <div className="space-y-6 pt-4">
           <div className="flex justify-end">
-            <div className="w-full sm:w-72 space-y-3 text-sm text-slate-500 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+            <div className="w-full sm:w-72 space-y-3 text-sm text-muted-foreground bg-surface p-4 rounded-xl border border-border">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span className="font-semibold tabular-nums text-slate-800">
+                <span className="font-semibold tabular-nums text-foreground">
                   ₹{Number(subtotal).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Estimated Tax (GST 18%)</span>
-                <span className="font-semibold tabular-nums text-slate-800">
+                <span className="font-semibold tabular-nums text-foreground">
                   ₹{Number(taxAmount).toFixed(2)}
                 </span>
               </div>
-              <div className="border-t border-slate-200/60 my-1"></div>
-              <div className="flex justify-between text-base font-black text-slate-900">
+              <div className="border-t border-border my-1"></div>
+              <div className="flex justify-between text-base font-black text-foreground">
                 <span>Total Amount</span>
-                <span className="tabular-nums text-indigo-600">
+                <span className="tabular-nums text-primary">
                   ₹{Number(totalAmount).toFixed(2)}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Notes & Clauses — Fully Branded for Your Business */}
-          <div className="border-t border-slate-100 pt-6 space-y-2">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          {/* Notes & Clauses */}
+          <div className="border-t border-border pt-6 space-y-2">
+            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Notes & Clauses:
             </h4>
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Thank you for your business. Please process the payment within the
               due date.
             </p>
-            <p className="text-xs text-slate-400 italic">
+            <p className="text-xs text-muted-foreground italic">
               * This is a computer-generated invoice from Invomora and does not
               require a physical signature.
             </p>

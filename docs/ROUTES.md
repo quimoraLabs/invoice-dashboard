@@ -63,8 +63,8 @@ The main application shell (`AppShell` in `src/App.jsx`) conditionally renders t
 
 * **Invoice Details (`/invoice/view/:invoiceId`):**
   * Extracts `:invoiceId` via `useParams()`.
-  * Fetches document from Firestore via `getInvoiceById(invoiceId, currentUser.id)`.
-  * If record does not exist or belongs to another tenant, displays error toast and redirects back to `/invoice`.
+  * Fetches document from Firestore via `getInvoiceById(invoiceId, orgId)`.
+  * If record does not exist or belongs to another organization tenant, displays error toast and redirects back to `/invoice`.
 * **Invoice Editor (`/invoice/update/:invoiceId`):**
-  * Loads existing invoice payload into form inputs.
-  * Preserves original `created_at` timestamp and `invoice_no` while submitting updated item arrays.
+  * Loads existing invoice payload into form inputs scoped by `orgId`.
+  * Preserves original `createdAt` timestamp and `invoice_no` while submitting updated item arrays.

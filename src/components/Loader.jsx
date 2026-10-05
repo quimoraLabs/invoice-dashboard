@@ -17,18 +17,18 @@ export default function Loader({
     return (
       <div className={`w-full animate-pulse space-y-3 p-4 ${className}`}>
         {/* Table Header Skeleton */}
-        <div className="h-10 w-full rounded-xl bg-slate-200 dark:bg-slate-700/60" />
+        <div className="h-10 w-full rounded-xl bg-muted" />
 
         {/* Table Rows Skeleton */}
         {Array.from({ length: rows }).map((_, index) => (
           <div
             key={index}
-            className="flex h-12 w-full items-center justify-between gap-4 rounded-xl bg-slate-100 dark:bg-slate-800/50 px-4"
+            className="flex h-12 w-full items-center justify-between gap-4 rounded-xl bg-surface px-4"
           >
-            <div className="h-4 w-1/4 rounded bg-slate-200 dark:bg-slate-700" />
-            <div className="h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-700" />
-            <div className="h-4 w-1/6 rounded bg-slate-200 dark:bg-slate-700" />
-            <div className="h-8 w-8 rounded-lg bg-slate-200 dark:bg-slate-700" />
+            <div className="h-4 w-1/4 rounded bg-muted" />
+            <div className="h-4 w-1/3 rounded bg-muted" />
+            <div className="h-4 w-1/6 rounded bg-muted" />
+            <div className="h-8 w-8 rounded-lg bg-muted" />
           </div>
         ))}
       </div>
@@ -38,11 +38,11 @@ export default function Loader({
   // 2. Fullscreen / Modal Overlay Loader (Blur background + Spinner)
   if (variant === "overlay") {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-        <div className="flex flex-col items-center rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-2xl border border-slate-100 dark:border-slate-700">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600 dark:border-slate-700 dark:border-t-indigo-500" />
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div className="flex flex-col items-center rounded-2xl bg-surface-elevated p-6 shadow-2xl border border-border">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" />
           {text && (
-            <p className="mt-3 text-sm font-medium text-slate-600 dark:text-slate-300">
+            <p className="mt-3 text-sm font-medium text-foreground">
               {text}
             </p>
           )}
@@ -55,11 +55,11 @@ export default function Loader({
   if (variant === "card") {
     return (
       <div
-        className={`animate-pulse rounded-2xl border border-slate-100 dark:border-slate-700/80 bg-white dark:bg-slate-800 p-5 shadow-sm ${className}`}
+        className={`animate-pulse rounded-2xl border border-border bg-surface-elevated p-5 shadow-sm ${className}`}
       >
-        <div className="h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-700 mb-3" />
-        <div className="h-8 w-1/2 rounded bg-slate-200 dark:bg-slate-700 mb-2" />
-        <div className="h-3 w-1/4 rounded bg-slate-200 dark:bg-slate-700" />
+        <div className="h-4 w-1/3 rounded bg-muted mb-3" />
+        <div className="h-8 w-1/2 rounded bg-muted mb-2" />
+        <div className="h-3 w-1/4 rounded bg-muted" />
       </div>
     );
   }
@@ -69,9 +69,9 @@ export default function Loader({
     <div
       className={`flex flex-col items-center justify-center p-8 ${className}`}
     >
-      <div className="h-8 w-8 animate-spin rounded-full border-3 border-slate-200 border-t-indigo-600 dark:border-slate-700 dark:border-t-indigo-500" />
+      <div className="h-8 w-8 animate-spin rounded-full border-3 border-muted border-t-primary" />
       {text && (
-        <span className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+        <span className="mt-2 text-xs font-medium text-muted-foreground">
           {text}
         </span>
       )}

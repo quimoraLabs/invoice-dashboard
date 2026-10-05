@@ -16,22 +16,22 @@ export default function ProductDetailsModal({ products, onSelect, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-surface-elevated border border-border rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">
             Select Product
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+            className="p-1 rounded-full text-muted-foreground hover:bg-surface transition-colors"
             aria-label="Close modal"
           >
             <svg
-              className="w-6 h-6 text-gray-600"
+              className="w-6 h-6"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -49,7 +49,7 @@ export default function ProductDetailsModal({ products, onSelect, onClose }) {
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {products.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               No products found
             </div>
           ) : (
@@ -57,20 +57,20 @@ export default function ProductDetailsModal({ products, onSelect, onClose }) {
               {products.map((product) => (
                 <div
                   key={product.id}
-                  className="p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:shadow-md transition-all duration-200 group"
+                  className="p-4 border border-border bg-surface rounded-xl cursor-pointer hover:border-primary hover:shadow-md transition-all duration-200 group"
                   onClick={() => onSelect(product)}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                           {product.title}
                         </h3>
                       </div>
                       
-                      <div className="space-y-1 text-sm flex items-center justify-between">
-                          <span><strong>₹</strong>{Number(product.price).toFixed(2)}</span>
-                          <span>{product.source}</span>
+                      <div className="space-y-1 text-sm flex items-center justify-between text-muted-foreground">
+                        <span><strong>₹</strong>{Number(product.price).toFixed(2)}</span>
+                        <span>{product.source}</span>
                       </div>
                     </div>
                   </div>
@@ -81,10 +81,10 @@ export default function ProductDetailsModal({ products, onSelect, onClose }) {
         </div>
 
         {/* Modal Footer */}
-        <div className="border-t p-4 sm:p-6">
+        <div className="border-t border-border p-4 sm:p-6">
           <button
             onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors"
+            className="w-full sm:w-auto px-4 py-2 bg-surface hover:bg-surface-elevated text-foreground font-medium rounded-xl border border-border transition-colors"
           >
             Cancel
           </button>

@@ -20,7 +20,7 @@ export default function SearchBar({
       {/* Search Input */}
       <div className="relative flex-1">
         <HiSearch
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
           size={18}
         />
         <input
@@ -28,7 +28,7 @@ export default function SearchBar({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search customers by name, email, or phone"
-          className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-11 pr-3 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+          className="w-full rounded-2xl border border-border bg-surface-elevated py-2.5 pl-11 pr-3 text-sm text-foreground placeholder-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
         />
       </div>
 

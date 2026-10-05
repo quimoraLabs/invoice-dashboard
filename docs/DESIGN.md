@@ -6,7 +6,7 @@ The design system is implemented with **Tailwind CSS v4** via native CSS tokens 
 
 ## 1. Tailwind CSS v4 `@theme` & Breakpoints
 
-Custom breakpoints and variants are declared natively in `src/index.css` using the v4 `@theme` directive and `@custom-variant`:
+Standardized responsive breakpoints are declared natively in `src/index.css` using the Tailwind v4 `@theme` directive (see full responsive directives in [RESPONSIVE.md](file:///d:/invoice-dashboard/docs/RESPONSIVE.md)):
 
 ```css
 @import "tailwindcss";
@@ -15,31 +15,36 @@ Custom breakpoints and variants are declared natively in `src/index.css` using t
 
 @theme {
   --breakpoint-*: initial;
-  --breakpoint-xsm: 480px;
-  --breakpoint-sm: 720px;
-  --breakpoint-md: 1024px;
-  --breakpoint-lg: 1599px;
-  --breakpoint-xl: 1999px;
+  --breakpoint-xs: 390px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
 }
 ```
 
 ---
 
-## 2. Color Palette & Dark Mode Semantic Mappings
+## 2. Color Palette & CSS Variable-Based Semantic Tokens
 
-The UI uses Tailwind slate neutrals with indigo primary accents and semantic feedback states:
+The UI uses semantic CSS tokens defined in `src/tokens.css` and mapped to Tailwind v4 inline theme via `src/index.css`:
 
-| Role | Light Mode Value / Class | Dark Mode Value / Class | Purpose |
-| :--- | :--- | :--- | :--- |
-| **Canvas Background** | `#f8fafc` (`bg-slate-50`) | `#0f172a` (`dark:bg-slate-900`) | Main application viewport |
-| **Surface Card** | `#ffffff` (`bg-white`) | `#1e293b` (`dark:bg-slate-800`) | Cards, tables, dropdown menus |
-| **Border / Divider** | `#e2e8f0` (`border-slate-200`) | `#334155` (`dark:border-slate-700`) | Card outlines, row borders |
-| **Primary Text** | `#0f172a` (`text-slate-900`) | `#f8fafc` (`dark:text-slate-100`) | Headers, lead titles, amounts |
-| **Secondary Text** | `#64748b` (`text-slate-500`) | `#94a3b8` (`dark:text-slate-400`) | Subtitles, labels, descriptions |
-| **Brand Accent** | `#4f46e5` (`bg-indigo-600`) | `#6366f1` (`dark:bg-indigo-500`) | Primary CTA buttons, active links |
-| **Success State** | `#059669` (`text-emerald-600`) | `#34d399` (`dark:text-emerald-400`)| Paid badges, positive revenue |
-| **Warning State** | `#d97706` (`text-amber-600`) | `#fbbf24` (`dark:text-amber-400`) | Pending status, expiring invoices |
-| **Danger State** | `#e11d48` (`text-rose-600`) | `#f87171` (`dark:text-rose-400`) | Overdue badges, delete actions |
+| Semantic Token | Tailwind Class | Light Mode Value | Dark Mode Value | Purpose |
+| :--- | :--- | :--- | :--- | :--- |
+| `--background` | `bg-background` | `#ffffff` | `#09090b` (zinc-950) | Main viewport canvas background |
+| `--surface` | `bg-surface` | `#fafafa` | `#18181b` (zinc-900) | Secondary / muted surface background |
+| `--surface-elevated` | `bg-surface-elevated` | `#ffffff` | `#27272a` (zinc-800) | Cards, modals, dropdown menus |
+| `--muted` | `bg-muted` | `#f4f4f5` | `#27272a` (zinc-800) | Muted badges, skeleton placeholders |
+| `--border` | `border-border` | `#e4e4e7` | `#334155` / `#3f3f46` | Outlines, table borders, dividers |
+| `--input` | `border-input` | `#e4e4e7` | `#3f3f46` | Input element borders |
+| `--foreground` | `text-foreground` | `#18181b` | `#f4f4f5` (zinc-100) | Primary text, titles, values |
+| `--muted-foreground` | `text-muted-foreground` | `#71717a` | `#a1a1aa` (zinc-400) | Subtitles, labels, descriptions |
+| `--primary` | `bg-primary`, `text-primary` | `#4f46e5` (indigo-600) | `#6366f1` (indigo-500) | Primary CTA buttons, active links |
+| `--primary-hover` | `hover:bg-primary-hover` | `#4338ca` | `#818cf8` | Hover state for primary actions |
+| `--success` | `text-success`, `bg-success` | `#059669` | `#34d399` | Paid badges, positive revenue |
+| `--warning` | `text-warning`, `bg-warning` | `#d97706` | `#fbbf24` | Pending status, warnings |
+| `--danger` | `text-danger`, `bg-danger` | `#e11d48` | `#f87171` | Overdue badges, destructive actions |
 
 ---
 

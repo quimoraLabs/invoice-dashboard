@@ -36,7 +36,7 @@ export default function UpdateStatusModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs" />
         </Transition.Child>
 
         {/* Modal Center Container */}
@@ -50,20 +50,20 @@ export default function UpdateStatusModal({
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl space-y-4">
-              <Dialog.Title className="text-lg font-medium text-gray-900">
-                Update Status for {invoice?.id}
+            <Dialog.Panel className="w-full max-w-md rounded-2xl bg-surface-elevated border border-border p-6 shadow-xl space-y-4">
+              <Dialog.Title className="text-lg font-medium text-foreground">
+                Update Status for {invoice?.invoice_no || invoice?.id}
               </Dialog.Title>
 
               {/* Status Radio / Select */}
               <div>
-                <label className="text-sm text-gray-600 block mb-1">
+                <label className="text-sm text-foreground block mb-1">
                   Status
                 </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-purple-600 outline-none"
+                  className="w-full border border-border bg-surface text-foreground rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                 >
                   <option value="Paid">Paid</option>
                   <option value="Unpaid">Unpaid</option>
@@ -74,13 +74,13 @@ export default function UpdateStatusModal({
               {/* Conditional Payment Method Field */}
               {status === "Paid" && (
                 <div>
-                  <label className="text-sm text-gray-600 block mb-1">
+                  <label className="text-sm text-foreground block mb-1">
                     Payment Method *
                   </label>
                   <select
                     value={method}
                     onChange={(e) => setMethod(e.target.value)}
-                    className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-purple-600 outline-none"
+                    className="w-full border border-border bg-surface text-foreground rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   >
                     <option value="">Choose Method...</option>
                     <option value="UPI">UPI</option>
@@ -91,16 +91,16 @@ export default function UpdateStatusModal({
               )}
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="px-4 py-2 text-sm text-muted-foreground hover:bg-surface hover:text-foreground rounded-xl border border-border transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 text-sm text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-md"
+                  className="px-4 py-2 text-sm text-primary-foreground bg-primary hover:bg-primary-hover active:scale-95 rounded-xl shadow-sm transition-all"
                 >
                   Save Status
                 </button>

@@ -4,17 +4,17 @@ import InvoiceTableRow from "./InvoiceTableRow";
 function InvoiceTable({ invoices }) {
   if (invoices.length === 0) {
     return (
-      <div className="text-center py-10 rounded-[22px] border border-slate-200 bg-white shadow-sm">
-        <p className="text-gray-500">No invoices found.</p>
+      <div className="text-center py-10 rounded-[22px] border border-border bg-surface-elevated shadow-sm">
+        <p className="text-muted-foreground">No invoices found.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-[22px] border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-[22px] border border-border bg-surface-elevated shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left text-slate-500">
-          <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200 font-semibold tracking-wider">
+        <table className="w-full text-sm text-left text-muted-foreground">
+          <thead className="text-xs text-muted-foreground uppercase bg-surface border-b border-border font-semibold tracking-wider">
             <tr>
               <th scope="col" className="px-4 py-3 sm:px-6">Invoices</th>
               {/* RESPONSIVE HIDE: Hidden on mobile, visible from sm screens up */}
@@ -26,7 +26,7 @@ function InvoiceTable({ invoices }) {
               <th scope="col" className="px-4 py-3 text-right sm:px-6">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-border">
             {invoices.map((invoice) => (
               <InvoiceTableRow
                 key={invoice.id}
@@ -34,7 +34,6 @@ function InvoiceTable({ invoices }) {
               />
             ))}
           </tbody>
-          {/* Rule 1: Custom UI structures completed cleanly without terminating lists or trailing pagination loops */}
         </table>
       </div>
     </div>

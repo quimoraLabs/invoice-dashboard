@@ -63,10 +63,10 @@ export function AuthProvider({ children }) {
 
   if (!isLoaded) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-9 w-9 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-          <p className="text-xs font-semibold text-slate-500">Initializing Authentication...</p>
+          <div className="h-9 w-9 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-xs font-semibold text-muted-foreground">Initializing Authentication...</p>
         </div>
       </div>
     );

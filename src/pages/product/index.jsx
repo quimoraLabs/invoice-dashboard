@@ -92,15 +92,15 @@ function ProductsDashboard() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-slate-50 dark:bg-slate-950 min-h-screen mx-auto max-w-7xl">
+    <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen mx-auto max-w-7xl">
       {/* Header */}
       <div className="flex justify-between items-center mb-8 ">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
           Product Dashboard
         </h1>
         <button
           onClick={() => setActiveModal({ type: "new", product: null })}
-          className="inline-flex items-center justify-center rounded-xl bg-indigo-600 p-3 text-white shadow-md shadow-indigo-100 dark:shadow-none transition-all hover:bg-indigo-700 active:scale-95 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="inline-flex items-center justify-center rounded-xl bg-primary p-3 text-primary-foreground shadow-sm transition-all hover:bg-primary-hover active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <HiPlus size={20} />
         </button>

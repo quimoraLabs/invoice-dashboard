@@ -8,14 +8,9 @@ import { listenToInvoices } from "../firebase/invoice";
 import StatCard from "../components/StatCard";
 import * as FiIcons from "react-icons/fi";
 
-// A clean dictionary to map icon name strings to React Icons components
-
 function Home() {
   const { currentUser } = useAuth();
   const userName = currentUser?.displayName || currentUser?.email || "there";
-  const [allInvoices, setAllInvoices] = useState([]);
-
-
 
   const [stats, setStats] = useState({
     invoices: 0,
@@ -67,7 +62,6 @@ function Home() {
     };
   }, [targetUid]);
 
-
   const cardsConfig = [
     {
       title: "Invoices",
@@ -100,16 +94,16 @@ function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Sleek, Compact Welcome Banner */}
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 text-white shadow-sm">
+        <section className="overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-primary to-violet-700 p-5 text-white shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+              <h1 className="text-xl font-bold tracking-tight sm:text-2xl text-white">
                 Hello, {userName}!
               </h1>
-              <p className="text-xs text-indigo-200/80 mt-0.5">
+              <p className="text-xs text-white/80 mt-0.5">
                 Your workspace is ready. Track your invoices, keep customer
                 records tidy, and stay focused.
               </p>
@@ -118,13 +112,13 @@ function Home() {
             <div className="flex gap-2.5">
               <Link
                 to="/invoice"
-                className="rounded-xl bg-white px-4 py-2 text-xs font-semibold text-slate-900 transition hover:bg-slate-100 shadow-sm"
+                className="rounded-xl bg-white px-4 py-2 text-xs font-semibold text-zinc-900 transition hover:bg-white/90 shadow-sm"
               >
                 View invoices
               </Link>
               <Link
                 to="/invoice/create"
-                className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20"
+                className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20"
               >
                 New invoice
               </Link>
@@ -132,27 +126,27 @@ function Home() {
           </div>
         </section>
 
-        {/* Strict 4-Column Unified Grid (No stretching, beautiful hovers) */}
+        {/* Strict 4-Column Unified Grid */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {cardsConfig.map((card, idx) => (
             <StatCard key={idx} {...card} />
           ))}
         </section>
 
-        {/* Side-by-Side Graph & Quick Actions (Perfect Balanced Layout) */}
+        {/* Side-by-Side Graph & Quick Actions */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Graph on Left (2 Columns wide) - Extra wrapper removed to eliminate double borders */}
+          {/* Graph on Left (2 Columns wide) */}
           <div className="lg:col-span-2">
             <IncomeGraph />
           </div>
 
-          {/* Quick Actions on Right (1 Column wide) - Compact & aligned properly at the top */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          {/* Quick Actions on Right (1 Column wide) */}
+          <div className="rounded-2xl border border-border bg-surface-elevated p-6 shadow-sm">
             <div className="mb-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                 Actions
               </p>
-              <h2 className="mt-0.5 text-lg font-bold text-slate-900">
+              <h2 className="mt-0.5 text-lg font-bold text-foreground">
                 Quick shortcuts
               </h2>
             </div>
@@ -162,26 +156,25 @@ function Home() {
                   to: "/customers",
                   label: "Manage customers",
                   icon: "FiUsers",
-                  // Clean, explicit hover theme styles
-                  hoverBorder: "hover:border-blue-200 hover:bg-blue-50/40",
+                  hoverBorder: "hover:border-primary/40 hover:bg-surface",
                   iconBg:
-                    "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white",
+                    "bg-primary-muted text-primary group-hover:bg-primary group-hover:text-primary-foreground",
                 },
                 {
                   to: "/products",
                   label: "Review products",
                   icon: "FiBox",
-                  hoverBorder: "hover:border-amber-200 hover:bg-amber-50/40",
+                  hoverBorder: "hover:border-warning/40 hover:bg-surface",
                   iconBg:
-                    "bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white",
+                    "bg-warning-muted text-warning group-hover:bg-warning group-hover:text-white",
                 },
                 {
                   to: "/invoice",
                   label: `${stats.pendingInvoices} pending invoices`,
                   icon: "FiAlertCircle",
-                  hoverBorder: "hover:border-rose-200 hover:bg-rose-50/40",
+                  hoverBorder: "hover:border-danger/40 hover:bg-surface",
                   iconBg:
-                    "bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white",
+                    "bg-danger-muted text-danger group-hover:bg-danger group-hover:text-white",
                 },
               ].map((action, idx) => {
                 const StartIcon = FiIcons[action.icon] || FiIcons.FiLayers;
@@ -190,21 +183,20 @@ function Home() {
                   <Link
                     key={idx}
                     to={action.to}
-                    className={`group flex items-center justify-between rounded-xl border border-slate-200 p-3 text-sm font-medium text-slate-700 transition-all duration-200 shadow-sm hover:shadow-md ${action.hoverBorder}`}
+                    className={`group flex items-center justify-between rounded-xl border border-border p-3 text-sm font-medium text-foreground transition-all duration-200 shadow-sm hover:shadow-md ${action.hoverBorder}`}
                   >
                     <div className="flex items-center gap-3">
-                      {/* Now the background turns dark and the icon turns white cleanly on hover */}
                       <div
                         className={`p-2 rounded-lg transition-all duration-200 shrink-0 ${action.iconBg}`}
                       >
                         <StartIcon className="w-4 h-4" />
                       </div>
-                      <span className="transition-colors duration-200 group-hover:text-slate-900">
+                      <span className="transition-colors duration-200 group-hover:text-primary">
                         {action.label}
                       </span>
                     </div>
 
-                    <FiIcons.FiChevronRight className="w-4 h-4 text-slate-400 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-slate-600" />
+                    <FiIcons.FiChevronRight className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-foreground" />
                   </Link>
                 );
               })}

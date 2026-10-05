@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { HiSearch, HiX } from "react-icons/hi";
 import CustomDropdown from "../CustomDropdown";
 
@@ -31,7 +31,7 @@ function InvoiceFilters({
       {/* Search Input */}
       <div className="relative flex-1">
         <HiSearch
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
           size={18}
         />
         <input
@@ -39,13 +39,13 @@ function InvoiceFilters({
           placeholder="Search invoices..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-11 pr-10 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+          className="w-full rounded-2xl border border-border bg-surface-elevated py-2.5 pl-11 pr-10 text-sm text-foreground placeholder-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
         />
         {searchTerm && (
           <button
             type="button"
             onClick={() => setSearchTerm("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-muted-foreground hover:bg-surface hover:text-foreground transition-colors"
           >
             <HiX size={16} />
           </button>

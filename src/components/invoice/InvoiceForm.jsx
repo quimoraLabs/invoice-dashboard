@@ -177,10 +177,10 @@ function InvoiceForm({
 
   return (
     <form className="space-y-6" onSubmit={handleFormSubmit} autoComplete="off">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-surface-elevated p-6 rounded-2xl border border-border">
         {/* Customer Selection Block with ref tracking outside clicks */}
         <div className="relative" ref={customerRef}>
-          <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label className="block mb-2 text-sm font-medium text-foreground">
             Customer Selection
           </label>
           <input
@@ -190,17 +190,17 @@ function InvoiceForm({
             onChange={handleCustomerSearchChange}
             onFocus={() => setShowCustomerDropdown(true)}
             placeholder="Search or click to select client..."
-            className="w-full p-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+            className="w-full p-2.5 text-sm bg-surface border border-border rounded-xl text-foreground placeholder:text-muted-foreground"
           />
           {showCustomerDropdown && !isEditMode && (
-            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+            <div className="absolute z-50 w-full mt-1 bg-surface-elevated border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
               {filteredCustomers.map((c) => (
                 <div
                   key={c.id}
                   onClick={() => handleCustomerSelect(c)}
-                  className="px-4 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 cursor-pointer text-sm"
+                  className="px-4 py-2 hover:bg-surface cursor-pointer text-sm"
                 >
-                  <div className="font-semibold text-slate-700 dark:text-slate-200">
+                  <div className="font-semibold text-foreground">
                     {c.full_name}
                   </div>
                 </div>
@@ -210,7 +210,7 @@ function InvoiceForm({
         </div>
 
         <div>
-          <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label className="block mb-2 text-sm font-medium text-foreground">
             Invoice Issue Date
           </label>
           <input
@@ -220,19 +220,19 @@ function InvoiceForm({
             onChange={(e) =>
               setInvoice({ ...invoice, invoice_date: e.target.value })
             }
-            className="w-full p-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-800 dark:text-slate-200"
+            className="w-full p-2.5 text-sm bg-surface border border-border rounded-xl font-medium text-foreground"
           />
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+      <div className="bg-surface-elevated p-6 rounded-2xl border border-border space-y-4">
+        <label className="block text-sm font-medium text-foreground">
           Line Items & Products
         </label>
         {invoice.items.map((item, index) => (
           <div
             key={index}
-            className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-slate-50 dark:bg-slate-800/50 rounded-xl"
+            className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-surface rounded-xl p-3"
             ref={(el) => (productRefs.current[index] = el)}
           >
             <div className="sm:col-span-5 relative">
@@ -247,15 +247,15 @@ function InvoiceForm({
                 }}
                 onFocus={() => setActiveProductIndex(index)}
                 placeholder="Search product..."
-                className="w-full p-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                className="w-full p-2.5 text-sm bg-surface-elevated border border-border rounded-xl text-foreground placeholder:text-muted-foreground"
               />
               {activeProductIndex === index && (
-                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                <div className="absolute z-50 w-full mt-1 bg-surface-elevated border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
                   {allProducts.map((p) => (
                     <div
                       key={p.id}
                       onClick={() => handleProductSelect(index, p)}
-                      className="px-4 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 cursor-pointer text-sm text-slate-700 dark:text-slate-200"
+                      className="px-4 py-2 hover:bg-surface cursor-pointer text-sm text-foreground"
                     >
                       {p.title}
                     </div>
@@ -264,7 +264,7 @@ function InvoiceForm({
               )}
             </div>
             <div className="sm:col-span-2">
-              <p className="text-gray-500 text-sm px-2">₹{item.price || "0"}</p>
+              <p className="text-muted-foreground text-sm px-2">₹{item.price || "0"}</p>
             </div>
             <div className="sm:col-span-1">
               <input
@@ -275,21 +275,20 @@ function InvoiceForm({
                   handleItemChange(index, "quantity", e.target.value)
                 }
                 min={1}
-                className="w-full p-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                className="w-full p-2.5 text-sm bg-surface-elevated border border-border rounded-xl text-foreground"
               />
             </div>
             <div className="sm:col-span-2 flex items-center justify-between">
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <span className="text-sm font-semibold text-foreground">
                 ₹{(item.quantity * item.price).toFixed(2)}
               </span>
-              {/* {invoice.items.length > 1 && (*/}
               <div className="flex items-center gap-2">
                 {invoice.items.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeItem(index)}
                     title="Delete item"
-                    className="text-gray-400 hover:text-red-500 "
+                    className="text-muted-foreground hover:text-danger"
                   >
                     <HiOutlineTrash size={20} />
                   </button>
@@ -298,20 +297,19 @@ function InvoiceForm({
                   type="button"
                   onClick={addItem}
                   title="add item"
-                  className="hover:text-indigo-500 text-gray-400"
+                  className="hover:text-primary text-muted-foreground"
                 >
                   <HiOutlinePlusCircle size={20} />
                 </button>
               </div>
-              {/* )}*/}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-surface-elevated p-6 rounded-2xl border border-border">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label className="text-sm font-medium text-foreground">
             Settlement Status
           </label>
           <CustomDropdown
@@ -325,7 +323,7 @@ function InvoiceForm({
 
         {invoice.status === "Paid" && (
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label className="text-sm font-medium text-foreground">
               Payment Gateway
             </label>
             <CustomDropdown
@@ -339,28 +337,28 @@ function InvoiceForm({
         )}
       </div>
 
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-end space-y-4">
-        <div className="w-full sm:w-72 space-y-2 text-sm text-slate-600 dark:text-slate-400">
+      <div className="bg-surface-elevated p-6 rounded-2xl border border-border flex flex-col items-end space-y-4">
+        <div className="w-full sm:w-72 space-y-2 text-sm text-muted-foreground">
           <div className="flex justify-between">
             <span>Subtotal:</span>
-            <span className="text-slate-900 dark:text-slate-100 font-medium">
+            <span className="text-foreground font-medium">
               ₹{subtotal.toFixed(2)}
             </span>
           </div>
           <div className="flex justify-between items-center">
             <span>Tax Config (%):</span>
-            <p className="text-gray-900">{invoice.tax_percentage}%</p>
+            <p className="text-foreground">{invoice.tax_percentage}%</p>
           </div>
           <div className="flex justify-between">
             <span>Tax Calculated:</span>
-            <span className="text-slate-900 dark:text-slate-100 font-medium">
+            <span className="text-foreground font-medium">
               ₹{taxAmount.toFixed(2)}
             </span>
           </div>
-          <div className="border-t my-2"></div>
-          <div className="flex justify-between text-lg font-bold text-slate-900 dark:text-slate-100">
+          <div className="border-t border-border my-2"></div>
+          <div className="flex justify-between text-lg font-bold text-foreground">
             <span>Total:</span>
-            <span className="text-indigo-600 dark:text-indigo-400">
+            <span className="text-primary">
               ₹{totalPrice.toFixed(2)}
             </span>
           </div>
@@ -368,7 +366,7 @@ function InvoiceForm({
         <button
           type="submit"
           disabled={submitting}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-sm transition-all disabled:bg-emerald-400 disabled:cursor-not-allowed"
+          className="bg-success hover:opacity-90 text-white font-semibold px-6 py-3 rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting
             ? "Saving..."

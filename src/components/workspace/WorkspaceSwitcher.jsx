@@ -27,31 +27,31 @@ export default function WorkspaceSwitcher() {
   return (
     <>
       <Menu as="div" className="relative inline-block text-left">
-        <MenuButton className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100 hover:border-slate-300 focus:outline-none cursor-pointer">
-          <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-indigo-600 text-white">
-            <HiBriefcase size={12} />
+        <MenuButton className="flex items-center gap-1.5 sm:gap-2 rounded-xl border border-border bg-surface p-1.5 md:px-3 md:py-1.5 text-xs font-semibold text-foreground transition hover:bg-surface-elevated hover:border-border focus:outline-none cursor-pointer">
+          <div className="flex h-6 w-6 md:h-5 md:w-5 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-[11px] md:text-xs">
+            {activeWorkspace.name ? activeWorkspace.name.charAt(0).toUpperCase() : <HiBriefcase size={12} />}
           </div>
-          <span className="max-w-30 sm:max-w-40 truncate">
+          <span className="hidden md:inline-block max-w-[120px] lg:max-w-[160px] truncate">
             {activeWorkspace.name}
           </span>
           <span
-            className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase ${
+            className={`hidden md:inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase ${
               currentRole === "owner"
-                ? "bg-indigo-100 text-indigo-700"
-                : "bg-emerald-100 text-emerald-700"
+                ? "bg-primary-muted text-primary"
+                : "bg-success-muted text-success"
             }`}
           >
             {currentRole}
           </span>
-          <HiChevronDown size={14} className="text-slate-400" />
+          <HiChevronDown size={14} className="text-muted-foreground" />
         </MenuButton>
 
         <MenuItems
           transition
           anchor="bottom start"
-          className="w-56 origin-top-left rounded-2xl border border-slate-100 bg-white p-1.5 shadow-2xl transition duration-100 ease-out [--anchor-gap:6px] focus:outline-none data-closed:scale-95 data-closed:opacity-0 z-50"
+          className="w-56 origin-top-left rounded-2xl border border-border bg-surface-elevated p-1.5 shadow-2xl transition duration-100 ease-out [--anchor-gap:6px] focus:outline-none data-closed:scale-95 data-closed:opacity-0 z-50"
         >
-          <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             Workspaces
           </div>
 
@@ -64,32 +64,32 @@ export default function WorkspaceSwitcher() {
                     onClick={() => switchWorkspace(ws.id)}
                     className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition cursor-pointer ${
                       isActive
-                        ? "bg-indigo-50 text-indigo-700 font-bold"
-                        : "text-slate-700 hover:bg-slate-50"
+                        ? "bg-primary-muted text-primary font-bold"
+                        : "text-foreground hover:bg-surface"
                     }`}
                   >
                     <div className="flex items-center gap-2 truncate">
                       <span className="truncate">{ws.name}</span>
-                      <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-slate-100 text-slate-500 font-medium">
+                      <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-muted text-muted-foreground font-medium">
                         {ws.role || "member"}
                       </span>
                     </div>
-                    {isActive && <HiCheck size={14} className="text-indigo-600 shrink-0" />}
+                    {isActive && <HiCheck size={14} className="text-primary shrink-0" />}
                   </button>
                 </MenuItem>
               );
             })}
           </div>
 
-          <hr className="my-1.5 border-slate-100" />
+          <hr className="my-1.5 border-border" />
 
           {/* Manage Team Action */}
           <MenuItem>
             <button
               onClick={() => setIsTeamOpen(true)}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface transition cursor-pointer"
             >
-              <HiUserGroup size={16} className="text-indigo-600" />
+              <HiUserGroup size={16} className="text-primary" />
               Manage Team & Invites
             </button>
           </MenuItem>
@@ -98,9 +98,9 @@ export default function WorkspaceSwitcher() {
           <MenuItem>
             <button
               onClick={() => setIsCreateOpen(true)}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface transition cursor-pointer"
             >
-              <HiPlus size={16} className="text-slate-500" />
+              <HiPlus size={16} className="text-muted-foreground" />
               New Workspace
             </button>
           </MenuItem>

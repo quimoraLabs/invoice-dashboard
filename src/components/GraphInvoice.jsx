@@ -58,17 +58,17 @@ function IncomeGraph() {
   }, [currentUser?.uid]);
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-3xl border border-border bg-surface-elevated p-6 shadow-sm">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">
             Revenue
           </p>
-          <h2 className="mt-1 text-xl font-semibold text-slate-900">
+          <h2 className="mt-1 text-xl font-semibold text-foreground">
             Paid invoices trend
           </h2>
         </div>
-        <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-600">
+        <span className="rounded-full bg-success-muted px-3 py-1 text-sm font-medium text-success">
           Live data
         </span>
       </div>
@@ -77,23 +77,27 @@ function IncomeGraph() {
         <div className="h-60 lg:h-50">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={invoices}>
-              <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
                 tickLine={false}
                 axisLine={false}
-                // Optional: Add a custom tick formatter for dates if needed, e.g., to show month/day
-                tick={{ fill: "#64748b", fontSize: 12 }}
+                tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fill: "#64748b", fontSize: 12 }}
-                // Format Y-axis ticks to display currency
+                tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
                 tickFormatter={(value) => `₹${Number(value).toFixed(2)}`}
               />
               <Tooltip
-                // Customize tooltip to show formatted amount and label
+                contentStyle={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border)",
+                  color: "var(--foreground)",
+                  borderRadius: "1rem",
+                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                }}
                 formatter={(value) => [
                   `₹${Number(value).toFixed(2)}`,
                   "Total Amount",
@@ -103,7 +107,7 @@ function IncomeGraph() {
               <Line
                 type="monotone"
                 dataKey="amount"
-                stroke="#4F46E5"
+                stroke="var(--primary)"
                 strokeWidth={3}
                 dot={{ r: 4 }}
               />
@@ -111,7 +115,7 @@ function IncomeGraph() {
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+        <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-border bg-surface text-sm text-muted-foreground">
           No paid invoices yet.
         </div>
       )}

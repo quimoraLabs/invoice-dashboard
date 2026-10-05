@@ -2,13 +2,13 @@
 
 ## 1. System Overview & Tech Stack
 
-This application is a production-grade, multi-tenant invoicing SaaS running purely on client-side rendering with cloud-backed persistence and authentication.
+This application is a production-grade, multi-tenant B2B invoicing SaaS running on client-side rendering with cloud-backed persistence, role-based access control, and authentication.
 
 | Layer | Technology | Key Responsibility |
 | :--- | :--- | :--- |
 | **UI Framework** | React 19 + Vite | Fast HMR, reactive component rendering, root shell |
 | **Styling Engine** | Tailwind CSS v4 (`@tailwindcss/vite`) | High-performance CSS token-based design system |
-| **Authentication** | Clerk Auth (`@clerk/react`) | Identity provider, session tokens, JWT delegation |
+| **Authentication** | Clerk Auth (`@clerk/react`) | Identity provider, session tokens, Custom Claims JWT delegation |
 | **Database & Storage** | Firebase Cloud Firestore & Storage | Real-time document store, logo/asset binary storage |
 | **Client Routing** | React Router v7 (`react-router-dom`) | Declarative client routing and route guards |
 | **PDF Generation** | `@react-pdf/renderer` | Deterministic in-browser document compilation |
@@ -23,6 +23,9 @@ This application is a production-grade, multi-tenant invoicing SaaS running pure
 d:\invoice-dashboard\
 ├── public/                 # Static assets and embedded web fonts (roboto.ttf)
 ├── docs/                   # Production specification and architecture documents
+├── scripts/                # Server-side migration & administrative automation scripts
+│   ├── migrate-to-b2b.js   # Main Node.js B2B migration runner
+│   └── migrate-helpers.js  # Batch commit, rate limiting & retry utilities
 ├── src/
 │   ├── auth/               # Clerk login & registration view shells
 │   ├── assets/             # Brand logos, fallback placeholders, sample data
@@ -31,6 +34,7 @@ d:\invoice-dashboard\
 │   │   ├── invoice/        # Invoice forms, filter bars, table rows
 │   │   ├── modals/         # Delete confirmations, add dialogs
 │   │   ├── product/        # Product modals and line item selectors
+│   │   ├── workspace/      # Organization/Workspace switcher & team dialogs
 │   │   ├── ActionMenu.jsx  # Reusable headless item action menu
 │   │   ├── CustomDropdown.jsx # Headless accessible dropdown selector
 │   │   ├── GraphInvoice.jsx# Dashboard revenue and invoice metric charts
@@ -38,12 +42,15 @@ d:\invoice-dashboard\
 │   │   ├── Loader.jsx      # Unified spinner and skeleton loader
 │   │   ├── ProtectedRoute.jsx # Route-level authentication guard
 │   │   └── StatCard.jsx    # Metric KPI summary card
-│   ├── contexts/           # Global React Context providers (AuthContext)
+│   ├── contexts/           # Global React Context providers (AuthContext, WorkspaceContext)
+│   │   ├── authContext/    # Clerk session bridge & Firebase custom token exchange
+│   │   └── WorkspaceContext.jsx # Multi-tenant active organization state & token resolver
 │   ├── firebase/           # Service-layer Firebase SDK wrappers & configs
-│   ├── header/             # Global sticky navigation bar and user profile
+│   ├── header/             # Global sticky navigation bar, org switcher & user profile
 │   ├── pages/              # Primary route views (Home, Invoice, Customer, Product)
 │   ├── App.jsx             # Top-level route tree and layout shell
 │   ├── index.css           # Tailwind v4 theme tokens & global base styles
+│   ├── tokens.css          # Semantic light/dark design tokens
 │   └── main.jsx            # React root mount and ClerkProvider initialization
 ```
 
@@ -63,8 +70,9 @@ d:\invoice-dashboard\
 │        Context Layer         │ │     Service Layer (API)     │
 │  src/contexts/authContext/   │ │  src/firebase/              │
 │  - Clerk session sync        │ │  - customer.js, product.js  │
-│  - Firebase token exchange   │ │  - invoice.js, getFileUrl.js│
-│  - Current user state        │ │  - Direct Firestore queries│
+│  src/contexts/WorkspaceContext│ │  - invoice.js, getFileUrl.js│
+│  - Active orgId & role sync  │ │  - Direct Firestore queries │
+│  - Token refresh on switch   │ │  - Scoped by orgId          │
 └──────────────┬───────────────┘ └─────────────┬───────────────┘
                │                               │
                └───────────────┬───────────────┘
@@ -77,8 +85,10 @@ d:\invoice-dashboard\
 
 ### Layer Boundaries & Invariants
 1. **View Layer (`src/pages`, `src/components`):** Responsible only for rendering state, capturing UI events, and triggering local state transitions. No direct calls to low-level Firestore SDK primitives (`collection`, `getDocs`, `onSnapshot`).
-2. **Context Layer (`src/contexts/authContext`):** Bridges Clerk authentication with Firebase. Listens to Clerk session state, retrieves Clerk JWT custom tokens created for Firebase, signs into Firebase Auth via `signInWithCustomToken`, and exposes `currentUser` / `userLoggedIn`.
-3. **Service Layer (`src/firebase`):** Encapsulates all Firestore queries, constraints, mutations, and real-time listeners. Every function explicitly accepts `userId` (or derives it securely) and enforces strict document ownership.
+2. **Context Layer (`src/contexts/`):**
+   * `AuthContext`: Bridges Clerk authentication with Firebase. Listens to Clerk session state, retrieves Clerk JWT custom tokens created for Firebase, signs into Firebase Auth via `signInWithCustomToken`, and exposes `currentUser` / `userLoggedIn`.
+   * `WorkspaceContext`: Manages the active multi-tenant organization state (`activeOrgId`, `currentRole`), resolves user memberships, and triggers token refreshes on organization switches.
+3. **Service Layer (`src/firebase`):** Encapsulates all Firestore queries, constraints, mutations, and real-time listeners. Every function explicitly accepts `orgId` and `actorUserId`, enforcing strict organization tenant isolation.
 
 ---
 
@@ -111,6 +121,6 @@ Instead of relying on serverless Node.js Puppeteer functions (which introduce co
 * **Decision:** Use Clerk (`@clerk/react`) as the primary identity manager and Cloud Firestore for document storage. Authenticate Firebase sessions using Clerk Firebase JWT templates.
 * **Rationale:** Provides streamlined authentication UX, social logins, and account management while leveraging Firestore's real-time subscriptions and cost efficiency.
 
-### ADR-004: Document-Level Tenant Isolation
-* **Decision:** Stamp every document in `invoices`, `customers`, `products`, and `business_profiles` with a required `userId` matching Clerk's `user.id`.
-* **Rationale:** Enforces clean horizontal tenant isolation in Firestore queries and enables simple declarative security rules.
+### ADR-004: Organization-Scoped Multi-Tenant Isolation
+* **Decision:** Stamp every domain document (`invoices`, `customers`, `products`, `business_profiles`) with `orgId` as the primary tenant key, and enforce security boundaries using Clerk Custom Claims (`request.auth.token.orgId` and `request.auth.token.role`).
+* **Rationale:** Enables true B2B organization isolation, multi-user collaboration, granular role-based permissions (`owner`, `admin`, `accountant`, `viewer`), and $O(1)$ Firestore rule evaluation without runtime database read overhead.

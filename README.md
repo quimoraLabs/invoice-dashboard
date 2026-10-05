@@ -56,7 +56,7 @@ This project is built following strict architectural specs. Detailed specs and d
 | **Routing** | React Router v7 (`react-router-dom`) | Declarative client-side routing & route guards |
 | **PDF Generation** | `@react-pdf/renderer` v4 | In-browser client PDF compilation |
 | **Data Visualization** | Recharts v3 | Responsive revenue graphs & pie charts |
-| **Icons & Alerts** | `react-icons` & `react-hot-toast` | UI icons and toast alerts |
+| **Icons & Alerts** | `lucide-react , @icons-pack/react-simple-icons` & `react-hot-toast` | UI icons and toast alerts |
 
 ---
 
