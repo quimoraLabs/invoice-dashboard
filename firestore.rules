@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { 
+      return request.auth != null; 
+    }
+    
+    function isOwner() { 
+      return resource.data.userId == request.auth.uid; 
+    }
+    
+    function ownsNew() { 
+      return request.resource.data.userId == request.auth.uid; 
+    }
+
+    // Invoices collection
+    match /invoices/{docId} {
+      allow read, delete: if signedIn() && isOwner();
+      allow create: if signedIn() && ownsNew();
+      allow update: if signedIn() && isOwner() && ownsNew();
+    }
+
+    // Customers collection
+    match /customers/{docId} {
+      allow read, delete: if signedIn() && isOwner();
+      allow create: if signedIn() && ownsNew();
+      allow update: if signedIn() && isOwner() && ownsNew();
+    }
+
+    // Products collection
+    match /products/{docId} {
+      allow read, delete: if signedIn() && isOwner();
+      allow create: if signedIn() && ownsNew();
+      allow update: if signedIn() && isOwner() && ownsNew();
+    }
+
+    // Business Profiles collection (Doc ID must match user's Auth UID)
+    match /business_profiles/{docId} {
+      allow read, write: if signedIn() && docId == request.auth.uid;
+    }
+
+    // Workspaces & Team Collaborations
+    match /workspaces/{docId} {
+      allow read, write: if signedIn();
+    }
+    match /workspace_members/{docId} {
+      allow read, write: if signedIn();
+    }
+    match /workspace_invites/{docId} {
+      allow read, write: if signedIn();
+    }
+  }
+}
