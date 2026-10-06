@@ -250,10 +250,11 @@ function InvoiceForm({
             min={new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]}
             max={new Date().toISOString().split("T")[0]}
             value={invoice?.invoice_date ? String(invoice.invoice_date).split("T")[0] : ""}
+            onClick={(e) => e.target.showPicker?.()}
             onChange={(e) =>
               setInvoice({ ...invoice, invoice_date: e.target.value })
             }
-            className="w-full p-2.5 text-sm bg-surface border border-border rounded-xl font-medium text-foreground"
+            className="w-full p-2.5 text-sm bg-surface border border-border rounded-xl font-medium text-foreground cursor-pointer"
           />
           <p className="text-xs text-muted-foreground mt-1">
             Allowed: last 90 days to today (GST compliance).

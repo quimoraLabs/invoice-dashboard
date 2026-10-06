@@ -53,8 +53,8 @@ Stores organization metadata, subscription plan tier, and workspace ownership.
 | `plan` | `string` | Subscription tier: `"free"`, `"starter"`, `"pro"`, `"enterprise"` |
 | `status` | `string` | Status: `"active"`, `"suspended"`, `"trial"` |
 | `trialEndsAt` | `timestamp` | Timestamp when free trial period expires |
-| `createdAt` | `timestamp` | Server creation timestamp (`serverTimestamp()`) |
-| `updatedAt` | `timestamp` | Server last modified timestamp |
+| `created_at` | `timestamp` | Server creation timestamp (`serverTimestamp()`) |
+| `updated_at` | `timestamp` | Server last modified timestamp |
 
 ---
 
@@ -74,7 +74,7 @@ Stores team membership, deterministic composite IDs, and operational roles.
 | `role` | `string` | Member permission level: `"owner"`, `"admin"`, `"accountant"`, `"viewer"` |
 | `status` | `string` | Membership state: `"pending"`, `"active"`, `"suspended"` |
 | `joinedAt` | `timestamp` | Server timestamp of joining |
-| `updatedAt` | `timestamp` | Server timestamp of last role/status mutation |
+| `updated_at` | `timestamp` | Server timestamp of last role/status mutation |
 
 ---
 
@@ -96,8 +96,8 @@ Stores the organization's legal, tax, and branding information.
 | `logoUrl` | `string` | Cloud Storage URL for company logo |
 | `signatureUrl` | `string` | Cloud Storage URL for authorized sign-off |
 | `website` | `string` | Corporate website URL |
-| `createdAt` | `timestamp` | Server creation timestamp |
-| `updatedAt` | `timestamp` | Server update timestamp |
+| `created_at` | `timestamp` | Server creation timestamp |
+| `updated_at` | `timestamp` | Server update timestamp |
 
 ---
 
@@ -115,8 +115,8 @@ Stores organization-scoped ledger entries and issued invoices.
 | `customerName` | `string` | Snapshot of client name |
 | `customerEmail` | `string` | Snapshot of client email |
 | `customerAddress`| `string` | Snapshot of billing address |
-| `invoiceDate` | `string` | Issue date (`YYYY-MM-DD`) |
-| `dueDate` | `string` | Due date (`YYYY-MM-DD`) |
+| `invoiceDate` | `Timestamp` | Issue date (Firestore Timestamp, UTC) |
+| `dueDate` | `Timestamp` | Due date (Firestore Timestamp, UTC) |
 | `status` | `string` | Status: `"Paid"`, `"Pending"`, `"Overdue"`, `"Draft"` |
 | `items` | `Array<item>` | Line items array (`productId`, `title`, `qty`, `price`, `total`) |
 | `subtotal` | `number` | Total amount before taxes |
@@ -124,8 +124,8 @@ Stores organization-scoped ledger entries and issued invoices.
 | `taxAmount` | `number` | Computed tax amount |
 | `totalAmount` | `number` | Final computed invoice total |
 | `notes` | `string` | Notes / payment terms |
-| `createdAt` | `timestamp` | Server creation timestamp |
-| `updatedAt` | `timestamp` | Server update timestamp |
+| `created_at` | `timestamp` | Server creation timestamp |
+| `updated_at` | `timestamp` | Server update timestamp |
 
 ---
 
@@ -145,8 +145,8 @@ Stores client directory records for an organization.
 | `address` | `string` | Billing and shipping address |
 | `gstin` | `string` | Tax registration number |
 | `profile` | `string` | Avatar/logo URL (optional) |
-| `createdAt` | `timestamp` | Server creation timestamp |
-| `updatedAt` | `timestamp` | Server update timestamp |
+| `created_at` | `timestamp` | Server creation timestamp |
+| `updated_at` | `timestamp` | Server update timestamp |
 
 ---
 
@@ -164,8 +164,27 @@ Stores item and service catalog entries for an organization.
 | `price` | `number` | Unit rate in base currency |
 | `category` | `string` | Classification category (e.g. `"Development"`) |
 | `imageUrl` | `string` | Cloud Storage or asset URL |
-| `createdAt` | `timestamp` | Server creation timestamp (Normalized camelCase) |
-| `updatedAt` | `timestamp` | Server update timestamp |
+| `created_at` | `timestamp` | Server creation timestamp (Standard snake_case) |
+| `updated_at` | `timestamp` | Server update timestamp |
+
+---
+
+### G. Date Fields Policy
+
+All date fields in domain collections are stored as Firestore Timestamp (UTC).
+
+- `invoiceDate`, `dueDate` (`invoices`)
+- `created_at`, `updated_at` (all collections)
+
+Rationale:
+- Timezone-safe (stored in UTC, displayed in local time)
+- Enables proper range queries for GST monthly/quarterly filing
+- Correct chronological sorting
+- Overdue detection: `where('dueDate', '<', Timestamp.now())`
+
+Client-side: convert to/from ISO string for UI display only. Never store strings in Firestore.
+
+Legacy data: migrated from string to Timestamp during the B2B migration script (see Section 2.1 Step B.5).
 
 ---
 
@@ -185,8 +204,9 @@ flowchart TD
     F --> G
     G --> H[Batch Update customers where userId == user.id && orgId == null]
     H --> I[Batch Update products where userId == user.id && orgId == null]
-    I --> J[Reseat business_profiles/userId to business_profiles/orgId]
-    J --> K[Log Results & Output Audit Trail]
+    I --> J[Step B.5: Date Field Migration String to Timestamp]
+    J --> K[Reseat business_profiles/userId to business_profiles/orgId]
+    K --> L[Log Results & Output Audit Trail]
 ```
 
 #### Step-by-Step Script Pipeline:
@@ -194,19 +214,29 @@ flowchart TD
 2. **Idempotent Organization Check:**
    - Query `organizations` where `ownerId == user.id`.
    - If found, retrieve `orgId`.
-   - If not found, create new `organizations` document (`name: "${user.firstName || 'My'}'s Business"`, `ownerId: user.id`, `plan: "free"`, `status: "active"`, `createdAt: now`).
+   - If not found, create new `organizations` document (`name: "${user.firstName || 'My'}'s Business"`, `ownerId: user.id`, `plan: "free"`, `status: "active"`, `created_at: now`).
    - Ensure `organizationMembers/${orgId}_${user.id}` exists with `role: "owner"`, `status: "active"`, and `joinedAt: now`.
 3. **Batch Collection Stamping:**
    - For collections `invoices`, `customers`, and `products`:
      - Query in batches of 400 documents where `userId == user.id`.
      - Filter documents missing `orgId` or having legacy `created_at`.
-     - Update fields: `orgId: defaultOrgId`, `createdBy: user.id`, `createdAt: existing.created_at || existing.createdAt || now`.
+     - Update fields: `orgId: defaultOrgId`, `createdBy: user.id`, `created_at: existing.created_at || now`.
      - Commit batch write.
-4. **Business Profile Reseating:**
+4. **Step B.5: Date Field Migration:**
+   - For each domain document (`invoices`, `customers`, `products`):
+     - Convert legacy string date fields to Firestore Timestamp:
+       * `invoices.invoiceDate` (string `"YYYY-MM-DD"`) → Timestamp
+       * `invoices.dueDate` (string `"YYYY-MM-DD"`) → Timestamp
+       * `customers.created_at` (string) → Timestamp
+       * `products.created_at` (string) → Timestamp
+       * `business_profiles.updatedAt` (camelCase legacy) → `updated_at` (snake_case)
+     - Use `admin.firestore.Timestamp.fromDate(new Date(value + 'T00:00:00.000Z'))` to interpret legacy strings as UTC midnight.
+     - Idempotent check: only convert if the field is currently a string (`typeof === 'string'`).
+5. **Business Profile Reseating:**
    - Check if document `business_profiles/${user.id}` exists.
    - If present, write its payload to `business_profiles/${defaultOrgId}` with `orgId: defaultOrgId`, `userId: user.id`, `createdBy: user.id`.
    - Delete legacy document `business_profiles/${user.id}`.
-5. **New User Provisioning Going Forward (Optional / Event-Driven):**
+6. **New User Provisioning Going Forward (Optional / Event-Driven):**
    - Configure a Clerk Webhook endpoint (`user.created`) targeting a Firebase Cloud Function (`onUserCreated`) to automatically bootstrap a personal organization and owner membership for all newly registered users.
 
 ---
@@ -216,6 +246,7 @@ flowchart TD
 #### Idempotency Safeguards:
 * **Pre-Flight Condition Check:** The script queries `where("userId", "==", user.id)` and only updates records where `orgId == null` or `orgId == undefined`. Re-running the script on a previously migrated database produces 0 mutations and zero duplicate organizations.
 * **Deterministic Member IDs:** `organizationMembers` uses `docId = "${orgId}_${user.id}"`. Re-running cannot create duplicate membership records.
+* **Idempotent Date Field Conversion:** Date conversion is idempotent: once a field is a Timestamp, re-running the script skips it (checks `typeof === 'string'` before converting).
 * **Dry-Run Mode:** The script must support a `--dry-run` flag that outputs the exact mutation count (organizations to create, members to create, documents to stamp) without issuing write operations.
 
 #### Rollback Strategy:
@@ -470,11 +501,11 @@ service cloud.firestore {
 
 | Function | Old Signature | New B2B Signature | Parameters |
 | :--- | :--- | :--- | :--- |
-| `createInvoice` | `(invoice, setLoading, userId)` | `createInvoice(invoice, orgId, actorUserId, setLoading)` | `invoice` (object), `orgId` (string), `actorUserId` (string), `setLoading` (fn) |
+| `createInvoice` | `(invoice, setLoading, userId)` | `createInvoice(invoice, orgId, actorUserId, setLoading)` | `invoice` (object, `invoiceDate` & `dueDate` as Firestore `Timestamp`), `orgId` (string), `actorUserId` (string), `setLoading` (fn) |
 | `listenToInvoices` | `(callback, userId)` | `listenToInvoices(orgId, callback)` | `orgId` (string), `callback` (fn) |
-| `updateInvoice` | `(id, invoice, setLoading, userId)` | `updateInvoice(invoiceId, invoiceData, orgId, actorUserId, setLoading)` | `invoiceId` (string), `invoiceData` (object), `orgId` (string), `actorUserId` (string), `setLoading` (fn) |
+| `updateInvoice` | `(id, invoice, setLoading, userId)` | `updateInvoice(invoiceId, invoiceData, orgId, actorUserId, setLoading)` | `invoiceId` (string), `invoiceData` (object, `invoiceDate` & `dueDate` as Firestore `Timestamp`), `orgId` (string), `actorUserId` (string), `setLoading` (fn) |
 | `deleteInvoice` | `(id, setLoading, userId)` | `deleteInvoice(invoiceId, orgId, setLoading)` | `invoiceId` (string), `orgId` (string), `setLoading` (fn) |
-| `updateInvoiceStatusAndDueDate` | `(id, status, method, setLoading, userId)` | `updateInvoiceStatusAndDueDate(invoiceId, status, method, orgId, actorUserId, setLoading)` | `invoiceId` (string), `status` (string), `method` (string), `orgId` (string), `actorUserId` (string), `setLoading` (fn) |
+| `updateInvoiceStatusAndDueDate` | `(id, status, method, setLoading, userId)` | `updateInvoiceStatusAndDueDate(invoiceId, status, method, orgId, actorUserId, setLoading)` | `invoiceId` (string), `status` (string), `method` (string), `orgId` (string), `actorUserId` (string), `setLoading` (fn; `dueDate` updated as Firestore `Timestamp`) |
 
 ---
 

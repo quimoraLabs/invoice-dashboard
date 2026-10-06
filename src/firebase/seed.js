@@ -8,6 +8,7 @@ import {
   where,
   deleteDoc,
   serverTimestamp,
+  Timestamp,
 } from "firebase/firestore";
 import { db, auth } from "./firebaseConfig";
 
@@ -130,13 +131,17 @@ const SAMPLE_PRODUCTS = [
 ];
 
 /**
- * Clear all data belonging to the specified user ID (or legacy unassigned docs)
+ * Clear all data belonging to the specified user ID and org ID (or legacy unassigned docs)
  * @param {string} targetUserId - Target User UID
+ * @param {string} orgId - Target Organization ID
  */
-export async function clearUserData(targetUserId) {
+export async function clearUserData(targetUserId, orgId) {
   const uid = targetUserId;
   if (!uid) {
     throw new Error("Cannot clear data: No authenticated user ID found.");
+  }
+  if (!orgId) {
+    throw new Error("Cannot clear data: No organization ID provided.");
   }
 
   const collectionsToClear = ["invoices", "customers", "products"];
@@ -158,41 +163,50 @@ export async function clearUserData(targetUserId) {
 }
 
 /**
- * Seed sample data (5 customers, 10 products, 5 invoices) for a specified user ID
+ * Seed sample data (5 customers, 10 products, 5 invoices) for a specified user ID & org ID
  * @param {string} targetUserId - Target User UID (defaults to current logged in user)
+ * @param {string} orgId - Target Organization ID
  */
-export async function seedUserData(targetUserId) {
+export async function seedUserData(targetUserId, orgId) {
   const uid = targetUserId;
   if (!uid) {
     throw new Error("Cannot seed data: No authenticated user ID found.");
   }
+  if (!orgId) {
+    throw new Error("Cannot seed data: No organization ID provided.");
+  }
 
 
   // 1. Clear existing seed data first to avoid duplicates
-  await clearUserData(uid);
+  await clearUserData(uid, orgId);
 
   // 2. Seed Business Profile
-  const profileRef = doc(db, "business_profiles", uid);
-  await setDoc(profileRef, {
-    userId: uid,
-    companyName: "Invomora Solutions Pvt Ltd",
-    ownerName: "Madhav Kumar",
-    email: "billing@invomora.io",
-    phone: "+91 98100 99887",
-    address: "Tower C, 8th Floor, DLF Cyber City, Gurugram, Haryana - 122002",
-    taxId: "07AAACI1234A1Z1",
-    bankName: "HDFC Bank Ltd",
-    accountNumber: "50100234567890",
-    ifscCode: "HDFC0001234",
-    updatedAt: serverTimestamp(),
-  });
+  const profileRef = doc(db, "business_profiles", orgId);
+await setDoc(profileRef, {
+  orgId: orgId,
+  userId: uid,
+  createdBy: uid,
+  companyName: "Invomora Solutions Pvt Ltd",
+  ownerName: "Madhav Kumar",
+  email: "billing@invomora.io",
+  phone: "+91 98100 99887",
+  address: "Tower C, 8th Floor, DLF Cyber City, Gurugram, Haryana - 122002",
+  taxId: "07AAACI1234A1Z1",
+  bankName: "HDFC Bank Ltd",
+  accountNumber: "50100234567890",
+  ifscCode: "HDFC0001234",
+  created_at: serverTimestamp(),
+  updated_at: serverTimestamp(),
+});
 
   // 3. Seed Customers
   const customerDocs = [];
   for (const customer of SAMPLE_CUSTOMERS) {
     const custRef = await addDoc(collection(db, "customers"), {
       ...customer,
+      orgId: orgId,
       userId: uid,
+      createdBy: uid,
       created_at: serverTimestamp(),
     });
     customerDocs.push({ id: custRef.id, ...customer });
@@ -203,13 +217,15 @@ export async function seedUserData(targetUserId) {
   for (const product of SAMPLE_PRODUCTS) {
     const prodRef = await addDoc(collection(db, "products"), {
       ...product,
+      orgId: orgId,
       userId: uid,
+      createdBy: uid,
       created_at: serverTimestamp(),
     });
     productDocs.push({ id: prodRef.id, ...product });
   }
 
-  // 5. Seed Invoices (5 Invoices with YYYY-MM-DD date format)
+  // 5. Seed Invoices (5 Invoices with Firestore Timestamp dates)
   const sampleInvoices = [
     {
       invoice_no: "INV-001",
@@ -222,9 +238,9 @@ export async function seedUserData(targetUserId) {
         phone_number: customerDocs[0].phone_number,
         address: customerDocs[0].address,
       },
-      invoice_date: "2026-03-03",
-      paid_date: "2026-03-03",
-      due_date: "2026-03-17",
+      invoice_date: Timestamp.fromDate(new Date("2026-03-03")),
+      paid_date: Timestamp.fromDate(new Date("2026-03-03")),
+      due_date: Timestamp.fromDate(new Date("2026-03-17")),
       status: "Paid",
       payment_type: "UPI",
       tax_percentage: 18,
@@ -249,9 +265,9 @@ export async function seedUserData(targetUserId) {
         phone_number: customerDocs[1].phone_number,
         address: customerDocs[1].address,
       },
-      invoice_date: "2026-06-03",
-      paid_date: "2026-06-03",
-      due_date: "2026-06-17",
+      invoice_date: Timestamp.fromDate(new Date("2026-06-03")),
+      paid_date: Timestamp.fromDate(new Date("2026-06-03")),
+      due_date: Timestamp.fromDate(new Date("2026-06-17")),
       status: "Paid",
       payment_type: "Bank Transfer",
       tax_percentage: 18,
@@ -282,9 +298,9 @@ export async function seedUserData(targetUserId) {
         phone_number: customerDocs[2].phone_number,
         address: customerDocs[2].address,
       },
-      invoice_date: "2026-08-03",
+      invoice_date: Timestamp.fromDate(new Date("2026-08-03")),
       paid_date: null,
-      due_date: "2026-08-17",
+      due_date: Timestamp.fromDate(new Date("2026-08-17")),
       status: "Pending",
       payment_type: null,
       tax_percentage: 18,
@@ -309,9 +325,9 @@ export async function seedUserData(targetUserId) {
         phone_number: customerDocs[3].phone_number,
         address: customerDocs[3].address,
       },
-      invoice_date: "2026-08-15",
+      invoice_date: Timestamp.fromDate(new Date("2026-08-15")),
       paid_date: null,
-      due_date: "2026-08-29",
+      due_date: Timestamp.fromDate(new Date("2026-08-29")),
       status: "Pending",
       payment_type: null,
       tax_percentage: 18,
@@ -336,9 +352,9 @@ export async function seedUserData(targetUserId) {
         phone_number: customerDocs[4].phone_number,
         address: customerDocs[4].address,
       },
-      invoice_date: "2026-09-01",
+      invoice_date: Timestamp.fromDate(new Date("2026-09-01")),
       paid_date: null,
-      due_date: "2026-09-15",
+      due_date: Timestamp.fromDate(new Date("2026-09-15")),
       status: "Unpaid",
       payment_type: null,
       tax_percentage: 18,
@@ -357,7 +373,9 @@ export async function seedUserData(targetUserId) {
   for (const invoice of sampleInvoices) {
     await addDoc(collection(db, "invoices"), {
       ...invoice,
+      orgId: orgId,
       userId: uid,
+      createdBy: uid,
       created_at: serverTimestamp(),
     });
   }
