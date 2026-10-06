@@ -14,20 +14,28 @@ service cloud.firestore {
       return isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
 
+    function isMemberOfWorkspace(workspaceId) {
+      return isAuthenticated() && exists(/databases/$(database)/documents/workspace_members/$(workspaceId + '_' + request.auth.uid));
+    }
+
+    function isWorkspaceOwner(workspaceId) {
+      return isAuthenticated() && get(/databases/$(database)/documents/workspace_members/$(workspaceId + '_' + request.auth.uid)).data.role == 'owner';
+    }
+
     match /invoices/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if ownsDoc();
       allow create: if creatingOwnDoc();
       allow update, delete: if ownsDoc();
     }
 
     match /customers/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if ownsDoc();
       allow create: if creatingOwnDoc();
       allow update, delete: if ownsDoc();
     }
 
     match /products/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if ownsDoc();
       allow create: if creatingOwnDoc();
       allow update, delete: if ownsDoc();
     }
@@ -37,15 +45,35 @@ service cloud.firestore {
     }
 
     match /workspaces/{docId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isMemberOfWorkspace(docId);
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isWorkspaceOwner(docId);
+      allow delete: if isWorkspaceOwner(docId);
     }
     
     match /workspace_members/{docId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isMemberOfWorkspace(resource.data.workspaceId)
+      );
+      allow create: if isAuthenticated() && (
+        (request.resource.data.userId == request.auth.uid && request.resource.data.role == 'owner') ||
+        isWorkspaceOwner(request.resource.data.workspaceId)
+      );
+      allow update: if isWorkspaceOwner(resource.data.workspaceId);
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isWorkspaceOwner(resource.data.workspaceId)
+      );
     }
     
     match /workspace_invites/{docId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated() && (
+        resource.data.invitedEmail == request.auth.token.email ||
+        isMemberOfWorkspace(resource.data.workspaceId)
+      );
+      allow create: if isWorkspaceOwner(request.resource.data.workspaceId);
+      allow update, delete: if isWorkspaceOwner(resource.data.workspaceId);
     }
   }
 }

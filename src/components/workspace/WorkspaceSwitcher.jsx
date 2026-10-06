@@ -34,15 +34,17 @@ export default function WorkspaceSwitcher() {
           <span className="hidden md:inline-block max-w-[120px] lg:max-w-[160px] truncate">
             {activeWorkspace.name}
           </span>
-          <span
-            className={`hidden md:inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase ${
-              currentRole === "owner"
-                ? "bg-primary-muted text-primary"
-                : "bg-success-muted text-success"
-            }`}
-          >
-            {currentRole}
-          </span>
+          {currentRole && (
+            <span
+              className={`hidden md:inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase ${
+                currentRole === "owner"
+                  ? "bg-primary-muted text-primary"
+                  : "bg-success-muted text-success"
+              }`}
+            >
+              {currentRole}
+            </span>
+          )}
           <HiChevronDown size={14} className="text-muted-foreground" />
         </MenuButton>
 

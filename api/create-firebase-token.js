@@ -60,9 +60,22 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "CLERK_SECRET_KEY is not configured on server." });
     }
 
-    // 1. Verify Clerk JWT using Clerk Backend SDK
+    // Configured authorized parties from APP_URL and local environments
+    const configuredParties = (process.env.APP_URL || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const authorizedParties = [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      ...configuredParties,
+    ];
+
+    // 1. Verify Clerk JWT using Clerk Backend SDK with authorized parties
     const verifiedClaims = await verifyToken(clerkToken, {
       secretKey,
+      authorizedParties: authorizedParties.length > 0 ? authorizedParties : undefined,
     });
 
     const userId = verifiedClaims?.sub;

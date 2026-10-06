@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useAuth } from "./authContext/useAuth";
 import {
   listenToUserWorkspaces,
@@ -18,7 +18,7 @@ export function WorkspaceProvider({ children }) {
     return localStorage.getItem(STORAGE_KEY) || null;
   });
   const [loading, setLoading] = useState(true);
-  const [isCreatingDefault, setIsCreatingDefault] = useState(false);
+  const isCreatingDefaultRef = useRef(false);
 
   const userId = currentUser?.uid || currentUser?.id;
 
@@ -42,31 +42,38 @@ export function WorkspaceProvider({ children }) {
       .catch((err) => console.error("Error auto-joining invited workspaces:", err));
 
     // Real-time listener for user workspaces
-    const unsubscribe = listenToUserWorkspaces(userId, async (userWorkspaces) => {
-      setWorkspaces(userWorkspaces);
+    const unsubscribe = listenToUserWorkspaces(
+      userId,
+      async (userWorkspaces) => {
+        setWorkspaces(userWorkspaces);
 
-      // Auto-create default workspace if user has zero workspaces
-      if (userWorkspaces.length === 0 && !isCreatingDefault) {
-        setIsCreatingDefault(true);
-        try {
-          const defaultName = currentUser.displayName
-            ? `${currentUser.displayName}'s Business`
-            : "My Business";
-          const newWs = await createWorkspace(defaultName, currentUser);
-          setWorkspaces([newWs]);
-          setActiveWorkspaceId(newWs.id);
-          localStorage.setItem(STORAGE_KEY, newWs.id);
-        } catch (err) {
-          console.error("Error auto-creating default workspace:", err);
-        } finally {
-          setIsCreatingDefault(false);
-          setLoading(false);
+        // Auto-create default workspace if user has zero workspaces
+        if (userWorkspaces.length === 0 && !isCreatingDefaultRef.current) {
+          isCreatingDefaultRef.current = true;
+          try {
+            const defaultName = currentUser.displayName
+              ? `${currentUser.displayName}'s Business`
+              : "My Business";
+            const newWs = await createWorkspace(defaultName, currentUser);
+            setWorkspaces([newWs]);
+            setActiveWorkspaceId(newWs.id);
+            localStorage.setItem(STORAGE_KEY, newWs.id);
+          } catch (err) {
+            console.error("Error auto-creating default workspace:", err);
+          } finally {
+            isCreatingDefaultRef.current = false;
+            setLoading(false);
+          }
+          return;
         }
-        return;
-      }
 
-      setLoading(false);
-    });
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Failed to load user workspaces:", err);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, [userLoggedIn, userId, currentUser]);
@@ -102,7 +109,7 @@ export function WorkspaceProvider({ children }) {
     return newWs;
   }, [currentUser]);
 
-  const currentRole = activeWorkspace?.role || "owner";
+  const currentRole = activeWorkspace?.role || null;
   const isOwner = currentRole === "owner";
   const isAccountant = currentRole === "accountant";
 

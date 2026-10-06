@@ -56,7 +56,7 @@ export async function createWorkspace(name, ownerUser) {
 }
 
 // Listen to all workspaces the user is a member of
-export function listenToUserWorkspaces(userId, callback) {
+export function listenToUserWorkspaces(userId, callback, onError) {
   if (!userId) {
     callback([]);
     return () => {};
@@ -91,12 +91,12 @@ export function listenToUserWorkspaces(userId, callback) {
         callback(workspaces);
       } catch (err) {
         console.error("Error fetching user workspaces:", err);
-        callback([]);
+        if (onError) onError(err);
       }
     },
     (err) => {
       console.error("Error in listenToUserWorkspaces:", err);
-      callback([]);
+      if (onError) onError(err);
     }
   );
 }
