@@ -1,3 +1,11 @@
+> ⚠️ **TARGET-STATE DOCUMENT — NOT CURRENT BEHAVIOR.**
+> This document describes the planned B2B (multi-tenant) design. It does not describe what the code does today, and it uses `orgId` / `organization` vocabulary while the code uses `workspace`.
+> **Known divergence:** Real services in `src/firebase/` take `userId`, not `orgId`, and do not stamp audit metadata. The only workspace service is `workspace.js`.
+> For current behavior see [CURRENT_STATE.md](./CURRENT_STATE.md). For the doc map see [INDEX.md](./INDEX.md). Do not implement from this document without explicit phase approval.
+> Last reviewed against code: 2026-10-06
+
+---
+
 # Service Layer API Reference
 
 The service layer in `src/firebase/` abstracts all Firestore mutations, reads, and real-time listeners. Every function enforces tenant boundary invariants by operating strictly within the active `orgId` and stamping audit metadata (`actorUserId` / `createdBy`).

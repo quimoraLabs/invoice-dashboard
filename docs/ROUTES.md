@@ -1,3 +1,11 @@
+> ⚠️ **TARGET-STATE DOCUMENT — NOT CURRENT BEHAVIOR.**
+> This document describes the planned B2B (multi-tenant) design. It does not describe what the code does today, and it uses `orgId` / `organization` vocabulary while the code uses `workspace`.
+> **Known divergence:** Route paths in `src/App.jsx` are the source of truth. Role- and organization-aware guards described here are not implemented; `ProtectedRoute` only checks authentication.
+> For current behavior see [CURRENT_STATE.md](./CURRENT_STATE.md). For the doc map see [INDEX.md](./INDEX.md). Do not implement from this document without explicit phase approval.
+> Last reviewed against code: 2026-10-06
+
+---
+
 # Routing Table & Access Guards Specification
 
 The application routes are centralized in `src/App.jsx` using React Router v7 (`react-router-dom`) with declarative guards implemented in `src/components/ProtectedRoute.jsx`.

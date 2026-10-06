@@ -1,3 +1,11 @@
+> ⚠️ **TARGET-STATE DOCUMENT — NOT CURRENT BEHAVIOR.**
+> This document describes the planned B2B (multi-tenant) design. It does not describe what the code does today, and it uses `orgId` / `organization` vocabulary while the code uses `workspace`.
+> **Known divergence:** The token endpoint mints Firebase custom tokens with `uid` only. `orgId` / `role` claims from the Clerk template are not forwarded to Firebase and are not used by the app or the rules.
+> For current behavior see [CURRENT_STATE.md](./CURRENT_STATE.md). For the doc map see [INDEX.md](./INDEX.md). Do not implement from this document without explicit phase approval.
+> Last reviewed against code: 2026-10-06
+
+---
+
 # Clerk JWT Template & Custom Claims Setup Guide (Phase 1)
 ## Multi-Tenant B2B Identity Architecture for Invoice Dashboard
 

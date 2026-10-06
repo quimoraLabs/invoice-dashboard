@@ -25,8 +25,11 @@ To enable client-side routing with React Router v7 and prevent 404 errors on bro
 
 ```json
 {
+  "env": {
+    "NODE_OPTIONS": "--experimental-require-module"
+  },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/((?!api/).*)", "destination": "/" }
   ]
 }
 ```
@@ -36,6 +39,22 @@ To enable client-side routing with React Router v7 and prevent 404 errors on bro
 * **Output Directory:** `dist`
 * **Install Command:** `npm install`
 
+
+### 2.1 Serverless Function (`api/create-firebase-token.js`)
+
+Exchanges a Clerk session JWT for a Firebase custom token.
+
+- **Endpoint:** `POST /api/create-firebase-token`
+- **Input:** `{ clerkToken: string }` (Clerk JWT)
+- **Output:** `{ firebaseToken: string }` (Firebase custom token)
+- **Purpose:** Bridges Clerk authentication with Firebase Auth so Firestore security rules can evaluate `request.auth.uid`.
+
+**Required server-side environment variables:**
+- `CLERK_SECRET_KEY` — Clerk Secret Key (`sk_test_...` or `sk_live_...`)
+- `FIREBASE_SERVICE_ACCOUNT` — Firebase Admin SDK service account JSON (single line or base64)
+
+> [!CAUTION]
+> Both variables are server-side only. Never prefix with `VITE_`. Never commit to Git.
 ---
 
 ## 3. Environment Variables Configuration

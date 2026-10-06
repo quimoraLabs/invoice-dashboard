@@ -1,3 +1,11 @@
+> ⚠️ **TARGET-STATE DOCUMENT — NOT CURRENT BEHAVIOR.**
+> This document describes the planned B2B (multi-tenant) design. It does not describe what the code does today, and it uses `orgId` / `organization` vocabulary while the code uses `workspace`.
+> **Known divergence:** This is a specification. No `orgId` exists in application code and nothing in this document has been implemented.
+> For current behavior see [CURRENT_STATE.md](./CURRENT_STATE.md). For the doc map see [INDEX.md](./INDEX.md). Do not implement from this document without explicit phase approval.
+> Last reviewed against code: 2026-10-06
+
+---
+
 # B2B Migration Step 1: Ownership Model & Tenant Architecture Specification
 
 ---
