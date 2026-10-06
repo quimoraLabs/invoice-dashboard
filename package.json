@@ -6,6 +6,9 @@
   "engines": {
     "node": "24.x"
   },
+  "overrides": {
+    "jose": "^4.15.9"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -21,7 +24,8 @@
     "@react-pdf/renderer": "^4.5.1",
     "@tailwindcss/vite": "^4.3.3",
     "firebase": "^12.17.0",
-    "firebase-admin": "^14.5.0",
+    "firebase-admin": "^13.0.0",
+    "jose": "^4.15.9",
     "lucide-react": "^1.50.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
