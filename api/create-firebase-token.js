@@ -70,7 +70,8 @@ export default async function handler(req, res) {
       "http://localhost:5173",
       "http://localhost:3000",
       ...configuredParties,
-    ];
+      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+    ].filter(Boolean);
 
     // 1. Verify Clerk JWT using Clerk Backend SDK with authorized parties
     const verifiedClaims = await verifyToken(clerkToken, {
