@@ -51,7 +51,44 @@ The following are protected. Do NOT edit, rename, delete, reformat, or "fix" the
 
 ---
 
-## 6. Stack Invariants
+## 6. Business Rules (GST Compliance)
+This section is authoritative for business logic. AI agents MUST follow these rules.
+
+### 6.1 Invoice Date Policy
+- Invoice date CANNOT be in the future (GST invalid).
+- Invoice date CAN be backdated up to 90 days.
+- Beyond 90 days: BLOCKED.
+- Enforcement: HTML min/max + JS validation in InvoiceForm.jsx.
+
+### 6.2 Duplicate Product Prevention
+- A product appears only ONCE per invoice.
+- Multiple units = increase quantity.
+- Enforcement: dropdown filter + validation in InvoiceForm.jsx.
+
+### 6.3 Invoice Numbering
+- Sequential: INV-001, INV-002...
+- No gaps (GST).
+- Org-scoped.
+- Status: NOT yet implemented (current code uses lexicographic order, breaks at INV-1000).
+
+### 6.4 Tax Rules
+- Default GST: 18% (overridable per product).
+- taxAmount = subtotal * taxRate / 100.
+- Rounding: 2 decimals.
+
+### 6.5 Payment Status
+- Draft, Pending, Paid, Overdue.
+- Paid requires payment_type (UPI, Card, Cash).
+
+### 6.6 Pending Decisions
+- Default due date (30 days?)
+- GSTIN validation
+- Credit notes handling
+- Multi-currency: out of scope for v1.
+
+---
+
+## 7. Stack Invariants
 1. **Tailwind CSS v4:** use `@tailwindcss/vite` and the `@theme` block in `src/index.css`. No `tailwind.config.js`.
 2. **React 19 & React Router v7:** follow current hook rules; routing is centralized in `src/App.jsx`.
 3. **Component isolation:** domain components live in `src/components/{domain}/`; generic UI in `src/components/` or `src/components/modals/`.
@@ -59,7 +96,7 @@ The following are protected. Do NOT edit, rename, delete, reformat, or "fix" the
 
 ---
 
-## 7. Commands
+## 8. Commands
 - Dev server: `npm run dev` (note: `/api` routes need `vercel dev`)
 - Build: `npm run build`
 - Lint: `npm run lint`
@@ -69,7 +106,7 @@ Before marking any task done: `npm run build` and `npm run lint` pass, and mobil
 
 ---
 
-## 8. Directory Map
+## 9. Directory Map
 ```
 ├── PRD.md
 ├── AGENTS.md
@@ -88,21 +125,21 @@ Before marking any task done: `npm run build` and `npm run lint` pass, and mobil
 
 ---
 
-## 9. Editing & Prompting Rules
+## 10. Editing & Prompting Rules
 - Keep edits surgical and localized. Do not remove unrelated comments or logic.
 - Show what changed in the final message.
 - Never reproduce, log, or commit secrets.
 
 ---
 
-## 10. Security & Environment
+## 11. Security & Environment
 - Never expose secret keys in client code.
 - Client config uses `VITE_FIREBASE_*`, `VITE_CLERK_PUBLISHABLE_KEY`, and `VITE_CLOUDINARY_*` only.
 - `.env`, `.env.local`, and service-account JSON files must stay out of git.
 
 ---
 
-## 11. Verification Checklist
+## 12. Verification Checklist
 - [ ] Only the requested phase/task was touched.
 - [ ] No protected auth file was modified (or user approved it explicitly).
 - [ ] `docs/CURRENT_STATE.md` updated if current behavior changed.

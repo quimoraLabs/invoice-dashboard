@@ -57,6 +57,11 @@ body {
   color: var(--foreground);
 }
 
+html {
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
+}
+
 #root {
   min-height: 100vh;
   width: 100%;

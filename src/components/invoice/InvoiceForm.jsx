@@ -115,6 +115,21 @@ function InvoiceForm({
   };
 
   const handleProductSelect = (index, product) => {
+    const isDuplicate = invoice.items.some(
+      (item, i) => i !== index && (
+        item.id === product.id ||
+        (item.title && item.title.toLowerCase() === product.title?.toLowerCase())
+      )
+    );
+    if (isDuplicate) {
+      toast.error("This product is already added to the invoice");
+      const updatedTerms = [...productSearchTerms];
+      updatedTerms[index] = "";
+      setProductSearchTerms(updatedTerms);
+      setActiveProductIndex(null);
+      return;
+    }
+
     const updatedItems = [...invoice.items];
     updatedItems[index] = {
       id: product.id,
@@ -161,6 +176,14 @@ function InvoiceForm({
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
+    const invoiceDate = new Date(invoice.invoice_date);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (invoiceDate > today) {
+      toast.error("Invoice date cannot be in the future");
+      return;
+    }
+
     if (invoice.status === "Paid" && !invoice.payment_type) {
       toast.error("Please select a payment method for paid invoices.");
       return;
@@ -216,12 +239,16 @@ function InvoiceForm({
           <input
             type="date"
             readOnly={isEditMode}
+            max={new Date().toISOString().split("T")[0]}
             value={invoice?.invoice_date ? String(invoice.invoice_date).split("T")[0] : ""}
             onChange={(e) =>
               setInvoice({ ...invoice, invoice_date: e.target.value })
             }
             className="w-full p-2.5 text-sm bg-surface border border-border rounded-xl font-medium text-foreground"
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Past dates allowed for late billing. Future dates not permitted (GST compliance).
+          </p>
         </div>
       </div>
 
@@ -232,7 +259,7 @@ function InvoiceForm({
         {invoice.items.map((item, index) => (
           <div
             key={index}
-            className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-surface rounded-xl p-3"
+            className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-surface rounded-xl p-3 border border-border/80"
             ref={(el) => (productRefs.current[index] = el)}
           >
             <div className="sm:col-span-5 relative">
@@ -251,7 +278,16 @@ function InvoiceForm({
               />
               {activeProductIndex === index && (
                 <div className="absolute z-50 w-full mt-1 bg-surface-elevated border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                  {allProducts.map((p) => (
+                  {allProducts
+                    .filter((p) => {
+                      const isSelectedInOtherRow = invoice.items.some(
+                        (item, i) => i !== index && item.id === p.id
+                      );
+                      const matchesSearch = !productSearchTerms[index] || 
+                        p.title?.toLowerCase().includes(productSearchTerms[index].toLowerCase());
+                      return !isSelectedInOtherRow && matchesSearch;
+                    })
+                    .map((p) => (
                     <div
                       key={p.id}
                       onClick={() => handleProductSelect(index, p)}

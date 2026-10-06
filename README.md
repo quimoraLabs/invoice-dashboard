@@ -6,7 +6,6 @@ A modern, high-performance, full-stack B2B/B2C invoicing and financial analytics
 ![Tailwind](https://img.shields.io/badge/Tailwind-v4-38bdf8?style=for-the-badge&logo=tailwindcss)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite)
 ![Firebase](https://img.shields.io/badge/Firebase-v12-ffca28?style=for-the-badge&logo=firebase)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 ---
 
@@ -23,25 +22,30 @@ The **Invoice Dashboard** is designed for freelancers, agencies, and small busin
 - 🛍️ **Product Catalog Management:** Manage products and services, default pricing, tax rates, and unit types for 1-click line item insertion.
 - 👥 **Customer Directory:** Track client billing details, contact info, tax IDs (GSTIN/EIN), and billing addresses.
 - 🎨 **Tailwind CSS v4 Design Tokens:** Fully responsive, dark-mode ready UI built using standard Tailwind CSS v4 theme variables.
-- 🔐 **Multi-Tenant Data Isolation:** Secure authentication via Firebase Auth (Google Sign-In & Email/Password) with strict `userId` Firestore query isolation.
+- 🔐 **Multi-Tenant Data Isolation:** Secure authentication via Clerk Auth (Google Sign-In & Email/Password) with strict `userId` Firestore query isolation.
 - 🔔 **Instant Feedback:** Sleek toast notifications powered by `react-hot-toast` and interactive popover action menus.
 
 ---
 
-## 📚 Technical Documentation Hub
+## 📚 Documentation
 
-This project is built following strict architectural specs. Detailed specs and design documents live in the [`/docs`](file:///d:/invoice-dashboard/docs/INDEX.md) directory:
+All documentation lives in the /docs folder. Start at [docs/INDEX.md](./docs/INDEX.md) for the doc map.
 
-- 📌 [**PRD (Product Requirement Document)**](file:///d:/invoice-dashboard/PRD.md)
-- 📌 [**AGENTS.md (AI & Developer Directives)**](file:///d:/invoice-dashboard/AGENTS.md)
-- 📄 [**Documentation Master Index**](file:///d:/invoice-dashboard/docs/INDEX.md)
-- 📄 [**Master Context Snippet**](file:///d:/invoice-dashboard/docs/MASTER_CONTEXT.md)
-- 🔴 [**01. Project Vision & Overview**](file:///d:/invoice-dashboard/docs/01_PROJECT_VISION.md)
-- 🔴 [**03. Tech Stack & Architecture**](file:///d:/invoice-dashboard/docs/03_TECH_STACK_ARCHITECTURE.md)
-- 🔴 [**05. Data Model & Firestore Schema**](file:///d:/invoice-dashboard/docs/05_FIRESTORE_SCHEMA.md)
-- 🟡 [**08. Design System & Style Guide**](file:///d:/invoice-dashboard/docs/08_DESIGN_SYSTEM.md)
-- 🟢 [**18. Payment Gateway Integration Spec**](file:///d:/invoice-dashboard/docs/18_PAYMENT_GATEWAY.md)
-- 🔵 [**23. Security & Firestore Rules**](file:///d:/invoice-dashboard/docs/23_SECURITY_FIRESTORE_RULES.md)
+- [PRD.md](./PRD.md) — Product requirements
+- [AGENTS.md](./AGENTS.md) — AI agent and contributor directives
+- [docs/INDEX.md](./docs/INDEX.md) — Documentation index
+- [docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md) — Current behavior (authoritative)
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) — System design
+- [docs/DATABASE.md](./docs/DATABASE.md) — Firestore schema
+- [docs/SERVICE_API.md](./docs/SERVICE_API.md) — Service layer API
+- [docs/ROUTES.md](./docs/ROUTES.md) — Routing
+- [docs/DESIGN.md](./docs/DESIGN.md) — Design system
+- [docs/RESPONSIVE.md](./docs/RESPONSIVE.md) — Responsive strategy
+- [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) — Deployment
+- [docs/TESTING.md](./docs/TESTING.md) — Testing
+- [docs/FEATURES.md](./docs/FEATURES.md) — Feature matrix
+- [docs/CLERK_SETUP.md](./docs/CLERK_SETUP.md) — Clerk setup
+- [docs/B2B_MIGRATION_STEP1.md](./docs/B2B_MIGRATION_STEP1.md) — B2B migration spec
 
 ---
 
@@ -52,7 +56,8 @@ This project is built following strict architectural specs. Detailed specs and d
 | **Frontend Framework** | React 19 (`react`, `react-dom`) | Modern component model & hooks |
 | **Build Tool** | Vite 8 (`@vitejs/plugin-react-swc`) | Ultra-fast HMR and bundle compilation |
 | **Styling** | Tailwind CSS v4 (`@tailwindcss/vite`) | Native CSS theme tokens via `@import "tailwindcss"` |
-| **Backend as a Service** | Firebase v12 | Firebase Authentication & Cloud Firestore Database |
+| **Identity & Auth** | Clerk Auth (`@clerk/react`) | Identity provider, session tokens, JWT delegation |
+| **Backend as a Service** | Firebase v12 | Cloud Firestore database + Firebase Admin (server-side token minting) |
 | **Routing** | React Router v7 (`react-router-dom`) | Declarative client-side routing & route guards |
 | **PDF Generation** | `@react-pdf/renderer` v4 | In-browser client PDF compilation |
 | **Data Visualization** | Recharts v3 | Responsive revenue graphs & pie charts |
@@ -66,7 +71,7 @@ This project is built following strict architectural specs. Detailed specs and d
 invoice-dashboard/
 ├── PRD.md                         # Product Requirement Document
 ├── AGENTS.md                      # AI Agent & Developer Directives
-├── docs/                          # Exhaustive Technical Specifications (34 files)
+├── docs/                          # Technical specs (14 files)
 ├── src/
 │   ├── main.jsx                   # React DOM Entrypoint
 │   ├── App.jsx                    # Router Shell & Toast Provider
@@ -107,15 +112,23 @@ npm install
 ```
 
 ### 3. Environment Variables Setup
-Create a `.env` file in the root directory and add your Firebase Web Configuration keys:
+Create a `.env` file with:
 
 ```env
+# CLIENT-SIDE:
+VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 VITE_FIREBASE_API_KEY=your_firebase_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your_project_id
 VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
+VITE_CLOUDINARY_URL=your_cloudinary_url
+VITE_CLOUDINARY_PRESET=your_cloudinary_preset
+
+# SERVER-SIDE (for Vercel functions — never prefix with VITE_):
+CLERK_SECRET_KEY=sk_test_...
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account",...}
 ```
 
 ### 4. Run Development Server
@@ -137,16 +150,10 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read the [**Contributing Guidelines**](file:///d:/invoice-dashboard/docs/28_CONTRIBUTING.md) before submitting pull requests.
+Contributions are welcome! Please open an issue or PR on GitHub.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feat/amazing-feature`)
 3. Commit your changes following [Conventional Commits](https://www.conventionalcommits.org/) (`git commit -m 'feat: add amazing feature'`)
 4. Push to the branch (`git push origin feat/amazing-feature`)
 5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**. See the `LICENSE` file for details.
