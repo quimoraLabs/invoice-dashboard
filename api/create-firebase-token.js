@@ -71,6 +71,8 @@ export default async function handler(req, res) {
       "http://localhost:3000",
       ...configuredParties,
       process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+      process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : null,
+      process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null,
     ].filter(Boolean);
 
     // 1. Verify Clerk JWT using Clerk Backend SDK with authorized parties
