@@ -184,6 +184,14 @@ function InvoiceForm({
       return;
     }
 
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() - 90);
+    minDate.setHours(0, 0, 0, 0);
+    if (invoiceDate < minDate) {
+      toast.error("Invoice date cannot be more than 90 days in the past");
+      return;
+    }
+
     if (invoice.status === "Paid" && !invoice.payment_type) {
       toast.error("Please select a payment method for paid invoices.");
       return;
@@ -239,6 +247,7 @@ function InvoiceForm({
           <input
             type="date"
             readOnly={isEditMode}
+            min={new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]}
             max={new Date().toISOString().split("T")[0]}
             value={invoice?.invoice_date ? String(invoice.invoice_date).split("T")[0] : ""}
             onChange={(e) =>
@@ -247,7 +256,7 @@ function InvoiceForm({
             className="w-full p-2.5 text-sm bg-surface border border-border rounded-xl font-medium text-foreground"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Past dates allowed for late billing. Future dates not permitted (GST compliance).
+            Allowed: last 90 days to today (GST compliance).
           </p>
         </div>
       </div>
