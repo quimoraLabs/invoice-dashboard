@@ -1,4 +1,4 @@
-import { uploadToCloudinary } from "../firebase/getFileUrl";
+import { uploadMedia } from "../firebase/mediaAdapter";
 import { IoCloudUpload, IoCameraOutline } from "react-icons/io5";
 import { useState, useEffect, useRef } from "react";
 
@@ -26,7 +26,7 @@ export default function ImageUploader({
       const localUrl = URL.createObjectURL(file);
       setPreviewUrl(localUrl);
 
-      const imageUrl = await uploadToCloudinary(file);
+      const { url: imageUrl } = await uploadMedia(file);
       if (onUpload) onUpload(imageUrl, file);
     } catch (err) {
       console.error("Image upload failed:", err);
@@ -61,7 +61,7 @@ export default function ImageUploader({
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-6">
         <div
           onClick={handleAvatarClick}
-          className={`relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 rounded-full border-4 border-surface-elevated bg-surface shadow-md ring-1 ring-border overflow-hidden flex items-center justify-center transition-all ${
+          className={`relative h-24 w-24 sm:h-28 sm:w-28 shrink-0 rounded-full border-4 border-surface-elevated bg-surface shadow-md ring-1 ring-border overflow-hidden flex items-center justify-center transition-all ${
             loading ? "animate-pulse ring-primary" : ""
           } 
           cursor-pointer active:scale-95 sm:cursor-default sm:active:scale-100 group`}
@@ -82,7 +82,7 @@ export default function ImageUploader({
           ) : (
             !loading && (
               <div className="flex flex-col items-center text-muted-foreground transition-colors max-sm:group-hover:text-primary">
-                <IoCameraOutline size={28} className="sm:size-[32px]" />
+                <IoCameraOutline size={28} className="sm:size-8" />
               </div>
             )
           )}

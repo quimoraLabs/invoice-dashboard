@@ -151,3 +151,46 @@ jobs:
 - [ ] Vercel domain added to Firebase Console under **Authentication → Settings → Authorized domains**.
 - [ ] `firestore.rules` deployed to target Firebase project.
 - [ ] Deep links (e.g. `/invoice/view/inv_123`) resolve to `index.html` via `vercel.json` rewrites.
+
+---
+
+## 6. Local Media Storage (Floci)
+
+For local offline development and automated testing, the project supports **Floci** (a lightweight, local S3-compatible service emulator) instead of connecting to Cloudinary.
+
+### 6.1 Starting the Floci Emulator
+Run the Docker Compose service from the project root:
+```bash
+docker compose -f docker-compose.floci.yml up -d
+```
+The emulator listens on port `4566` (`http://localhost:4566`). Persistent data is stored in the local `floci-data/` directory (git-ignored).
+
+### 6.2 Testing & Managing via AWS CLI
+Configure the AWS CLI with dummy credentials and endpoint override:
+```bash
+# List local buckets
+aws --endpoint-url=http://localhost:4566 s3 ls
+
+# Create bucket manually (if needed)
+aws --endpoint-url=http://localhost:4566 s3 mb s3://invoicing-media-local
+
+# Inspect uploaded media items
+aws --endpoint-url=http://localhost:4566 s3 ls s3://invoicing-media-local/
+```
+
+### 6.3 Enabling Floci in the App
+Add to your `.env.local`:
+```bash
+VITE_USE_FLOCI=true
+VITE_FLOCI_ENDPOINT=http://localhost:4566
+VITE_FLOCI_ACCESS_KEY=test
+VITE_FLOCI_SECRET_KEY=test
+VITE_FLOCI_BUCKET=invoicing-media-local
+```
+When `VITE_USE_FLOCI=false` or unset (default in production / Vercel), media uploads automatically use Cloudinary.
+
+### 6.4 Stopping the Floci Emulator
+```bash
+docker compose -f docker-compose.floci.yml down
+```
+

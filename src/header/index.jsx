@@ -31,6 +31,8 @@ const Header = () => {
 
   const dropdownRef = useRef(null);
   const timeoutRef = useRef(null);
+  const mobileDrawerRef = useRef(null);
+  const menuButtonRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDarkMode);
@@ -81,6 +83,36 @@ const Header = () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
+
+  // Auto-close mobile drawer on outside click or page scroll
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const handleOutsideClick = (event) => {
+      if (
+        mobileDrawerRef.current &&
+        !mobileDrawerRef.current.contains(event.target) &&
+        menuButtonRef.current &&
+        !menuButtonRef.current.contains(event.target)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const handleScroll = () => {
+      setIsMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [isMenuOpen]);
 
   return (
     <>
@@ -219,6 +251,7 @@ const Header = () => {
           )}
 
           <button
+            ref={menuButtonRef}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="rounded-full border border-border p-2 text-foreground md:hidden"
           >
@@ -228,7 +261,10 @@ const Header = () => {
 
         {/* Mobile Sidebar Navigation */}
         {isMenuOpen && (
-          <div className="border-t border-border bg-surface px-4 py-4 shadow-lg md:hidden">
+          <div
+            ref={mobileDrawerRef}
+            className="border-t border-border bg-surface px-4 py-4 shadow-lg md:hidden"
+          >
             {userLoggedIn ? (
               <div className="space-y-2">
                 {navItems.map((item) => (
