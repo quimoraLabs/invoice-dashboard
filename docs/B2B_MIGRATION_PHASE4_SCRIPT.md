@@ -282,11 +282,36 @@ async function runMigration() {
 
               chunk.forEach((docSnap) => {
                 const data = docSnap.data();
-                batch.update(docSnap.ref, {
+                const updatePayload = {
                   orgId: orgId,
                   createdBy: userId,
                   createdAt: data.createdAt || data.created_at || admin.firestore.FieldValue.serverTimestamp()
-                });
+                };
+
+                // Step B.5: Convert legacy snake_case fields & string dates to camelCase Timestamps
+                if (collName === "customers") {
+                  if (data.full_name) updatePayload.name = data.full_name;
+                  if (data.phone_number) updatePayload.phone = data.phone_number;
+                } else if (collName === "invoices") {
+                  if (data.invoice_no) updatePayload.invoiceNumber = data.invoice_no;
+                  if (data.tax_percentage !== undefined) updatePayload.taxRate = data.tax_percentage;
+                  if (data.total_price !== undefined) updatePayload.totalAmount = data.total_price;
+                  if (data.payment_type !== undefined) updatePayload.paymentType = data.payment_type;
+                  if (typeof data.invoice_date === "string" || typeof data.invoiceDate === "string") {
+                    const dStr = data.invoice_date || data.invoiceDate;
+                    updatePayload.invoiceDate = admin.firestore.Timestamp.fromDate(new Date(dStr + "T00:00:00.000Z"));
+                  }
+                  if (typeof data.due_date === "string" || typeof data.dueDate === "string") {
+                    const dStr = data.due_date || data.dueDate;
+                    updatePayload.dueDate = admin.firestore.Timestamp.fromDate(new Date(dStr + "T00:00:00.000Z"));
+                  }
+                  if (typeof data.paid_date === "string" || typeof data.paidDate === "string") {
+                    const dStr = data.paid_date || data.paidDate;
+                    updatePayload.paidDate = admin.firestore.Timestamp.fromDate(new Date(dStr + "T00:00:00.000Z"));
+                  }
+                }
+
+                batch.update(docSnap.ref, updatePayload);
               });
 
               await batch.commit();
@@ -304,13 +329,19 @@ async function runMigration() {
         console.log(`  🏢 Reseating business profile: ${userId} -> ${orgId}`);
         if (!isDryRun) {
           const profileData = legacyProfileSnap.data();
-          await db.collection("business_profiles").doc(orgId).set({
+          const reseatedProfile = {
             ...profileData,
             orgId: orgId,
             userId: userId,
             createdBy: userId,
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          });
+          };
+          if (profileData.account_number) reseatedProfile.accountNumber = profileData.account_number;
+          if (profileData.ifsc_code) reseatedProfile.ifscCode = profileData.ifsc_code;
+          if (profileData.bank_name) reseatedProfile.bankName = profileData.bank_name;
+          if (profileData.tax_id) reseatedProfile.taxId = profileData.tax_id;
+
+          await db.collection("business_profiles").doc(orgId).set(reseatedProfile);
           // Verify copy exists before deletion
           const verifySnap = await db.collection("business_profiles").doc(orgId).get();
           if (verifySnap.exists) {

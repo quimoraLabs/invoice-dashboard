@@ -9,6 +9,12 @@ export default defineConfig(({ mode }) => {
   process.env.FIREBASE_SERVICE_ACCOUNT = env.FIREBASE_SERVICE_ACCOUNT
 
   return {
+    resolve: {
+      dedupe: ['react', 'react-dom'],
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react/jsx-runtime', '@clerk/react'],
+    },
     plugins: [
       react(),
       tailwindcss(),

@@ -24,7 +24,7 @@ function IncomeGraph() {
 
       // Group invoices by date and sum their amounts
       const aggregatedDataMap = paidInvoices.reduce((acc, invoice) => {
-        const rawDate = invoice.paid_date || invoice.invoice_date;
+        const rawDate = invoice.paidDate || invoice.paid_date || invoice.invoiceDate || invoice.invoice_date;
         let date = "Unknown";
         if (typeof rawDate === "string") {
           date = rawDate.split("T")[0];
@@ -34,8 +34,8 @@ function IncomeGraph() {
           date = new Date(rawDate.seconds * 1000).toISOString().split("T")[0];
         }
 
-        // Ensure total_price is treated as a number, defaulting to 0 if invalid
-        const amount = Number(invoice?.total_price) || 0;
+        // Ensure totalAmount is treated as a number, defaulting to 0 if invalid
+        const amount = Number(invoice?.totalAmount ?? invoice?.total_price) || 0;
 
         if (!acc[date]) {
           acc[date] = { date: date, amount: 0 };

@@ -52,7 +52,7 @@ export default function UpdateStatusModal({
           >
             <Dialog.Panel className="w-full max-w-md rounded-2xl bg-surface-elevated border border-border p-6 shadow-xl space-y-4">
               <Dialog.Title className="text-lg font-medium text-foreground">
-                Update Status for {invoice?.invoice_no || invoice?.id}
+                Update Status for {invoice?.invoiceNumber || invoice?.invoice_no || invoice?.id}
               </Dialog.Title>
 
               {/* Status Radio / Select */}

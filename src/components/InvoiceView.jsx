@@ -134,16 +134,18 @@ const InvoicePDF = ({ data, companyProfile }) => {
   const companyEmail = companyProfile?.email || data?.billFrom?.email || "billing@invoicedashboard.com";
   const issuerName = companyProfile?.ownerName || data?.billFrom?.ownerName || companyName;
 
-  const formattedDate = data?.invoice_date
-    ? new Date(data.invoice_date).toLocaleDateString("en-IN", {
+  const rawDate = data?.invoiceDate || data?.invoice_date;
+  const formattedDate = rawDate
+    ? new Date(rawDate?.toDate ? rawDate.toDate() : rawDate).toLocaleDateString("en-IN", {
         year: "numeric",
         month: "short",
         day: "numeric",
       })
     : "N/A";
 
-  const formattedPaidDate = data?.paid_date
-    ? new Date(data.paid_date).toLocaleDateString("en-IN", {
+  const rawPaidDate = data?.paidDate || data?.paid_date;
+  const formattedPaidDate = rawPaidDate
+    ? new Date(rawPaidDate?.toDate ? rawPaidDate.toDate() : rawPaidDate).toLocaleDateString("en-IN", {
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -157,14 +159,14 @@ const InvoicePDF = ({ data, companyProfile }) => {
         <View style={styles.headerContainer}>
           <View>
             <Text style={styles.title}>INVOICE</Text>
-            <Text style={styles.metaText}>#{data?.invoice_no || "INV-000"}</Text>
+            <Text style={styles.metaText}>#{data?.invoiceNumber || data?.invoice_no || "INV-000"}</Text>
           </View>
           <View style={{ alignItems: "flex-end" }}>
             <Text style={{ fontSize: 10, fontWeight: "bold", color: "#1e293b" }}>
               Status: {data?.status || "Pending"}
             </Text>
-            {data?.payment_type && (
-              <Text style={styles.metaText}>Payment Method: {data.payment_type}</Text>
+            {(data?.paymentType || data?.payment_type) && (
+              <Text style={styles.metaText}>Payment Method: {data.paymentType || data.payment_type}</Text>
             )}
           </View>
         </View>
@@ -192,11 +194,11 @@ const InvoicePDF = ({ data, companyProfile }) => {
 
         {/* Info Strip */}
         <View style={styles.infoStrip}>
-          <Text style={styles.infoCell}>Invoice #: {data?.invoice_no}</Text>
+          <Text style={styles.infoCell}>Invoice #: {data?.invoiceNumber || data?.invoice_no}</Text>
           <Text style={styles.infoCell}>Date: {formattedDate}</Text>
           <Text style={styles.infoCell}>Paid Date: {formattedPaidDate}</Text>
           <Text style={styles.infoCell}>
-            Total: ₹{Number(data?.total_price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            Total: ₹{Number(data?.totalAmount ?? data?.total_price ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
           </Text>
         </View>
 
@@ -231,7 +233,7 @@ const InvoicePDF = ({ data, companyProfile }) => {
               </TD>
               <TD style={[styles.td, { width: "15%", border: 0 }]}>
                 <Text style={styles.totalRowAmount}>
-                  ₹{Number(data?.total_price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  ₹{Number(data?.totalAmount ?? data?.total_price ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </Text>
               </TD>
             </TR>

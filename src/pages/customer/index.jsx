@@ -47,9 +47,9 @@ export default function CustomerDashboard() {
     const query = searchTerm.toLowerCase();
     if (!query) return true;
     return [
-      customer.full_name,
+      customer.name || customer.full_name,
       customer.email,
-      customer.phone_number,
+      customer.phone || customer.phone_number,
       customer.address,
     ]
       .filter(Boolean)
@@ -59,28 +59,24 @@ export default function CustomerDashboard() {
   // Sort the filtered array
   const sortedCustomers = [...filteredCustomers].sort((a, b) => {
     if (sortBy === "name-asc") {
-      return (a.full_name || "").localeCompare(b.full_name || "");
+      return (a.name || a.full_name || "").localeCompare(b.name || b.full_name || "");
     }
     if (sortBy === "name-desc") {
-      return (b.full_name || "").localeCompare(a.full_name || "");
+      return (b.name || b.full_name || "").localeCompare(a.name || a.full_name || "");
     }
 
     if (sortBy === "newest") {
-      const timeA = a.created_at?.toDate
-        ? a.created_at.toDate().getTime()
-        : a.created_at?.seconds || 0;
-      const timeB = b.created_at?.toDate
-        ? b.created_at.toDate().getTime()
-        : b.created_at?.seconds || 0;
+      const tA = a.createdAt || a.created_at;
+      const tB = b.createdAt || b.created_at;
+      const timeA = tA?.toDate ? tA.toDate().getTime() : (tA?.seconds ? tA.seconds * 1000 : 0);
+      const timeB = tB?.toDate ? tB.toDate().getTime() : (tB?.seconds ? tB.seconds * 1000 : 0);
       return timeB - timeA;
     }
     if (sortBy === "oldest") {
-      const timeA = a.created_at?.toDate
-        ? a.created_at.toDate().getTime()
-        : a.created_at?.seconds || 0;
-      const timeB = b.created_at?.toDate
-        ? b.created_at.toDate().getTime()
-        : b.created_at?.seconds || 0;
+      const tA = a.createdAt || a.created_at;
+      const tB = b.createdAt || b.created_at;
+      const timeA = tA?.toDate ? tA.toDate().getTime() : (tA?.seconds ? tA.seconds * 1000 : 0);
+      const timeB = tB?.toDate ? tB.toDate().getTime() : (tB?.seconds ? tB.seconds * 1000 : 0);
       return timeA - timeB;
     }
     return 0;

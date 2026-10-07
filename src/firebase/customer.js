@@ -10,7 +10,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { db, auth } from "./firebaseConfig";
+import { db } from "./firebaseConfig";
 
 // Firestore collection reference
 const customersCollection = collection(db, "customers");
@@ -24,15 +24,16 @@ async function createCustomer(customer, setLoading, userId) {
       throw new Error("User authentication required to create customer.");
     }
     const customerPayload = {
-      full_name: (customer.full_name || customer.name || "").trim(),
+      name: (customer.name || customer.full_name || "").trim(),
       email: (customer.email || "").trim(),
-      phone_number: String(customer.phone_number || customer.phone || "").trim(),
+      phone: String(customer.phone || customer.phone_number || "").trim(),
       address: (customer.address || "").trim(),
       company: (customer.company || "").trim(),
       gstin: (customer.gstin || "").trim(),
       profile: customer.profile || "",
       userId: targetUid,
-      created_at: serverTimestamp(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
 
     const docRef = await addDoc(customersCollection, customerPayload);
@@ -87,14 +88,15 @@ async function updateCustomer(id, updatedData, setLoading, userId) {
       }
     }
     const cleanData = { ...updatedData };
-    if (cleanData.full_name || cleanData.name) {
-      cleanData.full_name = (cleanData.full_name || cleanData.name).trim();
+    if (cleanData.name || cleanData.full_name) {
+      cleanData.name = (cleanData.name || cleanData.full_name).trim();
     }
-    if (cleanData.phone_number || cleanData.phone) {
-      cleanData.phone_number = String(cleanData.phone_number || cleanData.phone).trim();
+    if (cleanData.phone || cleanData.phone_number) {
+      cleanData.phone = String(cleanData.phone || cleanData.phone_number).trim();
     }
-    delete cleanData.name;
-    delete cleanData.phone;
+    delete cleanData.full_name;
+    delete cleanData.phone_number;
+    cleanData.updatedAt = serverTimestamp();
 
     await updateDoc(docRef, cleanData);
   } catch (error) {

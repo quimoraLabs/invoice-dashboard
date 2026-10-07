@@ -53,8 +53,8 @@ Stores organization metadata, subscription plan tier, and workspace ownership.
 | `plan` | `string` | Subscription tier: `"free"`, `"starter"`, `"pro"`, `"enterprise"` |
 | `status` | `string` | Status: `"active"`, `"suspended"`, `"trial"` |
 | `trialEndsAt` | `timestamp` | Timestamp when free trial period expires |
-| `created_at` | `timestamp` | Server creation timestamp (`serverTimestamp()`) |
-| `updated_at` | `timestamp` | Server last modified timestamp |
+| `createdAt` | `timestamp` | Server creation timestamp (`serverTimestamp()`) |
+| `updatedAt` | `timestamp` | Server last modified timestamp |
 
 ---
 
@@ -74,7 +74,7 @@ Stores team membership, deterministic composite IDs, and operational roles.
 | `role` | `string` | Member permission level: `"owner"`, `"admin"`, `"accountant"`, `"viewer"` |
 | `status` | `string` | Membership state: `"pending"`, `"active"`, `"suspended"` |
 | `joinedAt` | `timestamp` | Server timestamp of joining |
-| `updated_at` | `timestamp` | Server timestamp of last role/status mutation |
+| `updatedAt` | `timestamp` | Server timestamp of last role/status mutation |
 
 ---
 
@@ -96,8 +96,8 @@ Stores the organization's legal, tax, and branding information.
 | `logoUrl` | `string` | Cloud Storage URL for company logo |
 | `signatureUrl` | `string` | Cloud Storage URL for authorized sign-off |
 | `website` | `string` | Corporate website URL |
-| `created_at` | `timestamp` | Server creation timestamp |
-| `updated_at` | `timestamp` | Server update timestamp |
+| `createdAt` | `timestamp` | Server creation timestamp |
+| `updatedAt` | `timestamp` | Server update timestamp |
 
 ---
 
@@ -124,8 +124,8 @@ Stores organization-scoped ledger entries and issued invoices.
 | `taxAmount` | `number` | Computed tax amount |
 | `totalAmount` | `number` | Final computed invoice total |
 | `notes` | `string` | Notes / payment terms |
-| `created_at` | `timestamp` | Server creation timestamp |
-| `updated_at` | `timestamp` | Server update timestamp |
+| `createdAt` | `timestamp` | Server creation timestamp |
+| `updatedAt` | `timestamp` | Server update timestamp |
 
 ---
 
@@ -145,8 +145,8 @@ Stores client directory records for an organization.
 | `address` | `string` | Billing and shipping address |
 | `gstin` | `string` | Tax registration number |
 | `profile` | `string` | Avatar/logo URL (optional) |
-| `created_at` | `timestamp` | Server creation timestamp |
-| `updated_at` | `timestamp` | Server update timestamp |
+| `createdAt` | `timestamp` | Server creation timestamp |
+| `updatedAt` | `timestamp` | Server update timestamp |
 
 ---
 
@@ -164,8 +164,8 @@ Stores item and service catalog entries for an organization.
 | `price` | `number` | Unit rate in base currency |
 | `category` | `string` | Classification category (e.g. `"Development"`) |
 | `imageUrl` | `string` | Cloud Storage or asset URL |
-| `created_at` | `timestamp` | Server creation timestamp (Standard snake_case) |
-| `updated_at` | `timestamp` | Server update timestamp |
+| `createdAt` | `timestamp` | Server creation timestamp (Normalized camelCase) |
+| `updatedAt` | `timestamp` | Server update timestamp |
 
 ---
 
@@ -174,7 +174,7 @@ Stores item and service catalog entries for an organization.
 All date fields in domain collections are stored as Firestore Timestamp (UTC).
 
 - `invoiceDate`, `dueDate` (`invoices`)
-- `created_at`, `updated_at` (all collections)
+- `createdAt`, `updatedAt` (all collections)
 
 Rationale:
 - Timezone-safe (stored in UTC, displayed in local time)
@@ -204,7 +204,7 @@ flowchart TD
     F --> G
     G --> H[Batch Update customers where userId == user.id && orgId == null]
     H --> I[Batch Update products where userId == user.id && orgId == null]
-    I --> J[Step B.5: Date Field Migration String to Timestamp]
+    I --> J[Step B.5: Date & Field Migration to camelCase Timestamps]
     J --> K[Reseat business_profiles/userId to business_profiles/orgId]
     K --> L[Log Results & Output Audit Trail]
 ```
@@ -214,23 +214,34 @@ flowchart TD
 2. **Idempotent Organization Check:**
    - Query `organizations` where `ownerId == user.id`.
    - If found, retrieve `orgId`.
-   - If not found, create new `organizations` document (`name: "${user.firstName || 'My'}'s Business"`, `ownerId: user.id`, `plan: "free"`, `status: "active"`, `created_at: now`).
+   - If not found, create new `organizations` document (`name: "${user.firstName || 'My'}'s Business"`, `ownerId: user.id`, `plan: "free"`, `status: "active"`, `createdAt: now`).
    - Ensure `organizationMembers/${orgId}_${user.id}` exists with `role: "owner"`, `status: "active"`, and `joinedAt: now`.
 3. **Batch Collection Stamping:**
    - For collections `invoices`, `customers`, and `products`:
      - Query in batches of 400 documents where `userId == user.id`.
-     - Filter documents missing `orgId` or having legacy `created_at`.
-     - Update fields: `orgId: defaultOrgId`, `createdBy: user.id`, `created_at: existing.created_at || now`.
+     - Filter documents missing `orgId` or having legacy timestamp formats.
+     - Update fields: `orgId: defaultOrgId`, `createdBy: user.id`, `createdAt: existing.createdAt || existing.created_at || now`.
      - Commit batch write.
-4. **Step B.5: Date Field Migration:**
+4. **Step B.5: Date & Field Migration:**
    - For each domain document (`invoices`, `customers`, `products`):
      - Convert legacy string date fields to Firestore Timestamp:
        * `invoices.invoiceDate` (string `"YYYY-MM-DD"`) → Timestamp
        * `invoices.dueDate` (string `"YYYY-MM-DD"`) → Timestamp
-       * `customers.created_at` (string) → Timestamp
-       * `products.created_at` (string) → Timestamp
-       * `business_profiles.updatedAt` (camelCase legacy) → `updated_at` (snake_case)
-     - Use `admin.firestore.Timestamp.fromDate(new Date(value + 'T00:00:00.000Z'))` to interpret legacy strings as UTC midnight.
+       * `customers.createdAt` / `customers.created_at` (string or timestamp) → `createdAt` Timestamp
+       * `products.createdAt` / `products.created_at` (string or timestamp) → `createdAt` Timestamp
+       * `business_profiles.updatedAt` / `business_profiles.updated_at` → `updatedAt` Timestamp
+     - Convert legacy field names to camelCase:
+       * `customers.full_name` → `name`
+       * `customers.phone_number` → `phone`
+       * `invoices.invoice_no` → `invoiceNumber`
+       * `invoices.tax_percentage` → `taxRate`
+       * `invoices.total_price` → `totalAmount`
+       * `invoices.payment_type` → `paymentType`
+       * `business_profiles.account_number` → `accountNumber`
+       * `business_profiles.ifsc_code` → `ifscCode`
+       * `business_profiles.bank_name` → `bankName`
+       * `business_profiles.tax_id` → `taxId`
+     - Use `admin.firestore.Timestamp.fromDate(new Date(value + 'T00:00:00.000Z'))` to interpret legacy date strings as UTC midnight.
      - Idempotent check: only convert if the field is currently a string (`typeof === 'string'`).
 5. **Business Profile Reseating:**
    - Check if document `business_profiles/${user.id}` exists.

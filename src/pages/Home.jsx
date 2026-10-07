@@ -34,7 +34,7 @@ function Home() {
         (invoice) => invoice.status?.toLowerCase() === "pending"
       );
       const revenue = paidInvoices.reduce(
-        (sum, invoice) => sum + Number(invoice.total_price || 0),
+        (sum, invoice) => sum + Number(invoice.totalAmount ?? invoice.total_price ?? 0),
         0
       );
 
@@ -97,7 +97,7 @@ function Home() {
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Sleek, Compact Welcome Banner */}
-        <section className="overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-primary to-violet-700 p-5 text-white shadow-sm">
+        <section className="overflow-hidden rounded-2xl border border-border bg-linear-to-r from-primary to-violet-700 p-5 text-white shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-xl font-bold tracking-tight sm:text-2xl text-white">

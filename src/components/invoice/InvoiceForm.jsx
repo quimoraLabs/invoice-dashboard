@@ -79,16 +79,14 @@ function InvoiceForm({
   ];
 
   const handleCustomerSelect = (customer) => {
-    const custName = customer.full_name || customer.name || "";
-    const custPhone = customer.phone_number || customer.phone || customer.phone_no || "";
+    const custName = customer.name || customer.full_name || "";
+    const custPhone = customer.phone || customer.phone_number || "";
     setInvoice((prev) => ({
       ...prev,
       client: {
         name: custName,
-        full_name: custName,
         email: customer.email || "",
         phone: custPhone,
-        phone_number: custPhone,
         address: customer.address || "",
         id: customer.id,
       },
@@ -108,7 +106,7 @@ function InvoiceForm({
     }
     const filtered = allCustomers.filter(
       (c) =>
-        (c.full_name || c.name)?.toLowerCase().includes(value.toLowerCase()) ||
+        (c.name || c.full_name)?.toLowerCase().includes(value.toLowerCase()) ||
         c.email?.toLowerCase().includes(value.toLowerCase()),
     );
     setFilteredCustomers(filtered);
@@ -171,12 +169,14 @@ function InvoiceForm({
     (total, item) => total + item.quantity * item.price,
     0,
   );
-  const taxAmount = (subtotal * (Number(invoice.tax_percentage) || 0)) / 100;
-  const totalPrice = subtotal + taxAmount;
+  const taxRate = Number(invoice.taxRate ?? invoice.tax_percentage ?? 18);
+  const taxAmount = (subtotal * taxRate) / 100;
+  const totalAmount = subtotal + taxAmount;
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    const invoiceDate = new Date(invoice.invoice_date);
+    const dateVal = invoice.invoiceDate || invoice.invoice_date;
+    const invoiceDate = new Date(dateVal);
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     if (invoiceDate > today) {
@@ -192,17 +192,21 @@ function InvoiceForm({
       return;
     }
 
-    if (invoice.status === "Paid" && !invoice.payment_type) {
+    if (invoice.status === "Paid" && !(invoice.paymentType || invoice.payment_type)) {
       toast.error("Please select a payment method for paid invoices.");
       return;
     }
 
     onSubmit({
       ...invoice,
+      invoiceNumber: invoice.invoiceNumber || invoice.invoice_no,
+      invoiceDate: dateVal,
+      taxRate: taxRate,
       subtotal,
-      tax_amount: taxAmount.toFixed(2),
-      total_price: totalPrice.toFixed(2),
-      paid_date: invoice.status === "Paid" ? new Date().toISOString() : null
+      taxAmount: Number(taxAmount.toFixed(2)),
+      totalAmount: Number(totalAmount.toFixed(2)),
+      paidDate: invoice.status === "Paid" ? (invoice.paidDate || new Date().toISOString()) : null,
+      paymentType: invoice.paymentType || invoice.payment_type || null,
     });
   };
 
@@ -232,7 +236,7 @@ function InvoiceForm({
                   className="px-4 py-2 hover:bg-surface cursor-pointer text-sm"
                 >
                   <div className="font-semibold text-foreground">
-                    {c.full_name}
+                    {c.name || c.full_name}
                   </div>
                 </div>
               ))}
@@ -249,10 +253,10 @@ function InvoiceForm({
             readOnly={isEditMode}
             min={new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]}
             max={new Date().toISOString().split("T")[0]}
-            value={invoice?.invoice_date ? String(invoice.invoice_date).split("T")[0] : ""}
+            value={(invoice?.invoiceDate || invoice?.invoice_date) ? String(invoice.invoiceDate || invoice.invoice_date).split("T")[0] : ""}
             onClick={(e) => e.target.showPicker?.()}
             onChange={(e) =>
-              setInvoice({ ...invoice, invoice_date: e.target.value })
+              setInvoice({ ...invoice, invoiceDate: e.target.value, invoice_date: e.target.value })
             }
             className="w-full p-2.5 text-sm bg-surface border border-border rounded-xl font-medium text-foreground cursor-pointer"
           />
@@ -374,8 +378,8 @@ function InvoiceForm({
             </label>
             <CustomDropdown
               readOnly={isEditMode}
-              value={invoice.payment_type}
-              onChange={(val) => setInvoice({ ...invoice, payment_type: val })}
+              value={invoice.paymentType || invoice.payment_type || ""}
+              onChange={(val) => setInvoice({ ...invoice, paymentType: val, payment_type: val })}
               options={paymentOptions}
               labelPrefix="Type:"
             />
@@ -393,7 +397,7 @@ function InvoiceForm({
           </div>
           <div className="flex justify-between items-center">
             <span>Tax Config (%):</span>
-            <p className="text-foreground">{invoice.tax_percentage}%</p>
+            <p className="text-foreground">{invoice.taxRate ?? invoice.tax_percentage ?? 18}%</p>
           </div>
           <div className="flex justify-between">
             <span>Tax Calculated:</span>
@@ -405,7 +409,7 @@ function InvoiceForm({
           <div className="flex justify-between text-lg font-bold text-foreground">
             <span>Total:</span>
             <span className="text-primary">
-              ₹{totalPrice.toFixed(2)}
+              ₹{totalAmount.toFixed(2)}
             </span>
           </div>
         </div>

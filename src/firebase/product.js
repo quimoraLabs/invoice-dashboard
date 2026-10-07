@@ -10,7 +10,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { db, auth } from "./firebaseConfig";
+import { db } from "./firebaseConfig";
 
 // Firestore collection reference
 const productsCollection = collection(db, "products");
@@ -26,7 +26,8 @@ async function createProduct(product, setLoading, userId) {
     const productPayload = {
       ...product,
       userId: targetUid,
-      created_at: serverTimestamp(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
 
     const docRef = await addDoc(productsCollection, productPayload);
@@ -80,7 +81,7 @@ async function updateProduct(id, updatedData, setLoading, userId) {
         throw new Error("Unauthorized: You do not have permission to update this product.");
       }
     }
-    await updateDoc(docRef, updatedData);
+    await updateDoc(docRef, { ...updatedData, updatedAt: serverTimestamp() });
   } catch (error) {
     console.error("Error updating product:", error);
     throw error;

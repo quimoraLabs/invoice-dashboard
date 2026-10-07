@@ -17,11 +17,11 @@ The service layer in `src/firebase/` abstracts all Firestore mutations, reads, a
 | Function | Parameters | Return Type | Description |
 | :--- | :--- | :--- | :--- |
 | `getNextInvoiceNumber` | `orgId: string` | `Promise<string>` | Queries organization's latest invoice and returns the next sequential number (e.g. `INV-004`). Defaults to `INV-001`. |
-| `createInvoice` | `invoice: object, orgId: string, actorUserId: string, setLoading?: (boolean) => void` | `Promise<DocumentReference>` | Stamps `orgId`, `createdBy: actorUserId`, `userId: actorUserId`, timestamps record via `serverTimestamp()`, sets `paid_date` if Paid, and persists to Firestore. |
+| `createInvoice` | `invoice: object, orgId: string, actorUserId: string, setLoading?: (boolean) => void` | `Promise<DocumentReference>` | Stamps `orgId`, `createdBy: actorUserId`, `userId: actorUserId`, timestamps record via `serverTimestamp()`, sets `paidDate` if Paid, and persists to Firestore. |
 | `listenToInvoices` | `orgId: string, callback: (invoices: Array<object>) => void` | `() => void` (Unsubscribe) | Real-time listener streaming all invoices matching `where("orgId", "==", orgId)`. Unsubscribes on cleanup. |
 | `getInvoiceById` | `invoiceId: string, orgId: string` | `Promise<object \| null>` | Retrieves single invoice by ID. Throws error if `orgId` doesn't match the record's tenant key. |
 | `updateInvoice` | `invoiceId: string, invoiceData: object, orgId: string, actorUserId: string, setLoading?: (boolean) => void` | `Promise<void>` | Verifies organization tenant boundary, removes transient `id` key, and updates specified fields in the document. |
-| `updateInvoiceStatusAndDueDate` | `invoiceId: string, status?: string, method?: string, orgId: string, actorUserId: string, setLoading?: (boolean) => void` | `Promise<void>` | Sets invoice status (`Paid`, `Pending`, `Overdue`). If Paid, records `payment_type` and current timestamp; otherwise resets them. |
+| `updateInvoiceStatusAndDueDate` | `invoiceId: string, status?: string, method?: string, orgId: string, actorUserId: string, setLoading?: (boolean) => void` | `Promise<void>` | Sets invoice status (`Paid`, `Pending`, `Overdue`). If Paid, records `paymentType` and current timestamp; otherwise resets them. |
 | `deleteInvoice` | `invoiceId: string, orgId: string, setLoading?: (boolean) => void` | `Promise<void>` | Confirms organization ownership before permanently deleting the invoice document. |
 
 ### Error & Loading Conventions
@@ -35,7 +35,7 @@ The service layer in `src/firebase/` abstracts all Firestore mutations, reads, a
 
 | Function | Parameters | Return Type | Description |
 | :--- | :--- | :--- | :--- |
-| `createCustomer` | `customer: object, orgId: string, actorUserId: string, setLoading?: (boolean) => void` | `Promise<DocumentReference>` | Sanitizes `full_name`, `email`, `phone_number`, stamps `orgId`, `createdBy: actorUserId`, `userId: actorUserId`, `createdAt: serverTimestamp()`, and creates record. |
+| `createCustomer` | `customer: object, orgId: string, actorUserId: string, setLoading?: (boolean) => void` | `Promise<DocumentReference>` | Sanitizes `name`, `email`, `phone`, stamps `orgId`, `createdBy: actorUserId`, `userId: actorUserId`, `createdAt: serverTimestamp()`, and creates record. |
 | `listenToCustomers` | `orgId: string, callback: (customers: Array<object>) => void` | `() => void` (Unsubscribe) | Real-time listener returning array of customers filtered strictly by `where("orgId", "==", orgId)`. |
 | `updateCustomer` | `customerId: string, customerData: object, orgId: string, actorUserId: string, setLoading?: (boolean) => void` | `Promise<void>` | Validates organization tenant boundary, trims strings, strips legacy aliases (`name`, `phone`), and updates document. |
 | `deleteCustomer` | `customerId: string, orgId: string, setLoading?: (boolean) => void` | `Promise<void>` | Validates organization ownership against target document and deletes the customer record. |

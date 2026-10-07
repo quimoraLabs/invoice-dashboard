@@ -13,6 +13,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "migrate:b2b": "node scripts/migrate-to-b2b.js",
+    "seed": "node --env-file=.env.local scripts/seed.js",
+    "clear:all": "node --env-file=.env.local scripts/clear-all.js",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -23,8 +26,10 @@
     "@icons-pack/react-simple-icons": "^13.15.1",
     "@react-pdf/renderer": "^4.5.1",
     "@tailwindcss/vite": "^4.3.3",
+    "dotenv": "^18.0.6",
     "firebase": "^12.17.0",
     "firebase-admin": "^13.0.0",
+    "groq-sdk": "^1.6.0",
     "jose": "^4.15.9",
     "lucide-react": "^1.50.0",
     "react": "^19.2.8",

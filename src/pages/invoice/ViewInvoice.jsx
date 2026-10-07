@@ -75,7 +75,7 @@ export default function InvoiceDetailPage() {
 
   if (loading || isDeleting) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-100">
         <div className="flex flex-col items-center gap-2">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="text-sm font-medium text-muted-foreground">
@@ -88,7 +88,7 @@ export default function InvoiceDetailPage() {
 
   if (!invoice && !isDeletingRef.current) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+      <div className="flex flex-col items-center justify-center min-h-100 space-y-4">
         <div className="text-foreground font-bold text-lg">
           Invoice not found or deleted
         </div>
@@ -102,7 +102,7 @@ export default function InvoiceDetailPage() {
     );
   }
 
-  const totalAmount = invoice?.total_price || 0;
+  const totalAmount = invoice?.totalAmount ?? invoice?.total_price ?? 0;
   const subtotal = totalAmount / 1.18;
   const taxAmount = totalAmount - subtotal;
 
@@ -202,7 +202,7 @@ export default function InvoiceDetailPage() {
             </div>
             <div className="flex flex-wrap items-baseline gap-3">
               <h1 className="text-2xl font-black text-foreground">
-                {invoice?.invoice_no}
+                {invoice?.invoiceNumber || invoice?.invoice_no}
               </h1>
               <span className="text-xl font-bold text-muted-foreground">/</span>
               <div className="text-xl font-extrabold text-primary tabular-nums">
@@ -217,37 +217,37 @@ export default function InvoiceDetailPage() {
             >
               {invoice?.status}
             </span>
-            {invoice?.payment_type && (
+            {(invoice?.paymentType || invoice?.payment_type) && (
               <span className="ml-2 text-xs text-muted-foreground font-medium">
-                via {invoice.payment_type}
+                via {invoice.paymentType || invoice.payment_type}
               </span>
             )}
           </div>
           <div className="sm:text-right text-xs sm:text-sm text-muted-foreground space-y-1 w-full sm:w-auto">
             <div>
               <span className="font-semibold text-foreground">Issue Date:</span>{" "}
-              {dateFormat(invoice?.invoice_date)
-                ? dateFormat(invoice.invoice_date).split(",")[0]
-                : invoice?.invoice_date || "N/A"}
+              {dateFormat(invoice?.invoiceDate || invoice?.invoice_date)
+                ? dateFormat(invoice.invoiceDate || invoice.invoice_date).split(",")[0]
+                : (invoice?.invoiceDate || invoice?.invoice_date || "N/A")}
             </div>
-            {invoice?.status === "Paid" && invoice?.paid_date ? (
+            {invoice?.status === "Paid" && (invoice?.paidDate || invoice?.paid_date) ? (
               <div>
                 <span className="font-semibold text-success">Paid Date:</span>{" "}
-                {dateFormat(invoice.paid_date)
-                  ? dateFormat(invoice.paid_date).split(",")[0]
-                  : invoice.paid_date}
+                {dateFormat(invoice.paidDate || invoice.paid_date)
+                  ? dateFormat(invoice.paidDate || invoice.paid_date).split(",")[0]
+                  : (invoice.paidDate || invoice.paid_date)}
               </div>
             ) : (
               <div>
                 <span className="font-semibold text-warning">
                   {invoice?.status === "Unpaid" ? "Due Date:" : "Expected Date:"}
                 </span>{" "}
-                {dateFormat(invoice?.due_date)
-                  ? dateFormat(invoice.due_date).split(",")[0]
-                  : invoice?.due_date ||
-                    (dateFormat(invoice?.invoice_date)
-                      ? dateFormat(invoice.invoice_date).split(",")[0]
-                      : "N/A")}
+                {dateFormat(invoice?.dueDate || invoice?.due_date)
+                  ? dateFormat(invoice.dueDate || invoice.due_date).split(",")[0]
+                  : (invoice?.dueDate || invoice?.due_date ||
+                    (dateFormat(invoice?.invoiceDate || invoice?.invoice_date)
+                      ? dateFormat(invoice.invoiceDate || invoice.invoice_date).split(",")[0]
+                      : "N/A"))}
               </div>
             )}
           </div>
@@ -275,7 +275,7 @@ export default function InvoiceDetailPage() {
               Billed To (Client)
             </h3>
             <div className="font-extrabold text-foreground text-base capitalize">
-              {invoice?.client?.name || invoice?.client?.full_name || "N/A"}
+              {invoice?.client?.name || "N/A"}
             </div>
             {invoice?.client?.address && (
               <p className="text-muted-foreground leading-relaxed max-w-md md:ml-auto">
@@ -284,10 +284,9 @@ export default function InvoiceDetailPage() {
             )}
             <div className="text-muted-foreground text-xs pt-1">
               {invoice?.client?.email}{" "}
-              {invoice?.client?.email &&
-                (invoice?.client?.phone || invoice?.client?.phone_number) &&
+              {invoice?.client?.email && invoice?.client?.phone &&
                 "•"}{" "}
-              {invoice?.client?.phone || invoice?.client?.phone_number}
+              {invoice?.client?.phone}
             </div>
           </div>
         </div>

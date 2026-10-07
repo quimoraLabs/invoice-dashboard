@@ -12,8 +12,9 @@ import {
   getDocs,
   getDoc,
   serverTimestamp,
+  Timestamp,
 } from "firebase/firestore";
-import { db, auth } from "./firebaseConfig";
+import { db } from "./firebaseConfig";
 import { formatCurrentDate } from "../components/helper";
 
 // Firestore collection reference
@@ -24,13 +25,13 @@ async function getNextInvoiceNumber(userId) {
   const targetUid = userId;
   try {
     const q = targetUid
-      ? query(invoiceCollection, where("userId", "==", targetUid), orderBy("invoice_no", "desc"), limit(1))
-      : query(invoiceCollection, orderBy("invoice_no", "desc"), limit(1));
+      ? query(invoiceCollection, where("userId", "==", targetUid), orderBy("invoiceNumber", "desc"), limit(1))
+      : query(invoiceCollection, orderBy("invoiceNumber", "desc"), limit(1));
     const snapshot = await getDocs(q);
 
     if (!snapshot.empty) {
       const lastInvoice = snapshot.docs[0].data();
-      const lastNumber = parseInt(lastInvoice.invoice_no?.replace("INV-", "") || "0", 10);
+      const lastNumber = parseInt((lastInvoice.invoiceNumber || lastInvoice.invoice_no)?.replace("INV-", "") || "0", 10);
       return `INV-${String(lastNumber + 1).padStart(3, "0")}`;
     }
   } catch (error) {
@@ -51,12 +52,34 @@ async function createInvoice(invoice, setLoading, userId) {
     const invoicePayload = {
       ...invoice,
       userId: targetUid,
-      created_at: serverTimestamp(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
+    delete invoicePayload.created_at;
+    delete invoicePayload.updated_at;
 
-    if (invoicePayload.status === "Paid" && invoicePayload.payment_type !== "") {
-      invoicePayload.paid_date = invoicePayload.invoice_date || formatCurrentDate();
+    // Normalize date fields to Firestore Timestamp objects
+    const rawInvoiceDate = invoicePayload.invoiceDate || invoicePayload.invoice_date || formatCurrentDate();
+    invoicePayload.invoiceDate = rawInvoiceDate?.toDate ? rawInvoiceDate : Timestamp.fromDate(new Date(rawInvoiceDate));
+    delete invoicePayload.invoice_date;
+
+    if (invoicePayload.dueDate || invoicePayload.due_date) {
+      const rawDueDate = invoicePayload.dueDate || invoicePayload.due_date;
+      invoicePayload.dueDate = rawDueDate?.toDate ? rawDueDate : Timestamp.fromDate(new Date(rawDueDate));
+      delete invoicePayload.due_date;
     }
+
+    if (invoicePayload.status === "Paid" && (invoicePayload.paymentType || invoicePayload.payment_type)) {
+      const rawPaidDate = invoicePayload.paidDate || invoicePayload.paid_date;
+      if (rawPaidDate) {
+        invoicePayload.paidDate = rawPaidDate?.toDate ? rawPaidDate : Timestamp.fromDate(new Date(rawPaidDate));
+      } else {
+        invoicePayload.paidDate = invoicePayload.invoiceDate;
+      }
+    } else {
+      invoicePayload.paidDate = null;
+    }
+    delete invoicePayload.paid_date;
 
     const docRef = await addDoc(invoiceCollection, invoicePayload);
     return docRef;
@@ -130,6 +153,7 @@ async function updateInvoice(id, updatedData, setLoading, userId) {
     }
     const cleanData = { ...updatedData };
     delete cleanData.id;
+    cleanData.updatedAt = serverTimestamp();
 
     await updateDoc(docRef, cleanData);
   } catch (error) {
@@ -162,14 +186,16 @@ async function updateInvoiceStatusAndDueDate(
     if (status === "Paid") {
       payload = {
         status: "Paid",
-        payment_type: type || "UPI",
-        paid_date: formatCurrentDate(),
+        paymentType: type || "UPI",
+        paidDate: Timestamp.fromDate(new Date()),
+        updatedAt: serverTimestamp(),
       };
     } else {
       payload = {
         status: status,
-        payment_type: "",
-        paid_date: null,
+        paymentType: null,
+        paidDate: null,
+        updatedAt: serverTimestamp(),
       };
     }
 

@@ -2,7 +2,13 @@ import { uploadToCloudinary } from "../firebase/getFileUrl";
 import { IoCloudUpload, IoCameraOutline } from "react-icons/io5";
 import { useState, useEffect, useRef } from "react";
 
-export default function ImageUploader({ onUpload, currentImage }) {
+export default function ImageUploader({
+  onUpload,
+  currentImage,
+  id = "image-uploader",
+  label = "Upload Photo",
+  subtext = "PNG, JPG, or WEBP. 1:1 square ratio recommended.",
+}) {
   const [loading, setLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(currentImage || "");
   const fileInputRef = useRef(null);
@@ -43,7 +49,7 @@ export default function ImageUploader({ onUpload, currentImage }) {
   return (
     <div className="w-full">
       <input
-        id="image-uploader"
+        id={id}
         type="file"
         className="hidden"
         accept="image/*"
@@ -98,14 +104,14 @@ export default function ImageUploader({ onUpload, currentImage }) {
           ) : (
             <>
               <label
-                htmlFor="image-uploader"
+                htmlFor={id}
                 className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface-elevated px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition hover:bg-surface hover:border-border cursor-pointer active:scale-95"
               >
                 <IoCloudUpload size={16} className="text-muted-foreground" />
-                <span>Upload Photo</span>
+                <span>{label}</span>
               </label>
               <p className="mt-2 text-xs text-muted-foreground">
-                PNG, JPG, or WEBP. 1:1 square ratio recommended.
+                {subtext}
               </p>
             </>
           )}

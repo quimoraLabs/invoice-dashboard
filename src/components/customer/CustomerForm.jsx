@@ -10,20 +10,20 @@ export default function CustomerModal({ onClose, customer }) {
   const isEditMode = !!customer;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: "",
+    name: "",
     email: "",
     profile: "",
-    phone_number: "",
+    phone: "",
     address: "",
   });
 
   useEffect(() => {
     if (isEditMode) {
       setFormData({
-        full_name: customer.full_name || customer.name || "",
+        name: customer.name || customer.full_name || "",
         email: customer.email || "",
         profile: customer.profile || "",
-        phone_number: customer.phone_number || customer.phone || "",
+        phone: customer.phone || customer.phone_number || "",
         address: customer.address || "",
       });
     }
@@ -53,12 +53,12 @@ export default function CustomerModal({ onClose, customer }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.full_name.trim() || !formData.email.trim()) {
+    if (!formData.name.trim() || !formData.email.trim()) {
       toast.error("Please fill in the required fields.");
       return;
     }
 
-    if (!validatePhoneNumber(formData.phone_number)) return;
+    if (!validatePhoneNumber(formData.phone)) return;
 
     try {
       const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
@@ -68,9 +68,9 @@ export default function CustomerModal({ onClose, customer }) {
       }
 
       const payload = {
-        full_name: formData.full_name.trim(),
+        name: formData.name.trim(),
         email: formData.email.trim(),
-        phone_number: String(formData.phone_number).trim(),
+        phone: String(formData.phone).trim(),
         address: formData.address.trim(),
         profile: formData.profile || "",
         userId: targetUid,
@@ -95,7 +95,7 @@ export default function CustomerModal({ onClose, customer }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-2xl rounded-[24px] border border-border bg-surface-elevated shadow-2xl">
+      <div className="w-full max-w-2xl rounded-24px border border-border bg-surface-elevated shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border p-5">
           <h3 className="text-xl font-semibold text-foreground">
@@ -120,16 +120,16 @@ export default function CustomerModal({ onClose, customer }) {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
               <label
-                htmlFor="full_name"
+                htmlFor="name"
                 className="text-sm font-medium text-foreground"
               >
-                Full name
+                Full Name
               </label>
               <input
                 type="text"
-                name="full_name"
-                id="full_name"
-                value={formData.full_name}
+                name="name"
+                id="name"
+                value={formData.name}
                 onChange={handleChange}
                 className="mt-2 w-full rounded-2xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 placeholder="Alex John"
@@ -158,18 +158,18 @@ export default function CustomerModal({ onClose, customer }) {
 
             <div>
               <label
-                htmlFor="phone_number"
+                htmlFor="phone"
                 className="text-sm font-medium text-foreground"
               >
-                Phone number
+                Phone Number
               </label>
               <input
                 type="tel"
                 pattern="[0-9]{10}"
                 title="Enter a 10-digit phone number"
-                name="phone_number"
-                id="phone_number"
-                value={formData.phone_number}
+                name="phone"
+                id="phone"
+                value={formData.phone}
                 onChange={handleChange}
                 className="mt-2 w-full rounded-2xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 placeholder="10-digit number"

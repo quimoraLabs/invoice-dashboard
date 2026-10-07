@@ -42,7 +42,7 @@ By passing `orgId` and `role` as claims directly inside the signed JWT from Cler
 ```
 
 > [!NOTE]
-> When using the Clerk Firebase template preset, Clerk automatically merges standard Firebase Auth fields (`user_id`, `sub`, `aud`, `iss`) with the custom `orgId` and `role` claims.
+> When using the Clerk Firebase template preset, Clerk automatically merges standard Firebase Auth fields (`userId`, `sub`, `aud`, `iss`) with the custom `orgId` and `role` claims.
 
 ---
 

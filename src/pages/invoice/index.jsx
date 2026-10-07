@@ -35,6 +35,7 @@ function Invoice() {
       const searchMatch =
         !searchTerm ||
         invoice.client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        invoice.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         invoice.invoice_no?.toLowerCase().includes(searchTerm.toLowerCase());
 
       return statusMatch && searchMatch;
@@ -42,20 +43,20 @@ function Invoice() {
 
     return result.sort((a, b) => {
       if (sortBy === "newest") {
-        const dateA = new Date(a.invoice_date || a.created_at || 0).getTime();
-        const dateB = new Date(b.invoice_date || b.created_at || 0).getTime();
+        const dateA = new Date(a.invoiceDate || a.invoice_date || a.createdAt || a.created_at || 0).getTime();
+        const dateB = new Date(b.invoiceDate || b.invoice_date || b.createdAt || b.created_at || 0).getTime();
         return dateB - dateA;
       }
       if (sortBy === "oldest") {
-        const dateA = new Date(a.invoice_date || a.created_at || 0).getTime();
-        const dateB = new Date(b.invoice_date || b.created_at || 0).getTime();
+        const dateA = new Date(a.invoiceDate || a.invoice_date || a.createdAt || a.created_at || 0).getTime();
+        const dateB = new Date(b.invoiceDate || b.invoice_date || b.createdAt || b.created_at || 0).getTime();
         return dateA - dateB;
       }
       if (sortBy === "amount-desc") {
-        return (Number(b.total_price) || 0) - (Number(a.total_price) || 0);
+        return (Number(b.totalAmount ?? b.total_price) || 0) - (Number(a.totalAmount ?? a.total_price) || 0);
       }
       if (sortBy === "amount-asc") {
-        return (Number(a.total_price) || 0) - (Number(b.total_price) || 0);
+        return (Number(a.totalAmount ?? a.total_price) || 0) - (Number(b.totalAmount ?? b.total_price) || 0);
       }
       if (sortBy === "name-asc") {
         const nameA = a.client?.name || a.client?.full_name || "";

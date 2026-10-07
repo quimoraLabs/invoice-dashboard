@@ -21,6 +21,7 @@ stats.html
 serviceAccountKey*.json
 *-firebase-adminsdk-*.json
 serviceAccount*.json
+scripts/migration-report.json
 
 # Editor directories and files
 .vscode/*

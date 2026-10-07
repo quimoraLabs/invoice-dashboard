@@ -76,26 +76,26 @@ function InvoiceTableRow({ invoice }) {
             to={`/invoice/view/${invoice.id}`}
             className="text-primary hover:opacity-80 transition-colors font-semibold"
           >
-            {invoice.invoice_no || "INV-00"}
+            {invoice.invoiceNumber || invoice.invoice_no || "INV-00"}
           </Link>
         </td>
 
         {/* Client Name */}
         <td className="hidden sm:table-cell px-6 py-4 text-foreground font-medium">
-          {invoice.client?.full_name || invoice.client?.name || "Client Name"}
+          {invoice.client?.name || invoice.client?.full_name || "Client Name"}
         </td>
 
         {/* Date Column */}
         <td className="hidden md:table-cell px-6 py-4 text-muted-foreground">
           <div className="text-sm font-medium text-foreground">
-            {dateFormat(invoice.invoice_date)?.split(",")[0] || "N/A"}
+            {dateFormat(invoice.invoiceDate || invoice.invoice_date)?.split(",")[0] || "N/A"}
           </div>
         </td>
 
         {/* Amount */}
         <td className="px-4 py-4 text-right font-semibold text-foreground tabular-nums whitespace-nowrap sm:px-6">
           ₹
-          {Number(invoice.total_price).toLocaleString("en-IN", {
+          {Number(invoice.totalAmount ?? invoice.total_price ?? 0).toLocaleString("en-IN", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}

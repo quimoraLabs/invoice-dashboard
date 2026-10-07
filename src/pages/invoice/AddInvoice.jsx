@@ -28,13 +28,13 @@ export default function AddInvoice() {
   }, [targetUid]);
 
   const emptyInvoiceState = {
-    invoice_no: "INV-00",
+    invoiceNumber: "INV-00",
     client: { name: "", email: "", phone: "", id: "" },
-    invoice_date: formatCurrentDate(),
-    tax_percentage: 18,
+    invoiceDate: formatCurrentDate(),
+    taxRate: 18,
     items: [{ id: "", title: "", quantity: 1, price: 0 }],
     status: "",
-    payment_type: "",
+    paymentType: "",
   };
 
   const handleCreateSubmit = async (finalInvoice) => {
@@ -45,7 +45,7 @@ export default function AddInvoice() {
     setSubmitting(true);
     try {
       const nextNo = await getNextInvoiceNumber(targetUid);
-      finalInvoice.invoice_no = nextNo;
+      finalInvoice.invoiceNumber = nextNo;
       finalInvoice.userId = targetUid;
       await createInvoice(finalInvoice, setSubmitting, targetUid);
       toast.success("Invoice successfully created!");

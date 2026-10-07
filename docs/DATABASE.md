@@ -92,8 +92,8 @@ Stores metadata, line items, and financial calculations for issued invoices.
 | `customerName` | `string` | Cached snapshot of customer business name |
 | `customerEmail` | `string` | Customer contact email |
 | `customerAddress`| `string` | Billing street address |
-| `invoiceDate` | `string` | Date of invoice issuance (`YYYY-MM-DD`) |
-| `dueDate` | `string` | Payment due date (`YYYY-MM-DD`) |
+| `invoiceDate` | `Timestamp` | Date of invoice issuance (Firestore Timestamp, UTC) |
+| `dueDate` | `Timestamp` | Payment due date (Firestore Timestamp, UTC) |
 | `status` | `string` | State: `"Paid"`, `"Pending"`, `"Overdue"`, `"Draft"` |
 | `items` | `Array<object>` | Line items array (`productId`, `title`, `qty`, `price`, `total`) |
 | `subtotal` | `number` | Sum of line item amounts before tax |
@@ -143,6 +143,25 @@ Catalog of goods or billable services.
 | `imageUrl` | `string` | Asset or Cloud Storage URL |
 | `createdAt` | `timestamp` | Record creation timestamp (camelCase) |
 | `updatedAt` | `timestamp` | Record update timestamp |
+
+---
+
+### G. Date Fields Policy
+
+All date fields in domain collections are stored as Firestore Timestamp (UTC).
+
+- `invoiceDate`, `dueDate` (`invoices`)
+- `createdAt`, `updatedAt` (all collections)
+
+Rationale:
+- Timezone-safe (stored in UTC, displayed in local time)
+- Enables proper range queries for GST monthly/quarterly filing
+- Correct chronological sorting
+- Overdue detection: `where('dueDate', '<', Timestamp.now())`
+
+Client-side: convert to/from ISO string for UI display only. Never store strings in Firestore.
+
+Legacy data: migrated from string to Timestamp during the B2B migration script (see [B2B_MIGRATION_STEP1.md Section 2.1 Step B.5](./B2B_MIGRATION_STEP1.md)).
 
 ---
 
@@ -230,7 +249,7 @@ service cloud.firestore {
       allow create: if isMember(request.resource.data.orgId) &&
                        hasRole(request.resource.data.orgId, ['owner', 'admin', 'accountant']);
       allow update: if isMember(resource.data.orgId) &&
-                       hasRole(request.resource.data.orgId, ['owner', 'admin', 'accountant']);
+                       hasRole(resource.data.orgId, ['owner', 'admin', 'accountant']);
       allow delete: if isMember(resource.data.orgId) &&
                        hasRole(resource.data.orgId, ['owner', 'admin']);
     }

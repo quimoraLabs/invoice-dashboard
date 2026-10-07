@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/authContext/useAuth";
 import { UserButton } from "@clerk/react"; // TODO: Use this after B2B launch, remove custom dropdown
-import { seedUserData, clearUserData } from "../firebase/seed";
-import toast from "react-hot-toast";
 import {
   HiMenu,
   HiX,
@@ -13,10 +11,9 @@ import {
   HiDocumentText,
   HiLogout,
   HiUser,
-  HiSparkles,
-  HiTrash,
   HiMoon,
   HiSun,
+  HiOfficeBuilding,
 } from "react-icons/hi";
 import ProfileModal from "../components/modals/ProfileViewModal";
 import WorkspaceSwitcher from "../components/workspace/WorkspaceSwitcher";
@@ -28,7 +25,6 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() =>
     document.documentElement.classList.contains("dark"),
   );
@@ -51,8 +47,8 @@ const Header = () => {
     { to: "/customers", label: "Customers", icon: <HiUsers size={18} /> },
     { to: "/products", label: "Products", icon: <HiCube size={18} /> },
     { to: "/invoice", label: "Invoices", icon: <HiDocumentText size={18} /> },
+    { to: "/business-profile", label: "Business Profile", icon: <HiOfficeBuilding size={18} /> },
   ];
-
   const handleLogout = async () => {
     if (signOut) {
       await signOut();
@@ -60,48 +56,6 @@ const Header = () => {
     setIsMenuOpen(false);
     setIsDropdownOpen(false);
     navigate("/login");
-  };
-
-  const handleSeedData = async () => {
-    const targetUid =
-      currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
-    if (!targetUid) {
-      toast.error("User authentication required to seed data.");
-      return;
-    }
-    setIsSeeding(true);
-    try {
-      await seedUserData(targetUid);
-      toast.success(
-        "Demo data seeded! 5 Customers, 10 Products, 5 Invoices loaded.",
-      );
-      setIsDropdownOpen(false);
-    } catch (err) {
-      console.error("Error seeding data:", err);
-      toast.error(err?.message || "Failed to seed demo data.");
-    } finally {
-      setIsSeeding(false);
-    }
-  };
-
-  const handleClearData = async () => {
-    const targetUid =
-      currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
-    if (!targetUid) {
-      toast.error("User authentication required to clear data.");
-      return;
-    }
-    setIsSeeding(true);
-    try {
-      await clearUserData(targetUid);
-      toast.success("Demo data cleared successfully.");
-      setIsDropdownOpen(false);
-    } catch (err) {
-      console.error("Error clearing data:", err);
-      toast.error(err?.message || "Failed to clear data.");
-    } finally {
-      setIsSeeding(false);
-    }
   };
 
   const handleMouseEnter = () => {
@@ -226,24 +180,14 @@ const Header = () => {
                         <HiUser size={16} className="text-muted-foreground" />
                         My Profile
                       </button>
-                      <button
-                        onClick={handleSeedData}
-                        disabled={isSeeding}
-                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-success transition hover:bg-surface"
+                      <Link
+                        to="/business-profile"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-surface"
                       >
-                        <HiSparkles size={16} className="text-success" />
-                        {isSeeding
-                          ? "Seeding..."
-                          : "Seed Demo Data (10 Products)"}
-                      </button>
-                      <button
-                        onClick={handleClearData}
-                        disabled={isSeeding}
-                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-warning transition hover:bg-surface"
-                      >
-                        <HiTrash size={16} className="text-warning" />
-                        Clear My Demo Data
-                      </button>
+                        <HiOfficeBuilding size={16} className="text-muted-foreground" />
+                        Business Profile
+                      </Link>
                       <hr className="my-1 border-border" />
                       <button
                         onClick={handleLogout}
@@ -319,28 +263,6 @@ const Header = () => {
                 >
                   <HiUser size={18} />
                   My Profile
-                </button>
-                <button
-                  onClick={() => {
-                    handleSeedData();
-                    setIsMenuOpen(false);
-                  }}
-                  disabled={isSeeding}
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium text-success"
-                >
-                  <HiSparkles size={18} className="text-success" />
-                  {isSeeding ? "Seeding..." : "Seed Demo Data (10 Products)"}
-                </button>
-                <button
-                  onClick={() => {
-                    handleClearData();
-                    setIsMenuOpen(false);
-                  }}
-                  disabled={isSeeding}
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium text-warning"
-                >
-                  <HiTrash size={18} className="text-warning" />
-                  Clear My Demo Data
                 </button>
                 <button
                   onClick={handleLogout}

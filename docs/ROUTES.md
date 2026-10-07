@@ -75,4 +75,4 @@ The main application shell (`AppShell` in `src/App.jsx`) conditionally renders t
   * If record does not exist or belongs to another organization tenant, displays error toast and redirects back to `/invoice`.
 * **Invoice Editor (`/invoice/update/:invoiceId`):**
   * Loads existing invoice payload into form inputs scoped by `orgId`.
-  * Preserves original `createdAt` timestamp and `invoice_no` while submitting updated item arrays.
+  * Preserves original `createdAt` timestamp and `invoiceNumber` while submitting updated item arrays.
