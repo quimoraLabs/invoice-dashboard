@@ -1,15 +1,15 @@
 import {
   collection,
   addDoc,
-  setDoc,
   doc,
   getDoc,
   getDocs,
   deleteDoc,
-  updateDoc,
   onSnapshot,
   query,
   where,
+  documentId,
+  writeBatch,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
@@ -18,7 +18,10 @@ const workspacesCollection = collection(db, "workspaces");
 const membersCollection = collection(db, "workspace_members");
 const invitesCollection = collection(db, "workspace_invites");
 
-// Create a new Workspace and add owner as first member
+// Firestore 'in' query limit
+const IN_QUERY_LIMIT = 10;
+
+// ---------- Create Workspace (atomic) ----------
 export async function createWorkspace(name, ownerUser) {
   if (!ownerUser?.id && !ownerUser?.uid) {
     throw new Error("Authentication required to create a workspace.");
@@ -26,19 +29,22 @@ export async function createWorkspace(name, ownerUser) {
   const userId = ownerUser.id || ownerUser.uid;
   const workspaceName = (name || "My Business").trim();
 
-  // 1. Create workspace document
-  const workspaceRef = await addDoc(workspacesCollection, {
+  // Pre-generate workspace ID so member doc can reference it in same batch
+  const workspaceRef = doc(workspacesCollection);
+  const workspaceId = workspaceRef.id;
+  const memberDocId = `${workspaceId}_${userId}`;
+  const memberRef = doc(db, "workspace_members", memberDocId);
+
+  const batch = writeBatch(db);
+
+  batch.set(workspaceRef, {
     name: workspaceName,
     ownerId: userId,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 
-  const workspaceId = workspaceRef.id;
-
-  // 2. Add owner as workspace member
-  const memberDocId = `${workspaceId}_${userId}`;
-  await setDoc(doc(db, "workspace_members", memberDocId), {
+  batch.set(memberRef, {
     workspaceId,
     userId,
     email: (ownerUser.email || "").toLowerCase().trim(),
@@ -46,6 +52,8 @@ export async function createWorkspace(name, ownerUser) {
     role: "owner",
     joinedAt: serverTimestamp(),
   });
+
+  await batch.commit();
 
   return {
     id: workspaceId,
@@ -55,7 +63,7 @@ export async function createWorkspace(name, ownerUser) {
   };
 }
 
-// Listen to all workspaces the user is a member of
+// ---------- Listen to user workspaces (N+1 fixed) ----------
 export function listenToUserWorkspaces(userId, callback, onError) {
   if (!userId) {
     callback([]);
@@ -68,29 +76,48 @@ export function listenToUserWorkspaces(userId, callback, onError) {
     q,
     async (snapshot) => {
       try {
-        const memberships = snapshot.docs.map((doc) => doc.data());
+        const memberships = snapshot.docs.map((d) => d.data());
+
         if (memberships.length === 0) {
           callback([]);
           return;
         }
 
-        const workspacePromises = memberships.map(async (membership) => {
-          const wsSnap = await getDoc(doc(db, "workspaces", membership.workspaceId));
-          if (wsSnap.exists()) {
-            return {
-              id: wsSnap.id,
-              ...wsSnap.data(),
-              role: membership.role || "accountant",
-              joinedAt: membership.joinedAt,
-            };
-          }
-          return null;
-        });
+        const workspaceIds = memberships.map((m) => m.workspaceId);
+        const roleMap = new Map(
+          memberships.map((m) => [m.workspaceId, m.role])
+        );
+        const joinedMap = new Map(
+          memberships.map((m) => [m.workspaceId, m.joinedAt])
+        );
 
-        const workspaces = (await Promise.all(workspacePromises)).filter(Boolean);
+        // Chunk into batches of 10
+        const chunks = [];
+        for (let i = 0; i < workspaceIds.length; i += IN_QUERY_LIMIT) {
+          chunks.push(workspaceIds.slice(i, i + IN_QUERY_LIMIT));
+        }
+
+        const workspaceDocs = await Promise.all(
+          chunks.map((chunk) =>
+            getDocs(
+              query(workspacesCollection, where(documentId(), "in", chunk))
+            )
+          )
+        );
+
+        const workspaces = workspaceDocs
+          .flatMap((snap) => snap.docs)
+          .map((wsDoc) => ({
+            id: wsDoc.id,
+            ...wsDoc.data(),
+            role: roleMap.get(wsDoc.id) || "accountant",
+            joinedAt: joinedMap.get(wsDoc.id),
+          }));
+
         callback(workspaces);
       } catch (err) {
         console.error("Error fetching user workspaces:", err);
+        // IMPORTANT: do NOT call callback([]) — that triggers default-ws spam
         if (onError) onError(err);
       }
     },
@@ -101,7 +128,7 @@ export function listenToUserWorkspaces(userId, callback, onError) {
   );
 }
 
-// Listen to members of an active workspace
+// ---------- Listen to workspace members ----------
 export function listenToWorkspaceMembers(workspaceId, callback) {
   if (!workspaceId) {
     callback([]);
@@ -113,9 +140,9 @@ export function listenToWorkspaceMembers(workspaceId, callback) {
   return onSnapshot(
     q,
     (snapshot) => {
-      const members = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      const members = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
       }));
       callback(members);
     },
@@ -126,7 +153,7 @@ export function listenToWorkspaceMembers(workspaceId, callback) {
   );
 }
 
-// Invite a new member by email with role (default: 'accountant')
+// ---------- Invite member ----------
 export async function inviteMemberToWorkspace({
   workspaceId,
   workspaceName,
@@ -139,7 +166,7 @@ export async function inviteMemberToWorkspace({
   }
   const emailClean = invitedEmail.toLowerCase().trim();
 
-  // 1. Check if email is already in pending invites for this workspace
+  // Duplicate pending invite check
   const qExisting = query(
     invitesCollection,
     where("workspaceId", "==", workspaceId),
@@ -151,7 +178,6 @@ export async function inviteMemberToWorkspace({
     throw new Error("An invitation has already been sent to this email.");
   }
 
-  // 2. Create invite doc
   const docRef = await addDoc(invitesCollection, {
     workspaceId,
     workspaceName: workspaceName || "Business Workspace",
@@ -165,7 +191,7 @@ export async function inviteMemberToWorkspace({
   return docRef.id;
 }
 
-// Listen to pending invites for a workspace
+// ---------- Listen to pending invites ----------
 export function listenToWorkspaceInvites(workspaceId, callback) {
   if (!workspaceId) {
     callback([]);
@@ -181,9 +207,9 @@ export function listenToWorkspaceInvites(workspaceId, callback) {
   return onSnapshot(
     q,
     (snapshot) => {
-      const invites = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      const invites = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
       }));
       callback(invites);
     },
@@ -194,21 +220,40 @@ export function listenToWorkspaceInvites(workspaceId, callback) {
   );
 }
 
-// Revoke a pending invite
+// ---------- Revoke invite ----------
 export async function revokeWorkspaceInvite(inviteId) {
   if (!inviteId) return;
-  const inviteRef = doc(db, "workspace_invites", inviteId);
-  await deleteDoc(inviteRef);
+  await deleteDoc(doc(db, "workspace_invites", inviteId));
 }
 
-// Remove a member from a workspace
+// ---------- Remove member (with last-owner guard) ----------
 export async function removeWorkspaceMember(workspaceId, memberUserId) {
   if (!workspaceId || !memberUserId) return;
+
   const memberDocId = `${workspaceId}_${memberUserId}`;
-  await deleteDoc(doc(db, "workspace_members", memberDocId));
+  const memberRef = doc(db, "workspace_members", memberDocId);
+  const memberSnap = await getDoc(memberRef);
+
+  if (!memberSnap.exists()) return;
+  const member = memberSnap.data();
+
+  // Prevent removing the last owner
+  if (member.role === "owner") {
+    const ownersQuery = query(
+      membersCollection,
+      where("workspaceId", "==", workspaceId),
+      where("role", "==", "owner")
+    );
+    const ownersSnap = await getDocs(ownersQuery);
+    if (ownersSnap.size <= 1) {
+      throw new Error("Cannot remove the last owner of a workspace.");
+    }
+  }
+
+  await deleteDoc(memberRef);
 }
 
-// Check and automatically accept any pending invites matching the current user's email
+// ---------- Accept pending invites (atomic batch per invite) ----------
 export async function checkAndAcceptPendingInvites(user) {
   if (!user?.email || (!user?.id && !user?.uid)) return 0;
   const userId = user.id || user.uid;
@@ -225,12 +270,13 @@ export async function checkAndAcceptPendingInvites(user) {
     if (snapshot.empty) return 0;
 
     let acceptedCount = 0;
+
     for (const inviteDoc of snapshot.docs) {
       const invite = inviteDoc.data();
       const memberDocId = `${invite.workspaceId}_${userId}`;
 
-      // Add to workspace_members
-      await setDoc(doc(db, "workspace_members", memberDocId), {
+      const batch = writeBatch(db);
+      batch.set(doc(db, "workspace_members", memberDocId), {
         workspaceId: invite.workspaceId,
         userId,
         email: userEmail,
@@ -238,14 +284,18 @@ export async function checkAndAcceptPendingInvites(user) {
         role: invite.role || "accountant",
         joinedAt: serverTimestamp(),
       });
-
-      // Update invite status
-      await updateDoc(doc(db, "workspace_invites", inviteDoc.id), {
+      batch.update(doc(db, "workspace_invites", inviteDoc.id), {
         status: "accepted",
         acceptedAt: serverTimestamp(),
       });
 
-      acceptedCount++;
+      try {
+        await batch.commit();
+        acceptedCount++;
+      } catch (err) {
+        console.error(`Failed to accept invite ${inviteDoc.id}:`, err);
+        // continue — one failed invite shouldn't block others
+      }
     }
 
     return acceptedCount;

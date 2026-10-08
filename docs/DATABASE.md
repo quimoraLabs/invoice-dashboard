@@ -1,6 +1,6 @@
 > ⚠️ **TARGET-STATE DOCUMENT — NOT CURRENT BEHAVIOR.**
 > This document describes the planned B2B (multi-tenant) design. It does not describe what the code does today, and it uses `orgId` / `organization` vocabulary while the code uses `workspace`.
-> **Known divergence:** Code today uses `workspaces` / `workspace_members` / `workspace_invites`, scopes domain data by `userId`, and uses snake_case fields (`invoice_no`, `created_at`). There is no `orgId` or `organizations` collection.
+> **Known divergence:** Code today uses `workspaces` / `workspace_members` / `workspace_invites`, scopes domain data by `userId`, writes camelCase fields (`invoiceNumber`, `createdAt`) with fallback dual-reads for legacy snake_case (`invoice_no`, `created_at`). There is no active `organizations` collection in the frontend.
 > For current behavior see [CURRENT_STATE.md](./CURRENT_STATE.md). For the doc map see [INDEX.md](./INDEX.md). Do not implement from this document without explicit phase approval.
 > Last reviewed against code: 2026-10-06
 

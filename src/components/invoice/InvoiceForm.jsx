@@ -88,6 +88,9 @@ function InvoiceForm({
         email: customer.email || "",
         phone: custPhone,
         address: customer.address || "",
+        gstin: customer.gstin || "",
+        state: customer.state || "",
+        stateCode: customer.stateCode || "",
         id: customer.id,
       },
     }));

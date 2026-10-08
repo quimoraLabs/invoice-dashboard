@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, setLogLevel } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 
 // Standard Firebase configuration reading from environment variables
 const firebaseConfig = {

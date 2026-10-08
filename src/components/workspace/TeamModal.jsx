@@ -1,11 +1,4 @@
-import React, { useState, useEffect } from "react";
-import {
-  listenToWorkspaceMembers,
-  listenToWorkspaceInvites,
-  inviteMemberToWorkspace,
-  revokeWorkspaceInvite,
-  removeWorkspaceMember,
-} from "../../firebase/workspace";
+import React, { useState } from "react";
 import { useAuth } from "../../contexts/authContext/useAuth";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import toast from "react-hot-toast";
@@ -19,32 +12,19 @@ import {
 
 export default function TeamModal({ isOpen, onClose }) {
   const { currentUser } = useAuth();
-  const { activeWorkspace, isOwner } = useWorkspace();
-  const [members, setMembers] = useState([]);
-  const [invites, setInvites] = useState([]);
+  const {
+    activeWorkspace,
+    members,
+    pendingInvites,
+    isOwner,
+    inviteMember,
+    revokeInvite,
+    removeMember,
+  } = useWorkspace();
+
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("accountant");
   const [isSending, setIsSending] = useState(false);
-
-  const workspaceId = activeWorkspace?.id;
-
-  // Listen to active workspace members and pending invites
-  useEffect(() => {
-    if (!isOpen || !workspaceId) return;
-
-    const unsubMembers = listenToWorkspaceMembers(workspaceId, (list) => {
-      setMembers(list);
-    });
-
-    const unsubInvites = listenToWorkspaceInvites(workspaceId, (list) => {
-      setInvites(list);
-    });
-
-    return () => {
-      unsubMembers();
-      unsubInvites();
-    };
-  }, [isOpen, workspaceId]);
 
   if (!isOpen) return null;
 
@@ -57,13 +37,7 @@ export default function TeamModal({ isOpen, onClose }) {
 
     setIsSending(true);
     try {
-      await inviteMemberToWorkspace({
-        workspaceId,
-        workspaceName: activeWorkspace.name,
-        invitedEmail: inviteEmail,
-        role: inviteRole,
-        invitedBy: currentUser?.uid || currentUser?.id,
-      });
+      await inviteMember(inviteEmail, inviteRole);
       toast.success(`Invitation sent to ${inviteEmail}!`);
       setInviteEmail("");
     } catch (err) {
@@ -76,10 +50,10 @@ export default function TeamModal({ isOpen, onClose }) {
 
   const handleRevokeInvite = async (inviteId) => {
     try {
-      await revokeWorkspaceInvite(inviteId);
+      await revokeInvite(inviteId);
       toast.success("Invitation revoked.");
     } catch (err) {
-      toast.error("Failed to revoke invite.");
+      toast.error(err?.message || "Failed to revoke invite.");
     }
   };
 
@@ -91,10 +65,10 @@ export default function TeamModal({ isOpen, onClose }) {
     if (!window.confirm("Are you sure you want to remove this team member?")) return;
 
     try {
-      await removeWorkspaceMember(workspaceId, memberUserId);
+      await removeMember(memberUserId);
       toast.success("Member removed from workspace.");
     } catch (err) {
-      toast.error("Failed to remove member.");
+      toast.error(err?.message || "Failed to remove member.");
     }
   };
 
@@ -231,13 +205,13 @@ export default function TeamModal({ isOpen, onClose }) {
           </div>
 
           {/* Pending Invites (if any) */}
-          {invites.length > 0 && (
+          {pendingInvites.length > 0 && (
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
-                Pending Invitations ({invites.length})
+                Pending Invitations ({pendingInvites.length})
               </h4>
               <div className="space-y-2">
-                {invites.map((invite) => (
+                {pendingInvites.map((invite) => (
                   <div
                     key={invite.id}
                     className="flex items-center justify-between rounded-xl border border-dashed border-border bg-surface p-3"

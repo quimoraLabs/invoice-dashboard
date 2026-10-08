@@ -1,10 +1,13 @@
 # Current State
 
-Last reviewed against code: 2026-10-06 (snapshot of the uploaded `invoice-dashboard-main.zip`)
+Last reviewed against code: 2026-10-08
 
 This is the only doc that describes what the code does **today**. Target-state docs are listed in [INDEX.md](./INDEX.md).
 
-> **Phase 0 note:** a hardening patch (stricter `firestore.rules`, workspace listener fix, `currentRole` fallback, `authorizedParties`, dependency/engine cleanup) was prepared after this snapshot. Items it changes are marked **(Phase 0)**. Once the patch is applied and deployed, update those items and remove this note.
+> **Phase 0 Status:** Security hardening patch applied (`firestore.rules` domain read boundaries tightened, `workspace_members` create hole patched with docId & ownership check, workspace listener error guard, `currentRole` null fallback, `authorizedParties`, dependency cleanup, composite index updated to `invoiceNumber`, and legacy dual-read fallback for invoice numbering).
+> **Known Invite Flow Limitations (Scheduled for Phase 2):**
+> 1. Invite Read: `request.auth.token.email` custom claim token me nahi hai, isliye non-member invitees client Firestore se seedhe invite read nahi kar sakte (sirf existing workspace members read kar sakte hain).
+> 2. Invite Accept: Client-side `workspace_members` creation invitee ke liye restricted hai (self-join as owner block kiya gaya hai). Full invite read + accept flow dedicated serverless endpoint (`/api/accept-invite`) ke sath Phase 2 me implement hoga.
 
 ---
 
@@ -45,10 +48,10 @@ Tenancy today is **per user**, not per organization or workspace.
 
 | Collection | Key field | Notes |
 | :--- | :--- | :--- |
-| `invoices` | `userId` | Fields include `invoice_no`, `created_at` (snake_case). Next number via `getNextInvoiceNumber`, which needs the `invoices(userId asc, invoice_no desc)` index. |
-| `customers` | `userId` | `created_at` |
-| `products` | `userId` | `created_at` |
-| `business_profiles` | doc id = user uid | Referenced by rules and `seed.js` only; no service in `src/` reads or writes it. |
+| `invoices` | `userId` | Fields include `invoice_no`, `invoiceNumber`, `created_at`. Atomic sequential numbering via `createInvoiceWithNumber` with `users/{userId}/counters/invoice`. |
+| `customers` | `userId` | `created_at`, `gstin`, `state`, `stateCode` |
+| `products` | `userId` | `created_at`, `hsn` |
+| `business_profiles` | doc id = user uid | Stored at `business_profiles/{userId}`. Read via `getBusinessProfile(userId)` in service layer (`src/firebase/profile.js`) for invoice GST headers. |
 | `workspaces` | `ownerId` | Created by `createWorkspace` |
 | `workspace_members` | doc id `{workspaceId}_{userId}`; fields `workspaceId`, `userId`, `role` | Roles used by the UI: `owner`, `accountant` |
 | `workspace_invites` | `workspaceId`, `invitedEmail`, `role`, `status` | Pending invites |
@@ -91,17 +94,20 @@ Exists: `WorkspaceContext`, `WorkspaceSwitcher`, `CreateWorkspaceModal`, `TeamMo
 
 Not connected: switching workspace does not change which invoices, customers, or products are shown. All domain data is still loaded for the signed-in user's own `userId`, so an invited member does not see the owner's data.
 
-Known problems:
-- `currentRole` falls back to `"owner"` when no role is found. **(Phase 0)** changes it to `null`.
-- `listenToUserWorkspaces` calls `callback([])` on errors, which can trigger repeated default-workspace creation. **(Phase 0)** removes this and adds an `onError` callback and a ref-based guard.
-- Invite acceptance is client-side and unverified.
+Known problems & Phase 0 Hardening Status:
+- `currentRole` falls back to `null` when no role is found. **(Fixed in Phase 0)**
+- `listenToUserWorkspaces` uses `onError` guard and no longer calls `callback([])` on error, eliminating default-workspace creation spam. **(Fixed in Phase 0)**
+- `createWorkspace` and `checkAndAcceptPendingInvites` use atomic `writeBatch`. **(Fixed in Phase 0)**
+- Workspace IDs query avoids N+1 reads using chunked `where(documentId(), 'in', chunk)`. **(Fixed in Phase 0)**
+- `TeamModal` refactored to consume centralized `WorkspaceContext` without duplicate listeners. **(Fixed in Phase 0)**
+- Invite acceptance is client-side and unverified (full server-verified accept moves to `/api/accept-invite` in Phase 2).
 
 ---
 
 ## 8. Known Issues
 
 1. Domain reads are open to any signed-in user in the uploaded rules (see section 4). **(Phase 0)**
-2. Invoice numbering orders `invoice_no` as a string (breaks at `INV-1000`) and is not transactional, so concurrent creates can collide.
+2. Invoice numbering orders `invoice_no` as a string (breaks at `INV-1000`) and is not transactional. **(Fixed in Phase 0/1: atomic runTransaction with /users/{userId}/counters/invoice counter and dual-write)**
 3. Both `@clerk/clerk-react` and `@clerk/react` are in `package.json`; only `@clerk/react` is used. **(Phase 0)**
 4. `vercel.json` contained an `env.NODE_OPTIONS` workaround. **(Phase 0)** removes it and pins `engines.node`; verify the API function on a preview deployment.
 5. The token endpoint is duplicated in `vite.config.js` and `api/create-firebase-token.js`.
@@ -113,8 +119,8 @@ Known problems:
 
 These docs were not changed in this pass, but they do not fully match the repo:
 
-- `TESTING.md` describes Vitest, React Testing Library, and Playwright. `package.json` has no test script and none of these packages.
-- `DEPLOYMENT.md` describes GitHub Actions CI. There is no `.github/` directory in the repo.
+- `TESTING.md`: Vitest unit tests (`test:unit`), rules tests (`test:rules`), and integration tests (`test:integration`) are configured with Firebase emulator.
+- `DEPLOYMENT.md`: GitHub Actions CI pipeline is configured in `.github/workflows/ci.yml` running lint, unit tests, emulator tests (Java 21), and build on pushes/PRs.
 
 Check both against the repo before relying on them.
 

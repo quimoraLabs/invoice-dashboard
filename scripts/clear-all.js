@@ -49,8 +49,9 @@ const ALL_COLLECTIONS = [
   "customers",
   "products",
   "business_profiles",
-  "organizations",
-  "organizationMembers",
+  "workspaces",
+  "workspace_members",
+  "workspace_invites",
 ];
 
 async function clearCollection(collName) {
@@ -91,6 +92,9 @@ export async function main() {
     console.log("ℹ️  Flag '--keep-profiles' active: skipping 'business_profiles'");
   }
 
+  const projectId = db.projectId || process.env.VITE_FIREBASE_PROJECT_ID || "unknown";
+  console.log(`🎯 Target Firebase Project: ${projectId}`);
+
   // Step 1: Pre-deletion document counting
   console.log("\n📊 Document counts per collection:");
   const counts = {};
@@ -107,7 +111,7 @@ export async function main() {
 
   // Step 2: Safety Check
   if (!flags.confirm) {
-    console.log("\n⚠️  WARNING: This will PERMANENTLY DELETE all data.");
+    console.log(`\n⚠️  WARNING: This will PERMANENTLY DELETE all data in project '${projectId}'.`);
     console.log("⚠️  Run with '--confirm' to proceed with deletion:");
     console.log("    npm run clear:all -- --confirm");
     if (flags.keepProfiles) {

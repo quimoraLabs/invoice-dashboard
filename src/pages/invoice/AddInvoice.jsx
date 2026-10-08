@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import InvoiceForm from "../../components/invoice/InvoiceForm";
 import { listenToCustomers } from "../../firebase/customer";
 import { listenToProducts } from "../../firebase/product";
-import { createInvoice, getNextInvoiceNumber } from "../../firebase/invoice";
+import { createInvoiceWithNumber } from "../../firebase/invoice";
 import { formatCurrentDate } from "../../components/helper";
 import { useAuth } from "../../contexts/authContext/useAuth";
 import toast from "react-hot-toast";
@@ -44,11 +44,9 @@ export default function AddInvoice() {
     }
     setSubmitting(true);
     try {
-      const nextNo = await getNextInvoiceNumber(targetUid);
-      finalInvoice.invoiceNumber = nextNo;
       finalInvoice.userId = targetUid;
-      await createInvoice(finalInvoice, setSubmitting, targetUid);
-      toast.success("Invoice successfully created!");
+      const created = await createInvoiceWithNumber(targetUid, finalInvoice, setSubmitting);
+      toast.success(`Invoice #${created.invoiceNumber} successfully created!`);
       setTimeout(() => {
         navigate(-1);
       }, 800);

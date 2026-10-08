@@ -440,6 +440,8 @@ export async function runSeed(userId, orgId) {
     throw new Error("User ID is required. Pass --user=<userId>");
   }
   const effectiveOrgId = orgId || userId;
+  const projectId = db.projectId || process.env.VITE_FIREBASE_PROJECT_ID || "unknown";
+  console.log(`🎯 Target Firebase Project: ${projectId}`);
   console.log(`🌱 Starting seed for user: ${userId}, org: ${effectiveOrgId}`);
 
   // 1. Clear existing data

@@ -5,7 +5,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "invoice_no", "order": "DESCENDING" }
+        { "fieldPath": "invoiceNumber", "order": "DESCENDING" }
       ]
     }
   ],

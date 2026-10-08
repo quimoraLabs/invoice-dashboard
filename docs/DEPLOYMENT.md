@@ -25,9 +25,6 @@ To enable client-side routing with React Router v7 and prevent 404 errors on bro
 
 ```json
 {
-  "env": {
-    "NODE_OPTIONS": "--experimental-require-module"
-  },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/" }
   ]

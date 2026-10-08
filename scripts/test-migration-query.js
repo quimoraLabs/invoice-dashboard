@@ -9,7 +9,12 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
-const userId = "user_3Jumy9bkbkCsgb5ImBg1TqQYSFf";
+const userId = process.argv[2] || process.env.TEST_USER_ID;
+
+if (!userId) {
+  console.error("❌ Please provide a user ID: node scripts/test-migration-query.js <userId>");
+  process.exit(1);
+}
 
 async function testQueries() {
   const collections = ["invoices", "customers", "products"];

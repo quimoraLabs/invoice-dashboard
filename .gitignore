@@ -36,3 +36,4 @@ scripts/migration-report.json
 *.sw?
 
 .vercel
+artifacts_pdf_review/
