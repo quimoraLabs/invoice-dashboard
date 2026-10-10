@@ -53,13 +53,26 @@ export async function scanForHighestNumber(userId) {
     });
     return maxNum;
   } catch (error) {
-    console.warn("Error scanning existing invoices for highest number:", error);
-    return 0;
+    console.error("Error scanning existing invoices for highest number:", error);
+    throw new Error(
+      `Failed to determine highest invoice number: ${error.message || error}`,
+      { cause: error }
+    );
   }
 }
 
+
+
+// Helper to normalize date to YYYY-MM-DD string for comparison
+export function toDateString(d) {
+  if (!d) return "";
+  const dateObj = d?.toDate ? d.toDate() : (d instanceof Date ? d : new Date(d));
+  if (isNaN(dateObj.getTime())) return "";
+  return dateObj.toISOString().split("T")[0];
+}
+
 // Validate business rules (90-day backdate, no future, duplicate products, tax rounding, payment status)
-function validateInvoiceData(invoicePayload) {
+export function validateInvoiceData(invoicePayload, existingDate = null) {
   // 1. Date Validation (max 90 days in past, no future dates)
   const rawDate = invoicePayload.invoiceDate || invoicePayload.invoice_date || formatCurrentDate();
   const dateObj = rawDate?.toDate ? rawDate.toDate() : new Date(rawDate);
@@ -69,14 +82,19 @@ function validateInvoiceData(invoicePayload) {
     throw new Error("Invoice date cannot be in the future (GST invalid).");
   }
 
-  const minDate = new Date();
-  minDate.setDate(minDate.getDate() - 90);
-  minDate.setHours(0, 0, 0, 0);
-  if (dateObj < minDate) {
-    throw new Error("Invoice date cannot be more than 90 days in the past (GST invalid).");
+  // 90-day backdate rule: Enforce on create OR when date is modified on update
+  const isDateChanged = existingDate ? toDateString(rawDate) !== toDateString(existingDate) : true;
+  if (isDateChanged) {
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() - 90);
+    minDate.setHours(0, 0, 0, 0);
+    if (dateObj < minDate) {
+      throw new Error("Invoice date cannot be more than 90 days in the past (GST invalid).");
+    }
   }
 
   // 2. Line Items Non-Empty & Duplicate Product Check
+
   if (!Array.isArray(invoicePayload.items) || invoicePayload.items.length === 0) {
     throw new Error("Invoice must contain at least one line item.");
   }
@@ -241,7 +259,7 @@ export async function createInvoice(invoice, setLoading, userId) {
 
 // Get next invoice number preview (reads counter or scans, does not increment)
 export async function getNextInvoiceNumber(userId) {
-  if (!userId) return "INV-001";
+  if (!userId) return "—";
   try {
     const counterRef = doc(db, "users", userId, "counters", "invoice");
     const counterSnap = await getDoc(counterRef);
@@ -252,10 +270,11 @@ export async function getNextInvoiceNumber(userId) {
     const maxExisting = await scanForHighestNumber(userId);
     return formatInvoiceNumber(maxExisting + 1, "INV-", 3);
   } catch (error) {
-    console.warn("Fallback to sequential invoice number preview:", error);
-    return "INV-001";
+    console.warn("Unable to determine next invoice number preview:", error);
+    return "—";
   }
 }
+
 
 // Stream live snapshot data isolated per user ID
 export function listenToInvoices(callback, userId) {
@@ -310,15 +329,20 @@ export async function updateInvoice(id, updatedData, setLoading, userId) {
   setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
-    if (userId) {
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists() && docSnap.data().userId && docSnap.data().userId !== userId) {
-        throw new Error("Unauthorized: You do not have permission to update this invoice.");
-      }
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      throw new Error("Target invoice document not found.");
     }
 
-    // Business validations on update
-    validateInvoiceData(updatedData);
+    const existingData = docSnap.data();
+    if (userId && existingData.userId && existingData.userId !== userId) {
+      throw new Error("Unauthorized: You do not have permission to update this invoice.");
+    }
+
+    // Business validations on update: pass stored invoiceDate so 90-day check only runs if date changed
+    const existingDate = existingData.invoiceDate || existingData.invoice_date;
+    validateInvoiceData(updatedData, existingDate);
     const normalizedData = normalizeInvoiceCalculations(updatedData);
 
     const cleanData = { ...normalizedData };
@@ -326,6 +350,7 @@ export async function updateInvoice(id, updatedData, setLoading, userId) {
     // Guard: invoiceNumber & invoice_no are strictly immutable!
     delete cleanData.invoiceNumber;
     delete cleanData.invoice_no;
+
 
     cleanData.updatedAt = serverTimestamp();
 

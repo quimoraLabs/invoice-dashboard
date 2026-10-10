@@ -115,12 +115,14 @@ Known problems & Phase 0 Hardening Status:
 
 ## 8. Known Issues
 
-1. Domain reads are open to any signed-in user in the uploaded rules (see section 4). **(Phase 0)**
-2. Invoice numbering orders `invoice_no` as a string (breaks at `INV-1000`) and is not transactional. **(Fixed in Phase 0/1: atomic runTransaction with /users/{userId}/counters/invoice counter and dual-write)**
-3. Both `@clerk/clerk-react` and `@clerk/react` are in `package.json`; only `@clerk/react` is used. **(Phase 0)**
-4. `vercel.json` contained an `env.NODE_OPTIONS` workaround. **(Phase 0)** removes it and pins `engines.node`; verify the API function on a preview deployment.
-5. The token endpoint is duplicated in `vite.config.js` and `api/create-firebase-token.js`.
-6. `visualizer()` runs on every build.
+1. Domain reads are open to any signed-in user in the uploaded rules (see section 4). **(Fixed in Phase 0 rules hardening)**
+2. Invoice numbering orders `invoice_no` as a string (breaks at `INV-1000`) and is not transactional. **(Fixed in Phase 0: atomic runTransaction with /users/{userId}/counters/invoice counter, dual-write, and scan failure explicitly throwing error without fallback duplicate generation)**
+3. Backdated invoice updates: 90-day backdating rule enforced on creation and only when `invoiceDate` changes during update; edits to existing backdated invoices without date modification are preserved. **(Fixed in Phase 0)**
+4. Both `@clerk/clerk-react` and `@clerk/react` are in `package.json`; only `@clerk/react` is used. **(Phase 0)**
+5. `vercel.json` contained an `env.NODE_OPTIONS` workaround. **(Phase 0)** removes it and pins `engines.node`; verify the API function on a preview deployment.
+6. The token endpoint is duplicated in `vite.config.js` and `api/create-firebase-token.js`.
+7. `visualizer()` runs on every build.
+
 
 ---
 

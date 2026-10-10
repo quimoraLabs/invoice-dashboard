@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { round2, formatInvoiceNumber } from "../src/firebase/invoice";
+import {
+  round2,
+  formatInvoiceNumber,
+  validateInvoiceData,
+  toDateString,
+} from "../src/firebase/invoice";
+
 
 describe("Invoice Business Logic Unit Tests", () => {
   describe("round2 (floating point precision helper)", () => {
@@ -45,4 +51,118 @@ describe("Invoice Business Logic Unit Tests", () => {
       expect(formatInvoiceNumber(7, "ACME-", 4)).toBe("ACME-0007");
     });
   });
+
+  describe("toDateString date normalization helper", () => {
+    it("converts Date, Firestore Timestamp-like and ISO string to YYYY-MM-DD", () => {
+      expect(toDateString("2026-04-15T10:30:00.000Z")).toBe("2026-04-15");
+      expect(toDateString(new Date("2026-05-20T00:00:00Z"))).toBe("2026-05-20");
+      expect(toDateString({ toDate: () => new Date("2026-06-01T00:00:00Z") })).toBe("2026-06-01");
+      expect(toDateString(null)).toBe("");
+    });
+  });
+
+  describe("validateInvoiceData (GST date & business rules)", () => {
+
+    const validItems = [{ id: "p1", title: "Item 1", price: 100, quantity: 1 }];
+
+    it("succeeds for fresh invoice created with today's date", () => {
+      expect(() => {
+        validateInvoiceData({
+          invoiceDate: new Date().toISOString(),
+          items: validItems,
+        });
+      }).not.toThrow();
+    });
+
+    it("fails when invoiceDate is in the future", () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 2);
+      expect(() => {
+        validateInvoiceData({
+          invoiceDate: tomorrow.toISOString(),
+          items: validItems,
+        });
+      }).toThrow(/Invoice date cannot be in the future/i);
+    });
+
+    it("fails when new invoice is backdated more than 90 days", () => {
+      const past120Days = new Date();
+      past120Days.setDate(past120Days.getDate() - 120);
+      expect(() => {
+        validateInvoiceData({
+          invoiceDate: past120Days.toISOString(),
+          items: validItems,
+        });
+      }).toThrow(/cannot be more than 90 days in the past/i);
+    });
+
+    it("succeeds when editing a 120-day-old invoice if date is NOT changed", () => {
+      const past120Days = new Date();
+      past120Days.setDate(past120Days.getDate() - 120);
+
+      expect(() => {
+        validateInvoiceData(
+          {
+            invoiceDate: past120Days.toISOString(),
+            status: "Pending",
+            items: validItems,
+          },
+          past120Days.toISOString() // existingDate matches
+        );
+      }).not.toThrow();
+    });
+
+    it("fails when editing an invoice and changing its date to 120 days in the past", () => {
+      const originalDate = new Date();
+      originalDate.setDate(originalDate.getDate() - 30); // Originally 30 days ago
+
+      const newDate = new Date();
+      newDate.setDate(newDate.getDate() - 120); // Changed to 120 days ago
+
+      expect(() => {
+        validateInvoiceData(
+          {
+            invoiceDate: newDate.toISOString(),
+            items: validItems,
+          },
+          originalDate.toISOString()
+        );
+      }).toThrow(/cannot be more than 90 days in the past/i);
+    });
+
+    it("fails when editing an invoice with a future date even if date matches existing", () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 5);
+
+      expect(() => {
+        validateInvoiceData(
+          {
+            invoiceDate: futureDate.toISOString(),
+            items: validItems,
+          },
+          futureDate.toISOString()
+        );
+      }).toThrow(/Invoice date cannot be in the future/i);
+    });
+
+    it("enforces paymentType when status is Paid", () => {
+      expect(() => {
+        validateInvoiceData({
+          invoiceDate: new Date().toISOString(),
+          items: validItems,
+          status: "Paid",
+        });
+      }).toThrow(/Payment method.*is mandatory for Paid status/i);
+
+      expect(() => {
+        validateInvoiceData({
+          invoiceDate: new Date().toISOString(),
+          items: validItems,
+          status: "Paid",
+          paymentType: "UPI",
+        });
+      }).not.toThrow();
+    });
+  });
 });
+

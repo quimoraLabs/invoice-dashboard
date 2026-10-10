@@ -187,13 +187,19 @@ function InvoiceForm({
       return;
     }
 
-    const minDate = new Date();
-    minDate.setDate(minDate.getDate() - 90);
-    minDate.setHours(0, 0, 0, 0);
-    if (invoiceDate < minDate) {
-      toast.error("Invoice date cannot be more than 90 days in the past");
-      return;
+    const initialDateVal = initialData?.invoiceDate || initialData?.invoice_date;
+    const isDateModified = !isEditMode || (initialDateVal && String(dateVal).split("T")[0] !== String(initialDateVal).split("T")[0]);
+
+    if (isDateModified) {
+      const minDate = new Date();
+      minDate.setDate(minDate.getDate() - 90);
+      minDate.setHours(0, 0, 0, 0);
+      if (invoiceDate < minDate) {
+        toast.error("Invoice date cannot be more than 90 days in the past");
+        return;
+      }
     }
+
 
     if (invoice.status === "Paid" && !(invoice.paymentType || invoice.payment_type)) {
       toast.error("Please select a payment method for paid invoices.");
