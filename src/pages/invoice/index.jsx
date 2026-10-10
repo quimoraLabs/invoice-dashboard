@@ -140,15 +140,26 @@ function Invoice() {
       // 3. Date Range Filter
       const invDateVal = invoice.invoiceDate || invoice.invoice_date || invoice.createdAt || invoice.created_at;
       if (invDateVal) {
-        const invDate = new Date(invDateVal.toDate ? invDateVal.toDate() : invDateVal);
+        let invDate;
+        if (invDateVal?.toDate && typeof invDateVal.toDate === "function") {
+          invDate = invDateVal.toDate();
+        } else if (invDateVal?.seconds) {
+          invDate = new Date(invDateVal.seconds * 1000);
+        } else if (typeof invDateVal === "string" && /^\d{4}-\d{2}-\d{2}$/.test(invDateVal)) {
+          const [y, m, d] = invDateVal.split("-").map(Number);
+          invDate = new Date(y, m - 1, d);
+        } else {
+          invDate = new Date(invDateVal);
+        }
+
         if (dateFrom) {
-          const from = new Date(dateFrom);
-          from.setHours(0, 0, 0, 0);
+          const [fy, fm, fd] = dateFrom.split("-").map(Number);
+          const from = new Date(fy, fm - 1, fd, 0, 0, 0, 0);
           if (invDate < from) return false;
         }
         if (dateTo) {
-          const to = new Date(dateTo);
-          to.setHours(23, 59, 59, 999);
+          const [ty, tm, td] = dateTo.split("-").map(Number);
+          const to = new Date(ty, tm - 1, td, 23, 59, 59, 999);
           if (invDate > to) return false;
         }
       }
@@ -244,6 +255,7 @@ function Invoice() {
         setDateFrom={(val) => updateFilters({ from: val })}
         dateTo={dateTo}
         setDateTo={(val) => updateFilters({ to: val })}
+        setDateRange={(from, to) => updateFilters({ from, to })}
         onResetFilters={handleResetFilters}
         hasActiveFilters={hasActiveFilters}
       />

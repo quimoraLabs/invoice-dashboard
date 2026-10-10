@@ -16,6 +16,7 @@ function InvoiceFilters({
   setDateFrom,
   dateTo,
   setDateTo,
+  setDateRange,
   onResetFilters,
   hasActiveFilters,
 }) {
@@ -45,22 +46,43 @@ function InvoiceFilters({
 
   // Quick preset handlers
   const handleQuickPreset = (preset) => {
+    const formatDateLocal = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
     const today = new Date();
-    const endStr = today.toISOString().split("T")[0];
+    const endStr = formatDateLocal(today);
 
     if (preset === "7days") {
       const past = new Date();
       past.setDate(past.getDate() - 7);
-      setDateFrom(past.toISOString().split("T")[0]);
-      setDateTo(endStr);
+      const startStr = formatDateLocal(past);
+      if (setDateRange) {
+        setDateRange(startStr, endStr);
+      } else {
+        setDateFrom(startStr);
+        setDateTo(endStr);
+      }
     } else if (preset === "30days") {
       const past = new Date();
       past.setDate(past.getDate() - 30);
-      setDateFrom(past.toISOString().split("T")[0]);
-      setDateTo(endStr);
+      const startStr = formatDateLocal(past);
+      if (setDateRange) {
+        setDateRange(startStr, endStr);
+      } else {
+        setDateFrom(startStr);
+        setDateTo(endStr);
+      }
     } else if (preset === "all") {
-      setDateFrom("");
-      setDateTo("");
+      if (setDateRange) {
+        setDateRange("", "");
+      } else {
+        setDateFrom("");
+        setDateTo("");
+      }
     }
   };
 

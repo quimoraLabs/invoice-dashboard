@@ -219,6 +219,45 @@ describe("Invoice Business Logic Unit Tests", () => {
       }).not.toThrow();
     });
   });
+
+  describe("Date Range Filter Logic", () => {
+    const isWithinRange = (invDateVal, dateFrom, dateTo) => {
+      let invDate;
+      if (invDateVal?.toDate && typeof invDateVal.toDate === "function") {
+        invDate = invDateVal.toDate();
+      } else if (invDateVal?.seconds) {
+        invDate = new Date(invDateVal.seconds * 1000);
+      } else if (typeof invDateVal === "string" && /^\d{4}-\d{2}-\d{2}$/.test(invDateVal)) {
+        const [y, m, d] = invDateVal.split("-").map(Number);
+        invDate = new Date(y, m - 1, d);
+      } else {
+        invDate = new Date(invDateVal);
+      }
+
+      if (dateFrom) {
+        const [fy, fm, fd] = dateFrom.split("-").map(Number);
+        const from = new Date(fy, fm - 1, fd, 0, 0, 0, 0);
+        if (invDate < from) return false;
+      }
+      if (dateTo) {
+        const [ty, tm, td] = dateTo.split("-").map(Number);
+        const to = new Date(ty, tm - 1, td, 23, 59, 59, 999);
+        if (invDate > to) return false;
+      }
+      return true;
+    };
+
+    it("correctly includes dates on the start and end boundaries", () => {
+      expect(isWithinRange("2026-10-01", "2026-10-01", "2026-10-10")).toBe(true);
+      expect(isWithinRange("2026-10-10", "2026-10-01", "2026-10-10")).toBe(true);
+      expect(isWithinRange("2026-10-05", "2026-10-01", "2026-10-10")).toBe(true);
+    });
+
+    it("correctly excludes dates outside the range", () => {
+      expect(isWithinRange("2026-09-30", "2026-10-01", "2026-10-10")).toBe(false);
+      expect(isWithinRange("2026-10-11", "2026-10-01", "2026-10-10")).toBe(false);
+    });
+  });
 });
 
 
