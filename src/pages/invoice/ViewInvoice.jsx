@@ -332,9 +332,16 @@ export default function InvoiceDetailPage() {
             <div>
               <span className="font-semibold text-foreground">Issue Date:</span>{" "}
               {dateFormat(invoice?.invoiceDate || invoice?.invoice_date)
-                ? dateFormat(invoice.invoiceDate || invoice.invoice_date).split(",")[0]
+                ? dateFormat(invoice.invoiceDate || invoice.invoice_date)
                 : "N/A"}
             </div>
+            {invoice?.createdAt && (
+              <div>
+                <span className="font-semibold text-foreground">Created:</span>{" "}
+                {dateFormat(invoice.createdAt)}
+              </div>
+            )}
+
             {invoice?.dueDate && (
               <div>
                 <span className="font-semibold text-foreground">Due Date:</span>{" "}

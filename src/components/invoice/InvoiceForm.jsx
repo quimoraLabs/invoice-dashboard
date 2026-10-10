@@ -178,6 +178,43 @@ function InvoiceForm({
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
+
+    // 1. Customer validation
+    const customerName = invoice.client?.name || invoice.client?.full_name || customerSearch;
+    if (!customerName || !customerName.trim()) {
+      toast.error("Please select or enter a customer for this invoice.");
+      return;
+    }
+
+    // 2. Line Items validation
+    if (!invoice.items || invoice.items.length === 0) {
+      toast.error("Please add at least one line item to the invoice.");
+      return;
+    }
+
+    for (let i = 0; i < invoice.items.length; i++) {
+      const item = invoice.items[i];
+      if (!item.title || !item.title.trim()) {
+        toast.error(`Please select or enter a product for item #${i + 1}.`);
+        return;
+      }
+      if (!item.quantity || Number(item.quantity) <= 0) {
+        toast.error(`Please enter a valid quantity (> 0) for item #${i + 1}.`);
+        return;
+      }
+      if (item.price === undefined || item.price === null || isNaN(Number(item.price)) || Number(item.price) < 0) {
+        toast.error(`Please enter a valid price for item #${i + 1}.`);
+        return;
+      }
+    }
+
+    // 3. Status validation
+    if (!invoice.status || !invoice.status.trim()) {
+      toast.error("Please select a settlement status (e.g. Pending or Paid).");
+      return;
+    }
+
+    // 4. Date validation
     const dateVal = invoice.invoiceDate || invoice.invoice_date;
     const invoiceDate = new Date(dateVal);
     const today = new Date();
@@ -200,7 +237,6 @@ function InvoiceForm({
       }
     }
 
-
     if (invoice.status === "Paid" && !(invoice.paymentType || invoice.payment_type)) {
       toast.error("Please select a payment method for paid invoices.");
       return;
@@ -208,6 +244,10 @@ function InvoiceForm({
 
     onSubmit({
       ...invoice,
+      client: {
+        ...invoice.client,
+        name: customerName.trim(),
+      },
       invoiceNumber: invoice.invoiceNumber || invoice.invoice_no,
       invoiceDate: dateVal,
       taxRate: taxRate,
@@ -218,6 +258,7 @@ function InvoiceForm({
       paymentType: invoice.paymentType || invoice.payment_type || null,
     });
   };
+
 
   return (
     <form className="space-y-6" onSubmit={handleFormSubmit} autoComplete="off">

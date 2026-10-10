@@ -33,9 +33,10 @@ export default function AddInvoice() {
     invoiceDate: formatCurrentDate(),
     taxRate: 18,
     items: [{ id: "", title: "", quantity: 1, price: 0 }],
-    status: "",
+    status: "Pending",
     paymentType: "",
   };
+
 
   const handleCreateSubmit = async (finalInvoice) => {
     if (!targetUid) {

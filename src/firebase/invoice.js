@@ -93,8 +93,13 @@ export function validateInvoiceData(invoicePayload, existingDate = null) {
     }
   }
 
-  // 2. Line Items Non-Empty & Duplicate Product Check
+  // 2. Mandatory Customer / Billed To Validation
+  const clientName = invoicePayload.client?.name || invoicePayload.client?.full_name || invoicePayload.customer_name;
+  if (!clientName || !clientName.trim()) {
+    throw new Error("Customer name is required. Please select or enter a valid customer.");
+  }
 
+  // 3. Line Items Non-Empty & Validated Items
   if (!Array.isArray(invoicePayload.items) || invoicePayload.items.length === 0) {
     throw new Error("Invoice must contain at least one line item.");
   }
@@ -102,8 +107,20 @@ export function validateInvoiceData(invoicePayload, existingDate = null) {
   const seenIds = new Set();
   const seenTitles = new Set();
   invoicePayload.items.forEach((item, index) => {
-    const itemId = item.id?.trim();
     const itemTitle = item.title?.trim().toLowerCase();
+    const itemId = item.id?.trim();
+    const qty = Number(item.quantity);
+    const price = Number(item.price);
+
+    if (!itemTitle) {
+      throw new Error(`Line item at row ${index + 1} must have a product title.`);
+    }
+    if (isNaN(qty) || qty <= 0) {
+      throw new Error(`Quantity for "${item.title}" at row ${index + 1} must be at least 1.`);
+    }
+    if (isNaN(price) || price < 0) {
+      throw new Error(`Price for "${item.title}" at row ${index + 1} cannot be negative.`);
+    }
 
     if (itemId && seenIds.has(itemId)) {
       throw new Error(`Duplicate product found (ID: ${itemId}) at row ${index + 1}. Increase quantity instead.`);
@@ -116,11 +133,17 @@ export function validateInvoiceData(invoicePayload, existingDate = null) {
     if (itemTitle) seenTitles.add(itemTitle);
   });
 
-  // 3. Payment Status Transition Check
+  // 4. Payment Settlement Status Validation
+  if (!invoicePayload.status || !invoicePayload.status.trim()) {
+    throw new Error("Payment status (Pending, Paid, or Draft) is mandatory.");
+  }
+
+  // 5. Payment Method Validation for Paid Status
   if (invoicePayload.status === "Paid" && !invoicePayload.paymentType && !invoicePayload.payment_type) {
-    throw new Error("Payment method (UPI, Card, Cash) is mandatory for Paid status.");
+    throw new Error("Payment method (UPI, Card, Cash, etc.) is mandatory for Paid status.");
   }
 }
+
 
 // Normalize calculation values with strict 2-decimal rounding
 function normalizeInvoiceCalculations(invoicePayload) {

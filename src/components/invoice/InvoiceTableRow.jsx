@@ -85,12 +85,18 @@ function InvoiceTableRow({ invoice }) {
           {invoice.client?.name || invoice.client?.full_name || "Client Name"}
         </td>
 
-        {/* Date Column */}
+        {/* Date & Time Column */}
         <td className="hidden md:table-cell px-6 py-4 text-muted-foreground">
           <div className="text-sm font-medium text-foreground">
             {dateFormat(invoice.invoiceDate || invoice.invoice_date)?.split(",")[0] || "N/A"}
           </div>
+          {(invoice.createdAt || invoice.invoiceDate) && (
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {dateFormat(invoice.createdAt || invoice.invoiceDate)?.split(",")[1]?.trim() || ""}
+            </div>
+          )}
         </td>
+
 
         {/* Amount */}
         <td className="px-4 py-4 text-right font-semibold text-foreground tabular-nums whitespace-nowrap sm:px-6">

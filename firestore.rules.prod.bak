@@ -1,1 +1,101 @@
-[1m[31mError:[39m[22m [1mfirestore:rules:get[22m is not a Firebase command
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+    
+    function ownsDoc() {
+      return isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    function creatingOwnDoc() {
+      return isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+    function isMemberOfWorkspace(workspaceId) {
+      return isAuthenticated() && exists(/databases/$(database)/documents/workspace_members/$(workspaceId + '_' + request.auth.uid));
+    }
+
+    function isWorkspaceOwner(workspaceId) {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/workspace_members/$(workspaceId + '_' + request.auth.uid)) &&
+        get(/databases/$(database)/documents/workspace_members/$(workspaceId + '_' + request.auth.uid)).data.role == 'owner';
+    }
+
+    function isWorkspaceDocOwnerAfter(workspaceId) {
+      return isAuthenticated() &&
+        existsAfter(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
+        getAfter(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerId == request.auth.uid;
+    }
+
+    match /invoices/{docId} {
+      allow read: if ownsDoc();
+      allow create: if creatingOwnDoc();
+      allow update: if ownsDoc() && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsDoc();
+    }
+
+    match /customers/{docId} {
+      allow read: if ownsDoc();
+      allow create: if creatingOwnDoc();
+      allow update: if ownsDoc() && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsDoc();
+    }
+
+    match /products/{docId} {
+      allow read: if ownsDoc();
+      allow create: if creatingOwnDoc();
+      allow update: if ownsDoc() && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsDoc();
+    }
+
+    match /business_profiles/{docId} {
+      allow read, write: if isAuthenticated() && docId == request.auth.uid;
+    }
+
+    match /users/{userId}/counters/{docId} {
+      allow read, write: if isAuthenticated() && userId == request.auth.uid;
+    }
+
+    match /workspaces/{docId} {
+      allow read: if isMemberOfWorkspace(docId);
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isWorkspaceOwner(docId);
+      allow delete: if isWorkspaceOwner(docId);
+    }
+    
+    match /workspace_members/{docId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isMemberOfWorkspace(resource.data.workspaceId)
+      );
+      allow create: if isAuthenticated() && (
+        // 1. Self-join as owner when workspace doc was just created by caller
+        (docId == request.resource.data.workspaceId + '_' + request.auth.uid &&
+         request.resource.data.userId == request.auth.uid &&
+         request.resource.data.role == 'owner' &&
+         isWorkspaceDocOwnerAfter(request.resource.data.workspaceId)) ||
+        // 2. Existing workspace owner adding a member directly
+        (docId == request.resource.data.workspaceId + '_' + request.resource.data.userId &&
+         isWorkspaceOwner(request.resource.data.workspaceId))
+      );
+      allow update: if isWorkspaceOwner(resource.data.workspaceId);
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isWorkspaceOwner(resource.data.workspaceId)
+      );
+    }
+    
+    match /workspace_invites/{docId} {
+      allow read: if isAuthenticated() && (
+        // Note: request.auth.token.email is not populated in custom token (Phase 1 pending)
+        // Invites currently visible to workspace members; full invitee read/accept moves to server endpoint in Phase 2
+        isMemberOfWorkspace(resource.data.workspaceId)
+      );
+      allow create: if isWorkspaceOwner(request.resource.data.workspaceId);
+      allow update, delete: if isWorkspaceOwner(resource.data.workspaceId);
+    }
+  }
+}

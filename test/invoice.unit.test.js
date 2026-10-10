@@ -63,15 +63,59 @@ describe("Invoice Business Logic Unit Tests", () => {
 
   describe("validateInvoiceData (GST date & business rules)", () => {
 
+    const validClient = { name: "Acme Corporation", email: "billing@acme.com" };
     const validItems = [{ id: "p1", title: "Item 1", price: 100, quantity: 1 }];
 
-    it("succeeds for fresh invoice created with today's date", () => {
+    it("succeeds for fresh invoice created with customer, items, status, and today's date", () => {
       expect(() => {
         validateInvoiceData({
+          client: validClient,
+          status: "Pending",
           invoiceDate: new Date().toISOString(),
           items: validItems,
         });
       }).not.toThrow();
+    });
+
+    it("fails when customer is missing or empty", () => {
+      expect(() => {
+        validateInvoiceData({
+          status: "Pending",
+          invoiceDate: new Date().toISOString(),
+          items: validItems,
+        });
+      }).toThrow(/Customer name is required/i);
+    });
+
+    it("fails when line items are missing product title or have invalid price/qty", () => {
+      expect(() => {
+        validateInvoiceData({
+          client: validClient,
+          status: "Pending",
+          invoiceDate: new Date().toISOString(),
+          items: [{ id: "p1", title: "", price: 100, quantity: 1 }],
+        });
+      }).toThrow(/must have a product title/i);
+
+      expect(() => {
+        validateInvoiceData({
+          client: validClient,
+          status: "Pending",
+          invoiceDate: new Date().toISOString(),
+          items: [{ id: "p1", title: "Prod", price: -10, quantity: 1 }],
+        });
+      }).toThrow(/cannot be negative/i);
+    });
+
+    it("fails when settlement status is missing", () => {
+      expect(() => {
+        validateInvoiceData({
+          client: validClient,
+          status: "",
+          invoiceDate: new Date().toISOString(),
+          items: validItems,
+        });
+      }).toThrow(/Payment status.*is mandatory/i);
     });
 
     it("fails when invoiceDate is in the future", () => {
@@ -79,6 +123,8 @@ describe("Invoice Business Logic Unit Tests", () => {
       tomorrow.setDate(tomorrow.getDate() + 2);
       expect(() => {
         validateInvoiceData({
+          client: validClient,
+          status: "Pending",
           invoiceDate: tomorrow.toISOString(),
           items: validItems,
         });
@@ -90,6 +136,8 @@ describe("Invoice Business Logic Unit Tests", () => {
       past120Days.setDate(past120Days.getDate() - 120);
       expect(() => {
         validateInvoiceData({
+          client: validClient,
+          status: "Pending",
           invoiceDate: past120Days.toISOString(),
           items: validItems,
         });
@@ -103,6 +151,7 @@ describe("Invoice Business Logic Unit Tests", () => {
       expect(() => {
         validateInvoiceData(
           {
+            client: validClient,
             invoiceDate: past120Days.toISOString(),
             status: "Pending",
             items: validItems,
@@ -122,6 +171,8 @@ describe("Invoice Business Logic Unit Tests", () => {
       expect(() => {
         validateInvoiceData(
           {
+            client: validClient,
+            status: "Pending",
             invoiceDate: newDate.toISOString(),
             items: validItems,
           },
@@ -137,6 +188,8 @@ describe("Invoice Business Logic Unit Tests", () => {
       expect(() => {
         validateInvoiceData(
           {
+            client: validClient,
+            status: "Pending",
             invoiceDate: futureDate.toISOString(),
             items: validItems,
           },
@@ -148,6 +201,7 @@ describe("Invoice Business Logic Unit Tests", () => {
     it("enforces paymentType when status is Paid", () => {
       expect(() => {
         validateInvoiceData({
+          client: validClient,
           invoiceDate: new Date().toISOString(),
           items: validItems,
           status: "Paid",
@@ -156,6 +210,7 @@ describe("Invoice Business Logic Unit Tests", () => {
 
       expect(() => {
         validateInvoiceData({
+          client: validClient,
           invoiceDate: new Date().toISOString(),
           items: validItems,
           status: "Paid",
@@ -165,4 +220,5 @@ describe("Invoice Business Logic Unit Tests", () => {
     });
   });
 });
+
 
