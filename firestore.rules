@@ -24,28 +24,31 @@ service cloud.firestore {
         get(/databases/$(database)/documents/workspace_members/$(workspaceId + '_' + request.auth.uid)).data.role == 'owner';
     }
 
-    function isWorkspaceDocOwner(workspaceId) {
+    function isWorkspaceDocOwnerAfter(workspaceId) {
       return isAuthenticated() &&
-        exists(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
-        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerId == request.auth.uid;
+        existsAfter(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
+        getAfter(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerId == request.auth.uid;
     }
 
     match /invoices/{docId} {
       allow read: if ownsDoc();
       allow create: if creatingOwnDoc();
-      allow update, delete: if ownsDoc();
+      allow update: if ownsDoc() && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsDoc();
     }
 
     match /customers/{docId} {
       allow read: if ownsDoc();
       allow create: if creatingOwnDoc();
-      allow update, delete: if ownsDoc();
+      allow update: if ownsDoc() && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsDoc();
     }
 
     match /products/{docId} {
       allow read: if ownsDoc();
       allow create: if creatingOwnDoc();
-      allow update, delete: if ownsDoc();
+      allow update: if ownsDoc() && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsDoc();
     }
 
     match /business_profiles/{docId} {
@@ -73,7 +76,7 @@ service cloud.firestore {
         (docId == request.resource.data.workspaceId + '_' + request.auth.uid &&
          request.resource.data.userId == request.auth.uid &&
          request.resource.data.role == 'owner' &&
-         isWorkspaceDocOwner(request.resource.data.workspaceId)) ||
+         isWorkspaceDocOwnerAfter(request.resource.data.workspaceId)) ||
         // 2. Existing workspace owner adding a member directly
         (docId == request.resource.data.workspaceId + '_' + request.resource.data.userId &&
          isWorkspaceOwner(request.resource.data.workspaceId))

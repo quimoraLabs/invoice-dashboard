@@ -67,11 +67,20 @@ There is no `orgId` anywhere in application code (only in `seed.js`). There are 
 - `workspaces`, `workspace_members`, `workspace_invites`: read and write allowed for any signed-in user.
 - `business_profiles`: doc id must equal the caller uid.
 
-**(Phase 0):** reads on domain collections require `resource.data.userId == request.auth.uid`; workspace collections are membership-based (read only for members, invites only for owner/admin, no workspace update/delete, owners cannot be removed). Side effect: accepting invites by email no longer works until server-side invite handling exists.
-
-Rules do not use custom claims and do not enforce roles beyond membership.
+**(Phase 0 Hardened):**
+- Domain collections (`invoices`, `customers`, `products`):
+  - `read`, `delete`: require `ownsDoc()` (`resource.data.userId == request.auth.uid`).
+  - `create`: requires `creatingOwnDoc()` (`request.resource.data.userId == request.auth.uid`).
+  - `update`: requires `ownsDoc()` AND immutable `userId` (`request.resource.data.userId == resource.data.userId`).
+- `workspaces`: read for members; create for authenticated owners; update/delete restricted to workspace owner (`isWorkspaceOwner`).
+- `workspace_members`: read for members and self; create allowed for self-join on newly created workspace via atomic `writeBatch` (enforced using `isWorkspaceDocOwnerAfter` with `existsAfter`/`getAfter`) or by existing workspace owner; update by workspace owner; delete by self or workspace owner.
+- `workspace_invites`: read for members; create/update/delete by workspace owner.
+- `business_profiles`: read/write restricted to caller UID.
+- `users/{userId}/counters/{docId}`: read/write restricted to owner UID.
+- Side effect: accepting invites by email remains client-side pending server endpoint in Phase 2. Rules do not use custom claims and do not enforce roles beyond membership/owner.
 
 ---
+
 
 ## 5. Routes (`src/App.jsx`)
 

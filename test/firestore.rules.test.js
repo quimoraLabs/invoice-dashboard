@@ -4,10 +4,11 @@ import {
   assertFails,
   assertSucceeds,
 } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, writeBatch, query, where, documentId, getDocs, collection } from "firebase/firestore";
 import fs from "fs";
 import path from "path";
 import process from "node:process";
+
 
 const PROJECT_ID = "invoice-dashboard-daedb";
 
@@ -279,4 +280,160 @@ describe("Firestore Security Rules", () => {
       })
     );
   });
+
+  // Test 11: allows owner to create workspace + member in ONE batch
+  it("allows owner to create workspace + member in ONE batch", async () => {
+    const ownerId = "user_batch_owner_1";
+    const workspaceId = "ws_batch_1";
+
+    const ownerContext = testEnv.authenticatedContext(ownerId);
+    const db = ownerContext.firestore();
+
+    const batch = writeBatch(db);
+    batch.set(doc(db, "workspaces", workspaceId), {
+      name: "Batch Workspace",
+      ownerId: ownerId,
+    });
+    batch.set(doc(db, "workspace_members", `${workspaceId}_${ownerId}`), {
+      workspaceId: workspaceId,
+      userId: ownerId,
+      role: "owner",
+    });
+
+    await assertSucceeds(batch.commit());
+  });
+
+  // Test 12: denies attacker batch-joining someone else's workspace
+  it("denies attacker batch-joining someone else's workspace", async () => {
+    const ownerId = "user_victim_2";
+    const attackerId = "user_attacker_2";
+    const workspaceId = "ws_victim_2";
+
+    // Seed workspace owned by victim
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, "workspaces", workspaceId), {
+        name: "Victim Workspace",
+        ownerId: ownerId,
+      });
+    });
+
+    const attackerContext = testEnv.authenticatedContext(attackerId);
+    const db = attackerContext.firestore();
+
+    const batch = writeBatch(db);
+    batch.set(doc(db, "workspace_members", `${workspaceId}_${attackerId}`), {
+      workspaceId: workspaceId,
+      userId: attackerId,
+      role: "owner",
+    });
+
+    await assertFails(batch.commit());
+  });
+
+  // Test 13: allows member to query workspaces using documentId() in [...]
+  it("allows member to query workspaces using documentId() in [...]", async () => {
+    const userId = "user_query_1";
+    const ws1 = "ws_q_1";
+    const ws2 = "ws_q_2";
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, "workspaces", ws1), { name: "WS 1", ownerId: userId });
+      await setDoc(doc(adminDb, "workspace_members", `${ws1}_${userId}`), {
+        workspaceId: ws1,
+        userId: userId,
+        role: "owner",
+      });
+      await setDoc(doc(adminDb, "workspaces", ws2), { name: "WS 2", ownerId: userId });
+      await setDoc(doc(adminDb, "workspace_members", `${ws2}_${userId}`), {
+        workspaceId: ws2,
+        userId: userId,
+        role: "owner",
+      });
+    });
+
+    const userContext = testEnv.authenticatedContext(userId);
+    const db = userContext.firestore();
+
+    const q = query(collection(db, "workspaces"), where(documentId(), "in", [ws1, ws2]));
+    await assertSucceeds(getDocs(q));
+  });
+
+  // Test 14: denies updating invoice to change userId
+  it("denies updating invoice to change userId", async () => {
+    const userId = "user_inv_owner";
+    const invoiceId = "inv_test_immutability";
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, "invoices", invoiceId), {
+        userId: userId,
+        invoiceNumber: "INV-001",
+        total: 100,
+      });
+    });
+
+    const userContext = testEnv.authenticatedContext(userId);
+    const db = userContext.firestore();
+
+    // Updating own invoice without changing userId should succeed
+    await assertSucceeds(
+      setDoc(
+        doc(db, "invoices", invoiceId),
+        { userId: userId, invoiceNumber: "INV-001", total: 200 },
+        { merge: true }
+      )
+    );
+
+    // Updating own invoice but tampering userId to another user should fail
+    await assertFails(
+      setDoc(
+        doc(db, "invoices", invoiceId),
+        { userId: "attacker_user_id", invoiceNumber: "INV-001", total: 200 },
+        { merge: true }
+      )
+    );
+  });
+
+  // Test 15: denies attacker batch attempt to hijack existing workspace ownerId and self-join
+  it("denies attacker batch attempt to hijack existing workspace ownerId and self-join", async () => {
+    const victimOwnerId = "user_victim_3";
+    const attackerId = "user_attacker_3";
+    const workspaceId = "ws_victim_3";
+
+    // Setup victim workspace
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, "workspaces", workspaceId), {
+        name: "Victim Workspace",
+        ownerId: victimOwnerId,
+      });
+      await setDoc(doc(adminDb, "workspace_members", `${workspaceId}_${victimOwnerId}`), {
+        workspaceId: workspaceId,
+        userId: victimOwnerId,
+        role: "owner",
+      });
+    });
+
+    const attackerContext = testEnv.authenticatedContext(attackerId);
+    const db = attackerContext.firestore();
+
+    const batch = writeBatch(db);
+    // Attacker tries to overwrite workspace ownerId to self and create owner-member doc
+    batch.set(
+      doc(db, "workspaces", workspaceId),
+      { ownerId: attackerId },
+      { merge: true }
+    );
+    batch.set(doc(db, "workspace_members", `${workspaceId}_${attackerId}`), {
+      workspaceId: workspaceId,
+      userId: attackerId,
+      role: "owner",
+    });
+
+    await assertFails(batch.commit());
+  });
 });
+
+
