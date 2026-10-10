@@ -5,7 +5,7 @@ dotenv.config({ path: ".env" });
 import admin from "firebase-admin";
 import Groq from "groq-sdk";
 
-// Initialize Firebase Admin SDK
+// Initialize Firebase Admin SDK with strict credentials guard
 if (!admin.apps.length) {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     try {
@@ -13,15 +13,21 @@ if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert(sa),
       });
-    } catch {
-      admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
-      });
+    } catch (err) {
+      console.error("❌ Failed to parse FIREBASE_SERVICE_ACCOUNT JSON in seed.js:", err.message);
+      throw new Error(
+        "FIREBASE_SERVICE_ACCOUNT is malformed JSON. Refusing to run seed script.",
+        { cause: err }
+      );
     }
-  } else {
+  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     admin.initializeApp({
       credential: admin.credential.applicationDefault(),
     });
+  } else {
+    throw new Error(
+      "Missing Firebase Admin credentials. Provide valid FIREBASE_SERVICE_ACCOUNT in .env.local or set GOOGLE_APPLICATION_CREDENTIALS."
+    );
   }
 }
 
@@ -32,9 +38,9 @@ export const groq = groqApiKey ? new Groq({ apiKey: groqApiKey }) : null;
 
 export const GROQ_MODEL = "openai/gpt-oss-120b";
 
-// Parse CLI Arguments: --user=<userId> --org=<orgId>
+// Parse CLI Arguments: --user=<userId> --org=<orgId> --confirm
 export function parseArgs() {
-  const args = {};
+  const args = { confirm: false };
   for (const arg of process.argv.slice(2)) {
     if (arg.startsWith("--user=")) {
       args.userId = arg.split("=")[1]?.trim();
@@ -42,9 +48,13 @@ export function parseArgs() {
     if (arg.startsWith("--org=")) {
       args.orgId = arg.split("=")[1]?.trim();
     }
+    if (arg === "--confirm") {
+      args.confirm = true;
+    }
   }
   return args;
 }
+
 
 // Fallback Static Data with camelCase keys
 export const FALLBACK_CUSTOMERS = [
@@ -413,7 +423,11 @@ Return a JSON object with an "invoices" array. For each invoice:
 }
 
 // Clear Existing User & Org Data
-export async function clearData(userId, orgId) {
+export async function clearData(userId, orgId, confirm = false) {
+  if (!confirm) {
+    console.warn(`⚠️ Skipped clearing previous data for user ${userId}: pass '--confirm' to purge existing mock records.`);
+    return;
+  }
   console.log(`🧹 Clearing existing data for user ${userId} and org ${orgId}...`);
   const collections = ["invoices", "customers", "products"];
 
@@ -435,7 +449,7 @@ export async function clearData(userId, orgId) {
 }
 
 // Main Execution Function
-export async function runSeed(userId, orgId) {
+export async function runSeed(userId, orgId, confirm = false) {
   if (!userId) {
     throw new Error("User ID is required. Pass --user=<userId>");
   }
@@ -444,8 +458,9 @@ export async function runSeed(userId, orgId) {
   console.log(`🎯 Target Firebase Project: ${projectId}`);
   console.log(`🌱 Starting seed for user: ${userId}, org: ${effectiveOrgId}`);
 
-  // 1. Clear existing data
-  await clearData(userId, effectiveOrgId);
+  // 1. Clear existing data only if explicitly confirmed
+  await clearData(userId, effectiveOrgId, confirm);
+
 
   // 2. Generate & Insert Customers
   const rawCustomers = await generateCustomers(5);
@@ -503,7 +518,7 @@ export async function runSeed(userId, orgId) {
 // CLI Execution Entrypoint
 const args = parseArgs();
 if (args.userId) {
-  runSeed(args.userId, args.orgId)
+  runSeed(args.userId, args.orgId, args.confirm)
     .then((stats) => {
       console.log(`\n🎉 Seeding finished successfully! Loaded ${stats.customers} Customers, ${stats.products} Products, ${stats.invoices} Invoices.`);
       process.exit(0);
@@ -513,3 +528,4 @@ if (args.userId) {
       process.exit(1);
     });
 }
+

@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "engines": {
-    "node": "24.x"
+    "node": "20.x"
   },
+
   "overrides": {
     "jose": "^4.15.9"
   },
