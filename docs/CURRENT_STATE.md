@@ -147,14 +147,15 @@ Check both against the repo before relying on them.
 | Field names | camelCase (`invoiceNumber`, `createdAt`) | snake_case (`invoice_no`, `created_at`) |
 | Service signatures | Take `orgId`, stamp `actorUserId` | Take `userId`, no audit stamping |
 | Role enforcement | Rules and UI | None beyond workspace membership |
-| Migration script | `scripts/migrate-to-b2b.js` | Does not exist; no `scripts/` directory |
+| Migration script | `scripts/migrate-to-b2b.js` | Implemented in `scripts/migrate-to-b2b.js` with dry-run/repair tooling; execution deferred to Phase 4 |
 | File storage | Firebase Storage | Cloudinary |
 
 ---
 
-## 11. Not Started
+## 11. Not Started (Phase 1+)
 
-Migration script; `orgId`/`workspaceId` on domain documents and queries; role enforcement in rules and UI; workspace switching endpoint; user provisioning webhook; server-side invite acceptance; rules tests (emulator); backup/export plan; org-scoped invoice sequence.
+`orgId`/`workspaceId` on domain documents and queries; role enforcement beyond owner/member; user provisioning webhook; server-side invite acceptance (`/api/accept-invite`); live migration execution (Phase 4).
+
 
 ---
 

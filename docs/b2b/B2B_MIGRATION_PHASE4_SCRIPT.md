@@ -1,8 +1,9 @@
 > ⚠️ **TARGET-STATE DOCUMENT — NOT CURRENT BEHAVIOR.**
 > This document describes the planned B2B (multi-tenant) design. It does not describe what the code does today, and it uses `orgId` / `organization` vocabulary while the code uses `workspace`.
-> **Known divergence:** This is a plan. `scripts/migrate-to-b2b.js` does not exist and no `scripts/` directory is present.
-> For current behavior see [CURRENT_STATE.md](./CURRENT_STATE.md). For the doc map see [INDEX.md](./INDEX.md). Do not implement from this document without explicit phase approval.
-> Last reviewed against code: 2026-10-06
+> **Known divergence:** The script is implemented in `scripts/migrate-to-b2b.js`, but live execution is strictly deferred to Phase 4 after Phase 1 tenancy decisions.
+> For current behavior see [../CURRENT_STATE.md](../CURRENT_STATE.md). For the doc map see [../INDEX.md](../INDEX.md). Do not run or implement from this document without explicit phase approval.
+> Last reviewed against code: 2026-10-10
+
 
 ---
 

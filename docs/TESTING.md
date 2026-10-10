@@ -1,20 +1,22 @@
 # Testing Strategy & Configuration
 
-The application testing suite employs **Vitest** for unit and component testing, **React Testing Library** for accessible DOM interactions, and **Playwright** for end-to-end user flows.
+> **Disclaimer:** Component tests (RTL) and E2E tests (Playwright) represent target testing architecture for future phases. The application currently implements **Vitest** unit tests and **Firebase Firestore Emulator** security rules & integration test suites.
 
 ---
 
-## 1. Testing Architecture & Tooling
+## 1. Implemented Test Suites (Phase 0)
 
-| Test Level | Tool | Target Scope | Execution Environment |
+| Test Level | Tool | Files | Run Command |
 | :--- | :--- | :--- | :--- |
-| **Unit Testing** | Vitest | Calculation helpers, formatters, service data adapters | Node.js (`v8` coverage) |
-| **Component Testing** | React Testing Library | UI rendering, user events, dropdowns, form inputs | JSDOM with `@testing-library/jest-dom` |
-| **E2E Testing** | Playwright | Full authentication flows, invoice creation, PDF export | Headless Chromium, WebKit, Mobile Safari |
+| **Unit Tests** | Vitest | `test/invoice.unit.test.js`, `test/numberToWords.test.js` | `npm run test:unit` |
+| **Rules Tests** | Vitest + Rules Unit Testing | `test/firestore.rules.test.js` | `npm run test:rules` |
+| **Integration Tests** | Vitest + Firestore Emulator | `test/invoice.integration.test.js` | `npm run test:integration` |
+| **Full Emulator Suite** | Firebase CLI + Vitest | Rules + Integration suites | `npm run test:emulator` |
 
 ---
 
-## 2. Configuration Files
+## 2. Target Testing Architecture (Future Phases)
+
 
 ### A. Vitest Setup (`vitest.config.js`)
 ```javascript

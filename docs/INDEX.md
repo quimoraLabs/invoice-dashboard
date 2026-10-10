@@ -27,8 +27,8 @@ Each carries a disclaimer header. They use `orgId` / `organization` vocabulary; 
 | [DATABASE.md](./DATABASE.md) | Firestore schema with `orgId`, `organizations`, role rules | Target state |
 | [SERVICE_API.md](./SERVICE_API.md) | Service layer API scoped by `orgId` with audit stamping | Target state |
 | [ROUTES.md](./ROUTES.md) | Routing table and role/org-aware guards | Partly current (paths), guards are target |
-| [B2B_MIGRATION_STEP1.md](./B2B_MIGRATION_STEP1.md) | Ownership model and tenant architecture spec | Spec only, not implemented |
-| [B2B_MIGRATION_PHASE4_SCRIPT.md](./B2B_MIGRATION_PHASE4_SCRIPT.md) | Plan for `scripts/migrate-to-b2b.js` | Script implemented (`scripts/migrate-to-b2b.js`), pending vocabulary alignment & verification |
+| [b2b/B2B_MIGRATION_STEP1.md](./b2b/B2B_MIGRATION_STEP1.md) | Ownership model and tenant architecture spec | Spec only, not implemented |
+| [b2b/B2B_MIGRATION_PHASE4_SCRIPT.md](./b2b/B2B_MIGRATION_PHASE4_SCRIPT.md) | Plan for `scripts/migrate-to-b2b.js` | Script implemented (`scripts/migrate-to-b2b.js`), pending vocabulary alignment & verification |
 | [CLERK_SETUP.md](./CLERK_SETUP.md) | Clerk JWT template and custom claims (Phase 1) | Partly applied, claims not used by the app |
 
 ---
@@ -42,7 +42,8 @@ Each carries a disclaimer header. They use `orgId` / `organization` vocabulary; 
 | [FEATURES.md](./FEATURES.md) | Feature matrix and roadmap | - |
 | [RESPONSIVE.md](./RESPONSIVE.md) | Responsive and mobile strategy | - |
 | [TESTING.md](./TESTING.md) | Testing strategy | Configured: Vitest unit tests (`test:unit`), rules tests (`test:rules`), and integration smoke suite (`test:integration`) on Firestore emulator |
-| [B2B_MIGRATION_AUDIT_REPORT.md](./B2B_MIGRATION_AUDIT_REPORT.md) | Phase 0 & B2B remaining work audit | Comprehensive audit report (spec vs code vs verified, risks, roadmap) |
+| [b2b/B2B_MIGRATION_AUDIT_REPORT.md](./b2b/B2B_MIGRATION_AUDIT_REPORT.md) | Phase 0 & B2B remaining work audit | Comprehensive audit report (spec vs code vs verified, risks, roadmap) |
+
 
 ---
 

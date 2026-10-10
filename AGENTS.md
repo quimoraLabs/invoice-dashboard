@@ -64,12 +64,12 @@ This section is authoritative for business logic. AI agents MUST follow these ru
 - A product appears only ONCE per invoice.
 - Multiple units = increase quantity.
 - Enforcement: dropdown filter + validation in InvoiceForm.jsx.
-
 ### 6.3 Invoice Numbering
 - Sequential: INV-001, INV-002...
 - No gaps (GST).
-- Org-scoped.
-- Status: NOT yet implemented (current code uses lexicographic order, breaks at INV-1000).
+- User-scoped transactional counter (`/users/{userId}/counters/invoice`).
+- Status: Implemented in Phase 0 via `runTransaction` with numeric incrementation and dual-write (`invoiceNumber` and legacy `invoice_no`).
+
 
 ### 6.4 Tax Rules
 - Default GST: 18% (overridable per product).
@@ -100,9 +100,14 @@ This section is authoritative for business logic. AI agents MUST follow these ru
 - Dev server: `npm run dev` (note: `/api` routes need `vercel dev`)
 - Build: `npm run build`
 - Lint: `npm run lint`
-- There is currently no automated test runner configured.
+- Tests:
+  - Unit tests: `npm run test:unit` (Vitest)
+  - Security Rules tests: `npm run test:rules` (Firestore Emulator)
+  - Integration tests: `npm run test:integration` (Firestore Emulator)
+  - Full emulator suite: `npm run test:emulator`
 
-Before marking any task done: `npm run build` and `npm run lint` pass, and mobile viewports are checked if layout changed.
+Before marking any task done: `npm run build`, `npm run lint`, and tests pass, and mobile viewports are checked if layout changed.
+
 
 ---
 
