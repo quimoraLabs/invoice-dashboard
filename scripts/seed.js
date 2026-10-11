@@ -456,6 +456,21 @@ export async function runSeed(userId, orgId, confirm = false) {
   const effectiveOrgId = orgId || userId;
   const projectId = db.projectId || process.env.VITE_FIREBASE_PROJECT_ID || "unknown";
   console.log(`🎯 Target Firebase Project: ${projectId}`);
+
+  // Production safety guard: block accidental mock seeding on production
+  const isProduction = projectId === "invoice-dashboard-daedb" || (!process.env.FIRESTORE_EMULATOR_HOST && !projectId.includes("demo-"));
+  if (isProduction) {
+    const projectFlag = process.argv.find((a) => a.startsWith("--project="));
+    const confirmedProjectId = projectFlag ? projectFlag.split("=")[1] : null;
+
+    if (!process.argv.includes("--allow-production") || confirmedProjectId !== projectId) {
+      console.error(`\n🚨 CRITICAL SAFETY GUARD: Target project '${projectId}' is a LIVE/PRODUCTION project.`);
+      console.error(`Refusing to seed mock data on production. To proceed, you MUST explicitly provide all flags:`);
+      console.error(`    npm run seed -- --user=<userId> --confirm --allow-production --project=${projectId}\n`);
+      process.exit(1);
+    }
+  }
+
   console.log(`🌱 Starting seed for user: ${userId}, org: ${effectiveOrgId}`);
 
   // 1. Clear existing data only if explicitly confirmed

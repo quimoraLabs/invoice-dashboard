@@ -152,13 +152,25 @@ Check both against the repo before relying on them.
 
 ---
 
-## 11. Not Started (Phase 1+)
+## 11. B2B Cutover Sequence & Tenancy Migration Order
 
-`orgId`/`workspaceId` on domain documents and queries; role enforcement beyond owner/member; user provisioning webhook; server-side invite acceptance (`/api/accept-invite`); live migration execution (Phase 4).
-
+To avoid cross-tenant leaks or breaking live production during migration to multi-tenancy:
+1. **Firestore Data Backup:** Full Firestore export (`gcloud firestore export`) or PITR snapshot before running any migration scripts.
+2. **Phase 1 (Auth Bridge):** Implement Clerk Custom Claims (`orgId`, `role`) minting via `/api/create-firebase-token.js` without altering live database rules.
+3. **Phase 2 & 3 (Rules & Indexes Staging):** Prepare `request.auth.token.orgId` rules and composite indexes.
+4. **Phase 4 (Data Migration):** Run `scripts/migrate-to-b2b.js` in dry-run mode, verify migration report, test with single canary user (`--user=`), then execute full batch.
+5. **Phase 5 (Service Layer Cutover):** Re-scope client queries (`invoice.js`, `customer.js`, `product.js`) to `workspaceId`/`orgId`.
+6. **Synchronized Production Deployment:** Deploy Firestore security rules and client code together within the same maintenance window.
+7. **Rollback Strategy:** Revert git commit via tag, restore rules version in Firebase Console Rules History, and restore Firestore data from step 1 export if data corruption occurs.
 
 ---
 
-## 12. Update Protocol
+## 12. Not Started (Phase 1+)
+
+`orgId`/`workspaceId` on domain documents and queries; role enforcement beyond owner/member; user provisioning webhook; server-side invite acceptance (`/api/accept-invite`); live migration execution (Phase 4).
+
+---
+
+## 13. Update Protocol
 
 Update this file in the same change as any change to rules, auth flow, collections, routes, env vars, or the workspace feature. Keep "Last reviewed against code" accurate.

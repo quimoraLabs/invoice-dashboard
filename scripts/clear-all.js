@@ -117,11 +117,16 @@ export async function main() {
 
   // Step 2: Safety Check
   const isProduction = projectId === "invoice-dashboard-daedb" || (!process.env.FIRESTORE_EMULATOR_HOST && !projectId.includes("demo-"));
-  if (isProduction && !process.argv.includes("--allow-production")) {
-    console.error(`\n🚨 CRITICAL SAFETY GUARD: Target project '${projectId}' is a LIVE/PRODUCTION project.`);
-    console.error(`Refusing to delete data. To proceed on production, you MUST explicitly provide both flags:`);
-    console.error(`    npm run clear:all -- --confirm --allow-production\n`);
-    return;
+  if (isProduction) {
+    const projectFlag = process.argv.find((a) => a.startsWith("--project="));
+    const confirmedProjectId = projectFlag ? projectFlag.split("=")[1] : null;
+
+    if (!process.argv.includes("--allow-production") || confirmedProjectId !== projectId) {
+      console.error(`\n🚨 CRITICAL SAFETY GUARD: Target project '${projectId}' is a LIVE/PRODUCTION project.`);
+      console.error(`Refusing to delete data. To proceed on production, you MUST explicitly provide all flags:`);
+      console.error(`    npm run clear:all -- --confirm --allow-production --project=${projectId}\n`);
+      process.exit(1);
+    }
   }
 
   if (!flags.confirm) {
