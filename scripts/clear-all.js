@@ -4,7 +4,7 @@ dotenv.config({ path: ".env" });
 
 import admin from "firebase-admin";
 
-// Initialize Firebase Admin SDK
+// Initialize Firebase Admin SDK with strict credentials guard
 if (!admin.apps.length) {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     try {
@@ -12,15 +12,21 @@ if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert(sa),
       });
-    } catch {
-      admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
-      });
+    } catch (err) {
+      console.error("❌ Failed to parse FIREBASE_SERVICE_ACCOUNT JSON in clear-all.js:", err.message);
+      throw new Error(
+        "FIREBASE_SERVICE_ACCOUNT is malformed JSON. Refusing to run clear-all script.",
+        { cause: err }
+      );
     }
-  } else {
+  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     admin.initializeApp({
       credential: admin.credential.applicationDefault(),
     });
+  } else {
+    throw new Error(
+      "Missing Firebase Admin credentials. Provide valid FIREBASE_SERVICE_ACCOUNT in .env.local or set GOOGLE_APPLICATION_CREDENTIALS."
+    );
   }
 }
 

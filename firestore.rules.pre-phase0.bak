@@ -19,44 +19,29 @@ service cloud.firestore {
     }
 
     function isWorkspaceOwner(workspaceId) {
-      return isAuthenticated() &&
-        exists(/databases/$(database)/documents/workspace_members/$(workspaceId + '_' + request.auth.uid)) &&
-        get(/databases/$(database)/documents/workspace_members/$(workspaceId + '_' + request.auth.uid)).data.role == 'owner';
-    }
-
-    function isWorkspaceDocOwnerAfter(workspaceId) {
-      return isAuthenticated() &&
-        existsAfter(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
-        getAfter(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerId == request.auth.uid;
+      return isAuthenticated() && get(/databases/$(database)/documents/workspace_members/$(workspaceId + '_' + request.auth.uid)).data.role == 'owner';
     }
 
     match /invoices/{docId} {
       allow read: if ownsDoc();
       allow create: if creatingOwnDoc();
-      allow update: if ownsDoc() && request.resource.data.userId == resource.data.userId;
-      allow delete: if ownsDoc();
+      allow update, delete: if ownsDoc();
     }
 
     match /customers/{docId} {
       allow read: if ownsDoc();
       allow create: if creatingOwnDoc();
-      allow update: if ownsDoc() && request.resource.data.userId == resource.data.userId;
-      allow delete: if ownsDoc();
+      allow update, delete: if ownsDoc();
     }
 
     match /products/{docId} {
       allow read: if ownsDoc();
       allow create: if creatingOwnDoc();
-      allow update: if ownsDoc() && request.resource.data.userId == resource.data.userId;
-      allow delete: if ownsDoc();
+      allow update, delete: if ownsDoc();
     }
 
     match /business_profiles/{docId} {
       allow read, write: if isAuthenticated() && docId == request.auth.uid;
-    }
-
-    match /users/{userId}/counters/{docId} {
-      allow read, write: if isAuthenticated() && userId == request.auth.uid;
     }
 
     match /workspaces/{docId} {
@@ -72,14 +57,8 @@ service cloud.firestore {
         isMemberOfWorkspace(resource.data.workspaceId)
       );
       allow create: if isAuthenticated() && (
-        // 1. Self-join as owner when workspace doc was just created by caller
-        (docId == request.resource.data.workspaceId + '_' + request.auth.uid &&
-         request.resource.data.userId == request.auth.uid &&
-         request.resource.data.role == 'owner' &&
-         isWorkspaceDocOwnerAfter(request.resource.data.workspaceId)) ||
-        // 2. Existing workspace owner adding a member directly
-        (docId == request.resource.data.workspaceId + '_' + request.resource.data.userId &&
-         isWorkspaceOwner(request.resource.data.workspaceId))
+        (request.resource.data.userId == request.auth.uid && request.resource.data.role == 'owner') ||
+        isWorkspaceOwner(request.resource.data.workspaceId)
       );
       allow update: if isWorkspaceOwner(resource.data.workspaceId);
       allow delete: if isAuthenticated() && (
@@ -90,8 +69,7 @@ service cloud.firestore {
     
     match /workspace_invites/{docId} {
       allow read: if isAuthenticated() && (
-        // Note: request.auth.token.email is not populated in custom token (Phase 1 pending)
-        // Invites currently visible to workspace members; full invitee read/accept moves to server endpoint in Phase 2
+        resource.data.invitedEmail == request.auth.token.email ||
         isMemberOfWorkspace(resource.data.workspaceId)
       );
       allow create: if isWorkspaceOwner(request.resource.data.workspaceId);
