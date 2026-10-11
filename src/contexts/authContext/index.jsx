@@ -77,6 +77,7 @@ export function AuthProvider({ children }) {
     return () => {
       isCancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally subscribed to stable IDs (user?.id, session?.id) to re-sync on account change without object identity thrashing
   }, [isLoaded, isSignedIn, user?.id, session?.id]);
 
   const currentUser = useMemo(() => {
