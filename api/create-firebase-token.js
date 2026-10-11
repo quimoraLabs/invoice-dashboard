@@ -2,13 +2,14 @@
 import { verifyToken } from "@clerk/backend";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 
 export const config = {
   runtime: 'nodejs',
 };
 
 // Singleton Firebase Admin initialization
-function getAdminAuth() {
+function initAdminApp() {
   if (!getApps().length) {
     const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
     if (!rawServiceAccount) {
@@ -30,7 +31,16 @@ function getAdminAuth() {
       credential: cert(serviceAccount),
     });
   }
+}
+
+function getAdminAuth() {
+  initAdminApp();
   return getAuth();
+}
+
+function getAdminFirestore() {
+  initAdminApp();
+  return getFirestore();
 }
 
 export default async function handler(req, res) {
@@ -49,7 +59,7 @@ export default async function handler(req, res) {
         body = {};
       }
     }
-    const { clerkToken } = body || {};
+    const { clerkToken, workspaceId: requestedWorkspaceId } = body || {};
 
     if (!clerkToken) {
       return res.status(400).json({ error: "Missing 'clerkToken' in request body." });
@@ -86,17 +96,74 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Invalid Clerk token: missing subject (userId)." });
     }
 
-    // 2. Generate Firebase custom token for this userId
-    const adminAuth = getAdminAuth();
-    const firebaseToken = await adminAuth.createCustomToken(userId);
+    // 2. Resolve custom claims for B2B multi-tenancy (workspaceId & role)
+    const customClaims = {};
+    let resolvedWorkspaceId = null;
+    let resolvedRole = null;
 
-    // 3. Return minted token
-    return res.status(200).json({ firebaseToken });
+    // Check claims embedded in Clerk token (from template or private_metadata)
+    const tokenWorkspaceId = verifiedClaims?.workspaceId || verifiedClaims?.orgId;
+    const tokenRole = verifiedClaims?.role;
+
+    if (tokenWorkspaceId && typeof tokenWorkspaceId === "string") {
+      resolvedWorkspaceId = tokenWorkspaceId;
+      resolvedRole = typeof tokenRole === "string" ? tokenRole : "accountant";
+    }
+
+    // If client requested a specific workspace or token didn't contain claims, resolve from Firestore
+    try {
+      const adminDb = getAdminFirestore();
+      if (requestedWorkspaceId && typeof requestedWorkspaceId === "string") {
+        const memberDoc = await adminDb
+          .collection("workspace_members")
+          .doc(`${requestedWorkspaceId}_${userId}`)
+          .get();
+
+        if (memberDoc.exists) {
+          const data = memberDoc.data() || {};
+          resolvedWorkspaceId = requestedWorkspaceId;
+          resolvedRole = data.role || "accountant";
+        }
+      } else if (!resolvedWorkspaceId) {
+        // Fallback: look up user's primary/first workspace membership
+        const membershipSnap = await adminDb
+          .collection("workspace_members")
+          .where("userId", "==", userId)
+          .limit(1)
+          .get();
+
+        if (!membershipSnap.empty) {
+          const firstDoc = membershipSnap.docs[0].data() || {};
+          resolvedWorkspaceId = firstDoc.workspaceId;
+          resolvedRole = firstDoc.role || "accountant";
+        }
+      }
+    } catch (dbErr) {
+      console.warn("Could not resolve workspace membership from Firestore Admin:", dbErr.message);
+    }
+
+    if (resolvedWorkspaceId) {
+      customClaims.workspaceId = resolvedWorkspaceId;
+      if (resolvedRole) {
+        customClaims.role = resolvedRole;
+      }
+    }
+
+    // 3. Generate Firebase custom token with claims
+    const adminAuth = getAdminAuth();
+    const firebaseToken = Object.keys(customClaims).length > 0
+      ? await adminAuth.createCustomToken(userId, customClaims)
+      : await adminAuth.createCustomToken(userId);
+
+    // 4. Return minted token
+    return res.status(200).json({
+      firebaseToken,
+      claims: customClaims,
+    });
   } catch (error) {
     console.error("Token exchange failed:", error);
     return res.status(401).json({
       error: "Authentication exchange failed",
-      details: error.message,
     });
   }
 }

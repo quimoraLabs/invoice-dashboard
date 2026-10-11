@@ -30,8 +30,8 @@ This is the only doc that describes what the code does **today**. Target-state d
 1. User signs in with Clerk (`/login`, `/register`).
 2. `src/contexts/authContext/index.jsx` gets a Clerk token via `session.getToken({ template: "firebase" })`.
 3. It POSTs that token to `/api/create-firebase-token`.
-4. The function verifies it with `verifyToken` (`@clerk/backend`) and mints a Firebase custom token with `admin.auth().createCustomToken(userId)`. **No custom claims are added**, so `orgId` / `role` from the Clerk template never reach Firebase.
-5. The client calls `signInWithCustomToken`. `request.auth.uid` in Firestore rules equals the Clerk user id (`user_...`).
+4. The function verifies it with `verifyToken` (`@clerk/backend`), resolves the active workspace (`workspaceId` and `role`) from token claims or `workspace_members`, and mints a Firebase custom token with `admin.auth().createCustomToken(userId, customClaims)`. Custom claims `{ workspaceId, role }` are minted into the Firebase token. Internal error details are masked to prevent leakages.
+5. The client calls `signInWithCustomToken`. `request.auth.uid` in Firestore rules equals the Clerk user id (`user_...`), and `request.auth.token.workspaceId` and `request.auth.token.role` are available in Firebase custom claims.
 6. The app renders only after the Firebase session is ready (`firebaseReady` gate).
 
 Required server env (Vercel): `CLERK_SECRET_KEY` and the Firebase service account (`FIREBASE_SERVICE_ACCOUNT`). Required client env: `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_FIREBASE_*`, `VITE_CLOUDINARY_*`. Note `.env.example` does not list the Cloudinary variables.
