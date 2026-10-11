@@ -116,6 +116,14 @@ export async function main() {
   console.log(`\nTotal documents across target collections: ${totalDocsFound}`);
 
   // Step 2: Safety Check
+  const isProduction = projectId === "invoice-dashboard-daedb" || (!process.env.FIRESTORE_EMULATOR_HOST && !projectId.includes("demo-"));
+  if (isProduction && !process.argv.includes("--allow-production")) {
+    console.error(`\n🚨 CRITICAL SAFETY GUARD: Target project '${projectId}' is a LIVE/PRODUCTION project.`);
+    console.error(`Refusing to delete data. To proceed on production, you MUST explicitly provide both flags:`);
+    console.error(`    npm run clear:all -- --confirm --allow-production\n`);
+    return;
+  }
+
   if (!flags.confirm) {
     console.log(`\n⚠️  WARNING: This will PERMANENTLY DELETE all data in project '${projectId}'.`);
     console.log("⚠️  Run with '--confirm' to proceed with deletion:");

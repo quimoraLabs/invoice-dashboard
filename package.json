@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "engines": {
-    "node": ">=20.0.0"
+    "node": "24.x"
   },
 
   "overrides": {
@@ -21,7 +21,7 @@
     "test:unit": "vitest run test/invoice.unit.test.js test/numberToWords.test.js",
     "test:rules": "firebase emulators:exec --only firestore \"vitest run test/firestore.rules.test.js\"",
     "test:integration": "firebase emulators:exec --only firestore \"vitest run test/invoice.integration.test.js\"",
-    "test:emulator": "firebase emulators:exec --only firestore \"vitest run test/firestore.rules.test.js && vitest run test/invoice.integration.test.js\"",
+    "test:emulator": "firebase emulators:exec --only firestore \"vitest run test/firestore.rules.test.js test/invoice.integration.test.js --fileParallelism=false\"",
     "preview": "vite preview"
   },
   "dependencies": {
