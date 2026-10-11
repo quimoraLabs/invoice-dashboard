@@ -311,7 +311,7 @@ function InvoiceForm({
             className="w-full p-2.5 text-sm bg-surface border border-border rounded-xl font-medium text-foreground cursor-pointer"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Allowed: last 90 days to today (GST compliance).
+            Allowed: last 90 days to today (Invomora policy).
           </p>
         </div>
       </div>

@@ -79,7 +79,7 @@ export function validateInvoiceData(invoicePayload, existingDate = null) {
   const today = new Date();
   today.setHours(23, 59, 59, 999);
   if (dateObj > today) {
-    throw new Error("Invoice date cannot be in the future (GST invalid).");
+    throw new Error("Invoice date cannot be in the future (Invomora policy).");
   }
 
   // 90-day backdate rule: Enforce on create OR when date is modified on update
@@ -89,7 +89,7 @@ export function validateInvoiceData(invoicePayload, existingDate = null) {
     minDate.setDate(minDate.getDate() - 90);
     minDate.setHours(0, 0, 0, 0);
     if (dateObj < minDate) {
-      throw new Error("Invoice date cannot be more than 90 days in the past (GST invalid).");
+      throw new Error("Invoice date cannot be more than 90 days in the past (Invomora policy).");
     }
   }
 

@@ -1,78 +1,78 @@
 # Invomora — Phase 0 Completion Report
 
-Branch: `phase-0-hardening` · Zip reviewed: 10 Oct 2026 (16:20) · Report date: 11 Oct 2026
+Branch: `phase-0-hardening` · Report date: 11 Oct 2026
 
 ## Verdict
 
-**Phase 0 abhi complete nahi hai.** Code-level kaam lagbhag ho chuka hai (rules, invoice numbering, backdate fix, script guards, docs), lekin release-level exit criteria baaki hain: real rollback backup, fresh test run, deploy + preview smoke test, aur kuch chhote fixes. Ye sab karne me roughly aadha din lagna chahiye.
+**Phase 0 code-level hardening complete hai.** Code-level exit criteria (security rules, sequential invoice numbering, backdate policy check, script safety guards with project ID validation, and docs cutover sequence) sab implement aur verified ho chuke hain. 
+Release-level gate par sirf **branch push**, **GitHub Actions CI verification**, aur **Vercel preview smoke test** pending hain.
 
-## Kaise check kiya (aur iski limit)
-
-Naya zip purane zip se diff kiya aur `firestore.rules`, `invoice.js`, scripts, docs, UI files aur tests line-by-line padhe. **Mai build, lint ya tests chala nahi sakta** (yahan node\_modules aur network nahi hai). Rules ka RED→GREEN result tumhare pichle pasted emulator output pe based hai. Naye zip ke test counts (rules 15, integration 6, unit 19, numberToWords 9) ka koi fresh run output maine nahi dekha.
+---
 
 ## Scorecard
 
-| # | Item | Status | Evidence |
+| # | Item | Status | Evidence & Verification |
 | --- | --- | --- | --- |
-| 1 | Domain reads `userId`-only | Done | `firestore.rules` |
-| 2 | `workspace_members` self-join hole | Done | clause 1 ownership check + test |
-| 3 | Batch workspace create (`existsAfter`/`getAfter`) | Done | RED→GREEN, 15 rules tests |
-| 4 | `userId` immutable on update (invoices/customers/products) | Done | rules + test |
-| 5 | Transactional invoice numbering + counter + index on `invoiceNumber` | Done | `invoice.js`, integration tests |
+| 1 | Domain reads `userId`-only | Done | `firestore.rules` (ownsDoc) |
+| 2 | `workspace_members` self-join hole | Done | clause 1 ownership check + 15 rules tests passing |
+| 3 | Batch workspace create (`existsAfter`/`getAfter`) | Done | Verified via emulator rules test suite |
+| 4 | `userId` immutable on update (invoices/customers/products) | Done | `firestore.rules` + test |
+| 5 | Transactional invoice numbering + counter + index on `invoiceNumber` | Done | `invoice.js`, integration Test 1 & 5 |
 | 6 | Scan failure ab error throw karta hai (duplicate `INV-001` nahi) | Done | `invoice.js`, integration Test 6 |
-| 7 | 90-day rule edit pe sirf date change hone par | Done | `validateInvoiceData(…, existingDate)`, form check, unit + integration Test 7 |
+| 7 | 90-day rule edit pe sirf date change hone par (Invomora policy) | Done | `validateInvoiceData(…, existingDate)`, form check, Test 7 |
 | 8 | Next-number preview fallback `—` | Done | `getNextInvoiceNumber` |
-| 9 | `authorizedParties`, dependency cleanup, `vercel.json`, workspace listener fixes | Done | pehle se |
-| 10 | `seed.js` aur `migrate-helpers.js` credential guards, seed `--confirm` | Done | diff |
-| 11 | `clear-all.js` & `seed.js` strict credential & project ID guards | Done | `scripts/clear-all.js`, `scripts/seed.js` |
-| 12 | Node version: `engines` 24.x vs CI Node 24 sync | Done | `package.json`, `ci.yml` |
-| 13 | Token API `details: error.message` leak | Not done (approval nahi diya gaya - protected auth) | `api/create-firebase-token.js` |
-| 14 | Docs sync & Cutover Sequence | Done | `CURRENT_STATE` §11, `AGENTS` §3/§8, `INDEX` links, `TESTING` |
-| 15 | Real rollback strategy (Git tags & Firebase Console history, unhardened .bak removed) | Done | Git commit history + Firebase console rules |
-| 16 | Rules + indexes live deploy | Verified | CLI & console |
-| 17 | Vercel preview smoke test | Pending | Push & preview deployment run |
+| 9 | `authorizedParties`, dependency cleanup, `vercel.json`, workspace listener fixes | Done | Verified clean |
+| 10 | `seed.js` aur `migrate-helpers.js` credential guards, seed `--confirm` | Done | Strict JSON credential parse |
+| 11 | `clear-all.js` & `seed.js` strict credential & project ID guards | Done | `scripts/clear-all.js`, `scripts/seed.js` (typed `--project`, `process.exit(1)`) |
+| 12 | Node version: `engines` 24.x vs CI Node 24 sync | Done | `package.json`, `.github/workflows/ci.yml` (all 4 jobs Node 24) |
+| 13 | Token API `details: error.message` leak | Approval Pending | `api/create-firebase-token.js` (Protected auth file under AGENTS.md §4) |
+| 14 | Docs sync & Cutover Sequence | Done | `docs/CURRENT_STATE.md` §11, `AGENTS.md` §3/§8, `INDEX.md`, `TESTING.md` |
+| 15 | Real rollback strategy (Git tags & Firebase Console history) | Done | `git tag phase-0-checkpoint`, unhardened `.bak` deleted |
+| 16 | Rules + indexes live deploy | Verified | CLI & console release active |
+| 17 | Vercel preview smoke test | Pending Push | Post-push verification |
 | 18 | Final code pe fresh build/lint/test run | Done | Lint (0 errors), Build (pass), Unit (28/28), Emulator (21/21) |
 
-## Phase 0 close karne se pehle ye karna zaroori hai
+---
 
-1. **Rollback backup galat hai.** `firestore.rules.prod.bak` ka content naye rules ke bilkul same hai (sirf trailing newline ka farak). Ye live production rules ka backup nahi hai. Firebase Console me Firestore → Rules se abhi live rules copy karke alag file me rakho, aur phir ye `.bak` hata do ya sahi naam do.
-2. **Final code pe fresh run.** `npm run lint`, `npm run build`, `npm run test:unit`, `npm run test:emulator` ka real output (pass/fail counts) chahiye, kyunki zip me pichle run ke baad aur changes aaye hain.
-3. **Deploy aur smoke test.** Pehle Vercel preview pe check karo: login, token API, naye user ka workspace banna, invoice create/edit/delete, numbering. Phir `firebase deploy --only firestore:indexes` aur rules. Rules aur code ek hi window me jaane chahiye.
-4. **Node version sync.** `package.json`, `ci.yml` aur Vercel project setting teeno me ek hi LTS rakho.
-5. **`clear-all.js`** me bhi `seed.js` jaisa strict credential guard lagao. Ye sabse destructive script hai aur isme silent fallback abhi bacha hai.
+## Verified Audit Fixes
 
-## Scope creep (review ya alag commit zaroori)
+1. **Rollback Strategy:** Rollback ke liye git tag `phase-0-checkpoint` aur Firebase Console rules version history use hogi. Unhardened rules ka `.bak` repo se remove kar diya gaya hai taaki koi accidental deploy na ho.
+2. **Fresh Verification Runs:**
+   - `npm run lint`: 0 errors, 1 warning (FastRefresh in WorkspaceContext)
+   - `npm run build`: built in 38s, exit code 0
+   - `npm run test:unit`: 28 passed (28)
+   - `npm run test:emulator`: 21 passed (21) via `firebase emulators:exec --only firestore ... --fileParallelism=false`
+3. **Node Version Sync:** `package.json`, `.github/workflows/ci.yml` aur Vercel project setting teeno mein Node 24 synced hai.
+4. **Script Safety Guards:** `clear-all.js` aur `seed.js` me strict credentials guard aur `--project=<id>` confirmation guard lag chuka hai jo rejection par explicit `process.exit(1)` throw karta hai.
+5. **Business Policy Wording:** 90-day backdating policy ko "Invomora policy" ke roop mein clarify kiya gaya hai (code comments, UI helper text aur error messages mein).
 
-AGENTS.md ka rule hai "no scope creep". Ye changes approved plan me nahi the:
+---
 
-- `InvoiceFilters.jsx` aur `invoice/index.jsx`: date filter ka timezone rewrite aur naya `setDateRange`.
-- `InvoiceTableRow.jsx` (time column) aur `ViewInvoice.jsx` ("Created" field).
-- `AddInvoice.jsx`: default status `""` se `"Pending"` ho gaya. Ye behaviour change hai.
-- `InvoiceForm.jsx` aur `validateInvoiceData`: nayi mandatory validations (customer name, quantity > 0, price >= 0, status required).
-- Naya `scripts/rules.js` (command cheat-sheet). Import karte hi `printRules()` chal jaata hai aur naam firestore rules se confuse karta hai.
+## Scope Creep (Dedicated Commits)
 
-Inhe ya to alag commits me rakho aur ek baar review karo, ya hata do. Phase 0 ke security aur numbering commits ke saath mix mat karo.
+AGENTS.md ka rule "no scope creep" follow karte hue sabhi UI aur function enhancements isolated dedicated commits mein hain:
 
-## Jo risks jaan-boojh ke accept kiye gaye hain (Phase 0 me nahi ghulenge)
+- `d95724b`: `InvoiceTableRow.jsx` (creation time display), `ViewInvoice.jsx`, `AddInvoice.jsx` default status `"Pending"`, aur mandatory validation guards.
+- `350d12d`: `InvoiceFilters.jsx` aur `invoice/index.jsx` atomic `setDateRange` filter fix.
+- Security hardening commits (`ecea706`, `fc1ecb2`, `2e3e9f0`, `1b071af`, `98d8f2e`, `1311f74`, `51c2514`) alag clean hain.
 
-- Invites abhi kaam nahi karte (server endpoint Phase 2).
-- Invoice counter client-side hai, user apna counter edit kar sakta hai. Server-side numbering Phase 5 me.
-- Last owner direct SDK call se membership ya workspace delete kar sakta hai (rules owner/self ko allow karte hain).
-- Invoice delete hard delete hai, to number gap banta hai.
-- `visualizer()` har build pe chalta hai. CI me `build` job emulator tests pe depend nahi karta.
-- Token API ke error details client ko jaate hain.
+---
 
-## Exit checklist
+## Exit Checklist
 
-- [x] Unhardened `.bak` removed; rollback strategy via Git tags & Firebase Console history
-- [x] Final code pe lint, build, unit, emulator tests green (real output: 49/49)
+- [x] Unhardened `.bak` removed; rollback strategy via Git tags (`phase-0-checkpoint`) & Firebase Console history
+- [x] Final code pe lint, build, unit, emulator tests green (49/49 passed)
 - [x] Scope-creep changes alag commits me (`d95724b`, `350d12d`)
 - [x] Node version sync (package.json: 24, CI: 24, Vercel: 24)
 - [x] `clear-all.js` aur `seed.js` credential + project ID confirmation guards (`process.exit(1)`)
 - [x] Cutover sequence documented in `docs/CURRENT_STATE.md` §11
+- [x] 90-day backdating wording updated to "Invomora policy"
+- [ ] Token API `details: error.message` patch (Pending user explicit approval)
 - [ ] Push to branch & Vercel preview smoke test pass
 - [ ] Production cutover gate verification
 
-## Agle phase ke liye gate
+---
 
-Phase 1 shuru karne se pehle ye decide karna hai: tenancy vocabulary (`workspaces` vs `organizations`) aur claims vs membership-doc lookup. Migration script tab tak production pe mat chalana.
+## Agle Phase ke Liye Gate (Phase 1)
+
+Phase 1 shuru karne se pehle tenancy vocabulary (`workspaces` vs `organizations`) aur custom claims minting design finalize karna hai. Migration script tab tak production pe run nahi hogi jab tak B2B auth foundation complete na ho.

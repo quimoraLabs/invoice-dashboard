@@ -118,7 +118,7 @@ export default function InvoiceDetailPage() {
         taxRate: invoice.taxRate ?? 18,
         notes: invoice.notes || "",
         status: "Draft",
-        invoiceDate: formatCurrentDate(), // Reset to today per GST 90-day compliance
+        invoiceDate: formatCurrentDate(), // Reset to today per Invomora 90-day policy
         dueDate: null,
         paidDate: null,
         paymentType: null,
