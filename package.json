@@ -6,7 +6,6 @@
   "engines": {
     "node": "24.x"
   },
-
   "overrides": {
     "jose": "^4.15.9"
   },
@@ -38,6 +37,7 @@
     "groq-sdk": "^1.6.0",
     "jose": "^4.15.9",
     "lucide-react": "^1.50.0",
+    "nodemailer": "^10.1.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hot-toast": "^2.6.0",

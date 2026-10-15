@@ -16,6 +16,7 @@ import {
   HiOfficeBuilding,
   HiClipboardList,
   HiMail,
+  HiLockClosed,
 } from "react-icons/hi";
 import ProfileModal from "../components/modals/ProfileViewModal";
 import WorkspaceSwitcher from "../components/workspace/WorkspaceSwitcher";
@@ -248,6 +249,16 @@ const Header = () => {
                         <HiOfficeBuilding size={16} className="text-muted-foreground" />
                         Business Profile
                       </Link>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new Event("invomora_lock_screen"));
+                          setIsDropdownOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-surface"
+                      >
+                        <HiLockClosed size={16} className="text-muted-foreground" />
+                        Lock Screen
+                      </button>
                       <hr className="my-1 border-border" />
                       <button
                         onClick={handleLogout}
@@ -344,6 +355,16 @@ const Header = () => {
                 >
                   <HiUser size={18} />
                   My Profile
+                </button>
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(new Event("invomora_lock_screen"));
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium text-foreground hover:bg-surface"
+                >
+                  <HiLockClosed size={18} />
+                  Lock Screen
                 </button>
                 <button
                   onClick={handleLogout}

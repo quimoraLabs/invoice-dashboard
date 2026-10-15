@@ -17,35 +17,35 @@ The **Invoice Dashboard** is designed for freelancers, agencies, and small busin
 
 ## ✨ Key Features
 
+- 🏢 **B2B Multi-Tenancy & Workspaces:** Multi-tenant workspace switcher, role-based access (`owner`, `accountant`), and complete data isolation.
+- 🔐 **Double Security on Team Invites:** Workspace owner must authorize invites with their 6-digit security PIN before dispatching. Recipients must verify the PIN to join.
+- ✉️ **Automated Gmail SMTP Email Dispatch:** Serverless Nodemailer service delivers branded invite emails with passcodes and triggers instant security alert emails on unauthorized access attempts.
+- ⏳ **15-Minute Standby Inactivity Lock:** Auto-blurs dashboard and locks access with the 6-digit PIN when inactive for 15 minutes, safeguarding sensitive accounting records on open laptops.
+- 📜 **Immutable Workspace Audit Trail:** Real-time mutation tracking and security audit log (`/activity-log`).
+- 🔢 **Sequential GST Invoice Numbering:** Transactional Firestore counters guarantee atomic, gapless sequential numbering (`INV-001`, `INV-002`).
 - 📊 **Interactive Analytics Dashboard:** Real-time revenue analytics powered by Recharts (Monthly Revenue trends, paid vs. unpaid invoice breakdowns).
 - 📄 **Instant Client-Side PDF Engine:** High-performance, pixel-perfect A4 invoice generation using `@react-pdf/renderer` without backend server overhead.
 - 🛍️ **Product Catalog Management:** Manage products and services, default pricing, tax rates, and unit types for 1-click line item insertion.
 - 👥 **Customer Directory:** Track client billing details, contact info, tax IDs (GSTIN/EIN), and billing addresses.
 - 🎨 **Tailwind CSS v4 Design Tokens:** Fully responsive, dark-mode ready UI built using standard Tailwind CSS v4 theme variables.
-- 🔐 **Multi-Tenant Data Isolation:** Secure authentication via Clerk Auth (Google Sign-In & Email/Password) with strict `userId` Firestore query isolation.
 - 🔔 **Instant Feedback:** Sleek toast notifications powered by `react-hot-toast` and interactive popover action menus.
 
 ---
 
 ## 📚 Documentation
 
-All documentation lives in the /docs folder. Start at [docs/INDEX.md](./docs/INDEX.md) for the doc map.
+All project documentation follows the **8 Standard Documents** architecture located in the `/docs` directory:
 
-- [PRD.md](./PRD.md) — Product requirements
-- [AGENTS.md](./AGENTS.md) — AI agent and contributor directives
-- [docs/INDEX.md](./docs/INDEX.md) — Documentation index
-- [docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md) — Current behavior (authoritative)
-- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) — System design
-- [docs/DATABASE.md](./docs/DATABASE.md) — Firestore schema
-- [docs/SERVICE_API.md](./docs/SERVICE_API.md) — Service layer API
-- [docs/ROUTES.md](./docs/ROUTES.md) — Routing
-- [docs/DESIGN.md](./docs/DESIGN.md) — Design system
-- [docs/RESPONSIVE.md](./docs/RESPONSIVE.md) — Responsive strategy
-- [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) — Deployment
-- [docs/TESTING.md](./docs/TESTING.md) — Testing
-- [docs/FEATURES.md](./docs/FEATURES.md) — Feature matrix
-- [docs/CLERK_SETUP.md](./docs/CLERK_SETUP.md) — Clerk setup
-- [docs/B2B_MIGRATION_STEP1.md](./docs/B2B_MIGRATION_STEP1.md) — B2B migration spec
+- [PROGRESS.md](./PROGRESS.md) — Live codebase reality & operational milestones (Authoritative)
+- [AGENTS.md](./AGENTS.md) — Contributor & AI agent directives
+- [docs/PRD.md](./docs/PRD.md) — Product vision, user personas & business requirements
+- [docs/ROADMAP.md](./docs/ROADMAP.md) — Version milestones & release plan (V1 → V2 → V3)
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) — System design, data flow & database schema
+- [docs/DEPLOYMENT_GUIDE.md](./docs/DEPLOYMENT_GUIDE.md) — Step-by-step production deployment guide
+- [docs/API_REFERENCE.md](./docs/API_REFERENCE.md) — Serverless endpoints & client service contracts
+- [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) — Developer guidelines & engineering standards
+- [docs/CHANGELOG.md](./docs/CHANGELOG.md) — Version release notes & patch history
+- [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) — Solutions for common setup & runtime issues
 
 ---
 
@@ -61,6 +61,7 @@ All documentation lives in the /docs folder. Start at [docs/INDEX.md](./docs/IND
 | **Routing** | React Router v7 (`react-router-dom`) | Declarative client-side routing & route guards |
 | **PDF Generation** | `@react-pdf/renderer` v4 | In-browser client PDF compilation |
 | **Data Visualization** | Recharts v3 | Responsive revenue graphs & pie charts |
+| **Email Service** | `nodemailer` v6 | Serverless Gmail SMTP notifications & security alerts |
 | **Icons & Alerts** | `lucide-react , @icons-pack/react-simple-icons` & `react-hot-toast` | UI icons and toast alerts |
 
 ---
@@ -69,15 +70,22 @@ All documentation lives in the /docs folder. Start at [docs/INDEX.md](./docs/IND
 
 ```bash
 invoice-dashboard/
-├── PRD.md                         # Product Requirement Document
+├── PRD.md                         # Product Requirement Document (v2 B2B)
 ├── AGENTS.md                      # AI Agent & Developer Directives
-├── docs/                          # Technical specs (14 files)
+├── api/                           # Vercel Serverless Functions
+│   ├── create-firebase-token.js   # Clerk JWT -> Firebase custom token bridge
+│   ├── accept-invite.js           # Server-side 6-digit passcode invite acceptance
+│   ├── my-invites.js              # Fetch user's pending workspace invitations
+│   ├── send-email.js              # Nodemailer email dispatcher (alerts & invites)
+│   └── mailer.js                  # Gmail SMTP configuration & HTML templates
+├── docs/                          # Technical specs & audit reports
 ├── src/
 │   ├── main.jsx                   # React DOM Entrypoint
-│   ├── App.jsx                    # Router Shell & Toast Provider
+│   ├── App.jsx                    # Router Shell, InactivityLock, & Toaster
 │   ├── index.css                  # Tailwind CSS v4 Theme & Base Styles
 │   ├── auth/                      # Login & Register views
 │   ├── components/                # Shared UI Components
+│   │   ├── workspace/             # Workspace switcher, team, invites, settings, inactivity lock
 │   │   ├── ActionMenu.jsx         # Row popover action menu
 │   │   ├── GraphInvoice.jsx       # Recharts Analytics
 │   │   ├── ImageUploader.jsx      # Company logo/signature uploader
@@ -86,13 +94,13 @@ invoice-dashboard/
 │   │   ├── customer/              # Customer components
 │   │   ├── invoice/               # Invoice forms, tables, modals
 │   │   └── product/               # Product catalog components
-│   ├── contexts/                  # AuthContext Provider
-│   ├── firebase/                  # Pure Firestore & Auth service functions
+│   ├── contexts/                  # AuthContext & WorkspaceContext
+│   ├── firebase/                  # Firestore service layer & config
 │   ├── header/                    # Top navigation bar
-│   └── pages/                     # Main Application Views (Home, Invoice, Customer, Product)
+│   └── pages/                     # Main Views (Home, Invoice, Customer, Product, ActivityLog)
 ├── .env.example                   # Environment variable template
 ├── package.json                   # Dependencies & scripts
-├── vite.config.js                 # Vite build settings
+├── vite.config.js                 # Vite build settings & local API middleware
 └── vercel.json                    # Single-Page App SPA deployment rewrites
 ```
 

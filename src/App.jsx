@@ -20,6 +20,7 @@ import InvoiceDetailPage from "./pages/invoice/ViewInvoice";
 import InvoiceEditPage from "./pages/invoice/UpdateInvoice";
 import { ProtectedRoute, PublicOnlyRoute } from "./components/ProtectedRoute";
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
+import InactivityLock from "./components/workspace/InactivityLock";
 function AppRoutes() {
   const routesArray = [
     { path: "/", element: <Navigate to="/home" replace /> },
@@ -126,6 +127,7 @@ function AppShell() {
   return (
     <>
       {!isAuthPage && <Header />}
+      {!isAuthPage && <InactivityLock />}
       <Toaster position="top-right" />
       <main className={isAuthPage ? "min-h-screen" : "pt-16 min-h-screen"}>
         <AppRoutes />

@@ -7,6 +7,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   process.env.CLERK_SECRET_KEY = env.CLERK_SECRET_KEY
   process.env.FIREBASE_SERVICE_ACCOUNT = env.FIREBASE_SERVICE_ACCOUNT
+  process.env.EMAIL_USER = env.EMAIL_USER
+  process.env.EMAIL_PASS = env.EMAIL_PASS
 
   return {
     resolve: {
@@ -339,6 +341,43 @@ export default defineConfig(({ mode }) => {
                 if (wsData.invitePasscode) {
                   const provided = String(passcode || '').trim()
                   if (!provided || provided !== String(wsData.invitePasscode).trim()) {
+                    try {
+                      await adminDb.collection('activity_logs').add({
+                        workspaceId: inviteData.workspaceId,
+                        actorUid: userId,
+                        actorName: effectiveEmail ? effectiveEmail.split('@')[0] : 'Invitee',
+                        actorEmail: effectiveEmail || '',
+                        action: 'security_alert',
+                        entityType: 'security',
+                        entityId: inviteId,
+                        entityTitle: 'Unauthorized Passcode Attempt',
+                        details: `Failed passcode attempt by ${effectiveEmail || userId} while trying to accept invitation.`,
+                        createdAt: new Date(),
+                      })
+
+                      let ownerEmail = null
+                      if (wsData.ownerId) {
+                        const ownerMember = await adminDb.collection('workspace_members').doc(`${inviteData.workspaceId}_${wsData.ownerId}`).get()
+                        if (ownerMember.exists) ownerEmail = ownerMember.data()?.email
+                      }
+                      if (!ownerEmail) {
+                        const ownerSnap = await adminDb.collection('workspace_members').where('workspaceId', '==', inviteData.workspaceId).where('role', '==', 'owner').limit(1).get()
+                        if (!ownerSnap.empty) ownerEmail = ownerSnap.docs[0].data()?.email
+                      }
+
+                      if (ownerEmail) {
+                        const { sendSecurityAlertEmail } = await import('./api/mailer.js')
+                        await sendSecurityAlertEmail({
+                          ownerEmail,
+                          workspaceName: wsData.name || 'Business Workspace',
+                          actorInfo: effectiveEmail || userId,
+                          details: 'Failed 6-digit passcode attempt while accepting an invitation',
+                        })
+                      }
+                    } catch (secErr) {
+                      console.warn('[Vite API] Could not trigger security alert email:', secErr.message)
+                    }
+
                     res.statusCode = 400
                     res.setHeader('Content-Type', 'application/json')
                     return res.end(JSON.stringify({
@@ -402,6 +441,122 @@ export default defineConfig(({ mode }) => {
                 res.statusCode = 500
                 res.setHeader('Content-Type', 'application/json')
                 res.end(JSON.stringify({ error: error.message }))
+              }
+            })
+          })
+
+          // 4. /api/send-email
+          server.middlewares.use('/api/send-email', async (req, res) => {
+            if (req.method !== 'POST') {
+              res.statusCode = 405
+              res.setHeader('Content-Type', 'application/json')
+              return res.end(JSON.stringify({ error: 'Method Not Allowed' }))
+            }
+
+            let body = ''
+            req.on('data', (chunk) => (body += chunk))
+            req.on('end', async () => {
+              try {
+                const {
+                  clerkToken,
+                  type,
+                  workspaceId,
+                  toEmail,
+                  role,
+                  inviterName,
+                  details,
+                  actorInfo,
+                } = JSON.parse(body || '{}')
+
+                if (!clerkToken) {
+                  res.statusCode = 400
+                  res.setHeader('Content-Type', 'application/json')
+                  return res.end(JSON.stringify({ error: 'Missing clerkToken' }))
+                }
+
+                const { verifyToken } = await import('@clerk/backend')
+                const { initializeApp, getApps, cert } = await import('firebase-admin/app')
+                const { getFirestore } = await import('firebase-admin/firestore')
+                const { sendSecurityAlertEmail, sendWorkspaceInviteEmail } = await import('./api/mailer.js')
+
+                if (!getApps().length) {
+                  const raw = process.env.FIREBASE_SERVICE_ACCOUNT
+                  if (!raw) throw new Error('Missing FIREBASE_SERVICE_ACCOUNT')
+                  const sa = raw.trim().startsWith('{')
+                    ? JSON.parse(raw)
+                    : JSON.parse(Buffer.from(raw, 'base64').toString('utf-8'))
+                  initializeApp({ credential: cert(sa) })
+                }
+
+                const verified = await verifyToken(clerkToken, {
+                  secretKey: process.env.CLERK_SECRET_KEY,
+                })
+
+                const callerId = verified.sub
+                if (!callerId) {
+                  res.statusCode = 401
+                  res.setHeader('Content-Type', 'application/json')
+                  return res.end(JSON.stringify({ error: 'Unauthorized' }))
+                }
+
+                const adminDb = getFirestore()
+
+                if (type === 'security_alert') {
+                  const wsDoc = await adminDb.collection('workspaces').doc(workspaceId).get()
+                  const wsData = wsDoc.exists ? wsDoc.data() : {}
+                  const ownerId = wsData?.ownerId
+
+                  let ownerEmail = null
+                  if (ownerId) {
+                    const ownerMember = await adminDb.collection('workspace_members').doc(`${workspaceId}_${ownerId}`).get()
+                    if (ownerMember.exists) ownerEmail = ownerMember.data()?.email
+                  }
+                  if (!ownerEmail) {
+                    const ownerSnap = await adminDb.collection('workspace_members').where('workspaceId', '==', workspaceId).where('role', '==', 'owner').limit(1).get()
+                    if (!ownerSnap.empty) ownerEmail = ownerSnap.docs[0].data()?.email
+                  }
+
+                  if (ownerEmail) {
+                    await sendSecurityAlertEmail({
+                      ownerEmail,
+                      workspaceName: wsData?.name,
+                      actorInfo: actorInfo || verified?.email || 'Local Session',
+                      details: details || 'Security alert on workspace',
+                    })
+                  }
+
+                  res.statusCode = 200
+                  res.setHeader('Content-Type', 'application/json')
+                  return res.end(JSON.stringify({ success: true }))
+                }
+
+                if (type === 'workspace_invite') {
+                  const wsDoc = await adminDb.collection('workspaces').doc(workspaceId).get()
+                  const wsData = wsDoc.exists ? wsDoc.data() : {}
+                  const invitePasscode = wsData?.invitePasscode || '123456'
+
+                  await sendWorkspaceInviteEmail({
+                    toEmail: toEmail.toLowerCase().trim(),
+                    workspaceName: wsData?.name || 'Business Workspace',
+                    inviterName: inviterName || verified?.email?.split('@')[0] || 'Workspace Owner',
+                    role: role || 'accountant',
+                    invitePasscode,
+                    appUrl: 'http://localhost:5173',
+                  })
+
+                  res.statusCode = 200
+                  res.setHeader('Content-Type', 'application/json')
+                  return res.end(JSON.stringify({ success: true }))
+                }
+
+                res.statusCode = 400
+                res.setHeader('Content-Type', 'application/json')
+                return res.end(JSON.stringify({ error: 'Unknown email type' }))
+              } catch (err) {
+                console.error('[api/send-email] ERROR:', err.message)
+                res.statusCode = 500
+                res.setHeader('Content-Type', 'application/json')
+                res.end(JSON.stringify({ error: err.message }))
               }
             })
           })

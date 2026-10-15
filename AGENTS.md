@@ -11,11 +11,17 @@ Every AI agent and human contributor MUST follow this file.
 ---
 
 ## 2. Source of Truth for Documentation
-1. Start at [`docs/INDEX.md`](docs/INDEX.md). It says which doc to trust for what.
-2. [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md) describes what the code does **today**. It is the only doc that is authoritative about current behavior.
-3. These docs describe the **planned B2B target state**, not current behavior, and carry a disclaimer header: `ARCHITECTURE.md`, `DATABASE.md`, `SERVICE_API.md`, `ROUTES.md`, `B2B_MIGRATION_STEP1.md`, `B2B_MIGRATION_PHASE4_SCRIPT.md`, `CLERK_SETUP.md`. Do NOT implement from them, and do NOT assume the code already matches them.
-4. When docs and code disagree, the code wins. Report the mismatch to the user instead of "fixing" the code to match a target-state doc.
-5. Reference only docs that exist in `/docs`. Do not invent or assume missing files.
+1. [`PROGRESS.md`](PROGRESS.md) describes what the code does **today** and tracks live operational milestones. It is the authoritative record of codebase reality.
+2. The [`docs/`](docs/) directory contains exactly the **8 Standard Documents**:
+   - [`docs/PRD.md`](docs/PRD.md) — Product vision, requirements & business logic
+   - [`docs/ROADMAP.md`](docs/ROADMAP.md) — Version milestones (V1 → V2 → V3)
+   - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — System design, data flow & database schema
+   - [`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md) — Production deployment instructions
+   - [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — Backend serverless endpoints & service layer
+   - [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) — Engineering standards & contribution guidelines
+   - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — Release history & patch notes
+   - [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) — FAQ & solutions for common issues
+3. When docs and code disagree, the code wins. Report the mismatch to the user instead of "fixing" code without approval.
 
 ---
 
@@ -23,7 +29,7 @@ Every AI agent and human contributor MUST follow this file.
 1. **One tool, one branch, one phase at a time.** Only one AI tool may work on the repo at any time, on a dedicated branch, on a single named phase. Never mix phases in one change.
 2. **No scope creep.** Do only the task explicitly requested. No drive-by refactors, renames, dependency changes, or "improvements".
 3. **Ask before architecture changes.** New collections, new auth flows, tenancy changes, and global state refactors need explicit user approval first.
-4. **Update `docs/CURRENT_STATE.md`** in the same change whenever behavior it describes changes (rules, auth flow, collections, routes, env vars).
+4. **Update `PROGRESS.md`** in the same change whenever behavior it describes changes (rules, auth flow, collections, routes, env vars).
 
 ---
 
@@ -44,10 +50,13 @@ The following are protected. Do NOT edit, rename, delete, reformat, or "fix" the
 
 ---
 
-## 5. Tenancy Vocabulary
-- The tenancy term in code is **workspace** (`workspaceId`, `workspaces`, `workspace_members`, `workspace_invites`).
-- Do NOT introduce `orgId`, `organization`, `organizations`, or `organizationMembers` in code until the Phase 1 decision is made by the user. (Target-state docs use that vocabulary; that is not an instruction to use it.)
-- **Current state:** domain collections (`invoices`, `customers`, `products`) are still keyed by `userId`, and Firestore rules enforce that. Do NOT change domain query scoping or document fields; that is a later phase (Phase 3) and needs explicit approval.
+## 5. Tenancy Vocabulary & Current Reality
+- The tenancy term across all code, rules, and scripts is **workspace** (`workspaceId`, `workspaces`, `workspace_members`, `workspace_invites`).
+- Do NOT introduce `orgId`, `organization`, `organizations`, or `organizationMembers` in code.
+- **Current state:** B2B multi-tenancy is active. Domain collections (`invoices`, `customers`, `products`) and `business_profiles` are keyed by `workspaceId` (with dual-mode fallback to `userId` for unmigrated single-user docs).
+- **Double Security:** Inviting a new team member requires the workspace owner to enter the 6-digit workspace PIN. Recipient must enter the 6-digit PIN to join.
+- **Email Notifications:** Automated delivery of invitation passcodes and security alert notifications powered by Nodemailer and Gmail SMTP (`api/mailer.js`, `api/send-email.js`).
+- **Inactivity Standby Lock:** Unattended sessions auto-lock after 15 minutes of inactivity (`InactivityLock.jsx`) with a full-screen blur. 3 failed attempts alert the owner via email.
 
 ---
 
@@ -67,8 +76,8 @@ This section is authoritative for business logic. AI agents MUST follow these ru
 ### 6.3 Invoice Numbering
 - Sequential: INV-001, INV-002...
 - No gaps (GST).
-- User-scoped transactional counter (`/users/{userId}/counters/invoice`).
-- Status: Implemented in Phase 0 via `runTransaction` with numeric incrementation and dual-write (`invoiceNumber` and legacy `invoice_no`).
+- Scoped transactional counters (`/workspaces/{workspaceId}/counters/invoice` and `/users/{userId}/counters/invoice`).
+- Status: Implemented via `runTransaction` with numeric incrementation and dual-write (`invoiceNumber` and legacy `invoice_no`).
 
 
 ### 6.4 Tax Rules
@@ -115,7 +124,7 @@ Before marking any task done: `npm run build`, `npm run lint`, and tests pass, a
 ```
 ├── PRD.md
 ├── AGENTS.md
-├── api/                    # Vercel serverless functions (create-firebase-token.js)
+├── api/                    # Vercel serverless functions (token bridge, invite verification, email mailer)
 ├── docs/                   # Specs; start at docs/INDEX.md
 ├── src/
 │   ├── App.jsx             # Shell & router

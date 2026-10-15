@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../../contexts/authContext/useAuth";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
+import { useSession } from "@clerk/react";
 import toast from "react-hot-toast";
 import {
   HiX,
@@ -11,10 +12,12 @@ import {
   HiKey,
   HiClipboardCopy,
   HiCheck,
+  HiShieldCheck,
 } from "react-icons/hi";
 
 export default function TeamModal({ isOpen, onClose }) {
   const { currentUser } = useAuth();
+  const { session } = useSession();
   const {
     activeWorkspace,
     members,
@@ -27,6 +30,7 @@ export default function TeamModal({ isOpen, onClose }) {
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("accountant");
+  const [authPasscode, setAuthPasscode] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [copiedPasscode, setCopiedPasscode] = useState(false);
 
@@ -39,11 +43,62 @@ export default function TeamModal({ isOpen, onClose }) {
       return;
     }
 
+    // Double Security: Authorize invite with 6-digit owner passcode
+    if (activeWorkspace?.invitePasscode) {
+      const enteredCode = authPasscode.trim();
+      if (!enteredCode || enteredCode !== String(activeWorkspace.invitePasscode).trim()) {
+        try {
+          const clerkToken = await session?.getToken().catch(() => null);
+          if (clerkToken) {
+            await fetch("/api/send-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                clerkToken,
+                type: "security_alert",
+                workspaceId: activeWorkspace.id,
+                details: `Failed authorization PIN attempt when attempting to invite ${inviteEmail}`,
+                actorInfo: currentUser?.email || "Local Session",
+              }),
+            });
+          }
+        } catch {
+          // ignore error
+        }
+
+        toast.error("Security Alert: Incorrect Owner PIN! Unauthorized invite blocked.");
+        return;
+      }
+    }
+
     setIsSending(true);
     try {
       await inviteMember(inviteEmail, inviteRole);
-      toast.success(`Invitation sent to ${inviteEmail}!`);
+
+      // Dispatch professional invitation email with passcode to invitee
+      try {
+        const clerkToken = await session?.getToken().catch(() => null);
+        if (clerkToken) {
+          await fetch("/api/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              clerkToken,
+              type: "workspace_invite",
+              workspaceId: activeWorkspace.id,
+              toEmail: inviteEmail.trim(),
+              role: inviteRole,
+              inviterName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "Workspace Owner",
+            }),
+          });
+        }
+      } catch (emailErr) {
+        console.warn("Could not dispatch invitation email:", emailErr.message);
+      }
+
+      toast.success(`Invitation & Security PIN sent to ${inviteEmail}!`);
       setInviteEmail("");
+      setAuthPasscode("");
     } catch (err) {
       console.error("Invite error:", err);
       toast.error(err?.message || "Failed to send invitation.");
@@ -113,33 +168,54 @@ export default function TeamModal({ isOpen, onClose }) {
                   Invite Team Member
                 </h4>
               </div>
-              <form onSubmit={handleSendInvite} className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
-                  <HiOutlineMail className="absolute left-3 top-3 text-muted-foreground" size={18} />
-                  <input
-                    type="email"
-                    placeholder="colleague@company.com"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    required
-                    className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
+              <form onSubmit={handleSendInvite} className="flex flex-col gap-2.5">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <HiOutlineMail className="absolute left-3 top-3 text-muted-foreground" size={18} />
+                    <input
+                      type="email"
+                      placeholder="colleague@company.com"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      required
+                      className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value)}
+                    className="rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shrink-0"
+                  >
+                    <option value="accountant">Accountant</option>
+                    <option value="owner">Co-Owner</option>
+                  </select>
                 </div>
-                <select
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value)}
-                  className="rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="accountant">Accountant</option>
-                  <option value="owner">Co-Owner</option>
-                </select>
-                <button
-                  type="submit"
-                  disabled={isSending}
-                  className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-hover disabled:opacity-50 transition shrink-0 cursor-pointer"
-                >
-                  {isSending ? "Sending..." : "Send Invite"}
-                </button>
+
+                {/* Double Security: Owner PIN Required to dispatch invite */}
+                <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                  <div className="relative flex-1 w-full">
+                    <HiKey className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      placeholder="Enter Owner PIN (6 digits) to authorize"
+                      value={authPasscode}
+                      onChange={(e) => setAuthPasscode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      required
+                      className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-xs tracking-wider font-mono text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSending}
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-hover disabled:opacity-50 transition shrink-0 cursor-pointer"
+                  >
+                    <HiShieldCheck size={16} />
+                    {isSending ? "Authorizing..." : "Authorize & Send"}
+                  </button>
+                </div>
               </form>
 
               {activeWorkspace?.invitePasscode && (

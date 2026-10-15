@@ -149,6 +149,43 @@ export default async function handler(req, res) {
     if (expectedPasscode) {
       const providedPasscode = String(passcode || "").trim();
       if (!providedPasscode || providedPasscode !== String(expectedPasscode).trim()) {
+        try {
+          await adminDb.collection("activity_logs").add({
+            workspaceId: inviteData.workspaceId,
+            actorUid: userId,
+            actorName: effectiveEmail ? effectiveEmail.split("@")[0] : "Invitee",
+            actorEmail: effectiveEmail || "",
+            action: "security_alert",
+            entityType: "security",
+            entityId: inviteId,
+            entityTitle: "Unauthorized Passcode Attempt",
+            details: `Failed passcode attempt by ${effectiveEmail || userId} while trying to accept invitation.`,
+            createdAt: new Date(),
+          });
+
+          let ownerEmail = null;
+          if (wsData.ownerId) {
+            const ownerMember = await adminDb.collection("workspace_members").doc(`${inviteData.workspaceId}_${wsData.ownerId}`).get();
+            if (ownerMember.exists) ownerEmail = ownerMember.data()?.email;
+          }
+          if (!ownerEmail) {
+            const ownerSnap = await adminDb.collection("workspace_members").where("workspaceId", "==", inviteData.workspaceId).where("role", "==", "owner").limit(1).get();
+            if (!ownerSnap.empty) ownerEmail = ownerSnap.docs[0].data()?.email;
+          }
+
+          if (ownerEmail) {
+            const { sendSecurityAlertEmail } = await import("./mailer.js");
+            await sendSecurityAlertEmail({
+              ownerEmail,
+              workspaceName: wsData.name || "Business Workspace",
+              actorInfo: effectiveEmail || userId,
+              details: "Failed 6-digit passcode attempt while accepting an invitation",
+            });
+          }
+        } catch (alertErr) {
+          console.warn("[Security Alert Trigger Warning]:", alertErr.message);
+        }
+
         return res.status(400).json({
           error: "Invalid 6-digit security passcode. Please ask the workspace owner for the correct passcode to join.",
         });
