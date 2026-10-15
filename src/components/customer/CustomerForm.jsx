@@ -2,11 +2,13 @@ import { IoClose } from "react-icons/io5";
 import { useState, useEffect } from "react";
 import { createCustomer, updateCustomer } from "../../firebase/customer";
 import { useAuth } from "../../contexts/authContext/useAuth";
+import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { toast } from "react-hot-toast";
 import ImageUploader from "../ImageUploader";
 
 export default function CustomerModal({ onClose, customer }) {
   const { currentUser } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const isEditMode = !!customer;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -62,10 +64,16 @@ export default function CustomerModal({ onClose, customer }) {
 
     try {
       const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
-      if (!targetUid) {
-        toast.error("User authentication required to save customer.");
+      const workspaceId = activeWorkspace?.id;
+      if (!targetUid && !workspaceId) {
+        toast.error("Authentication required to save customer.");
         return;
       }
+
+      const targetScope = {
+        workspaceId,
+        userId: targetUid,
+      };
 
       const payload = {
         name: formData.name.trim(),
@@ -73,14 +81,15 @@ export default function CustomerModal({ onClose, customer }) {
         phone: String(formData.phone).trim(),
         address: formData.address.trim(),
         profile: formData.profile || "",
-        userId: targetUid,
       };
+      if (targetUid) payload.userId = targetUid;
+      if (workspaceId) payload.workspaceId = workspaceId;
 
       if (!isEditMode) {
-        await createCustomer(payload, setLoading, targetUid);
+        await createCustomer(payload, setLoading, targetScope);
         toast.success("Customer added successfully!");
       } else {
-        await updateCustomer(customer.id, payload, setLoading, targetUid);
+        await updateCustomer(customer.id, payload, setLoading, targetScope);
         toast.success("Customer updated successfully!");
       }
       onClose();

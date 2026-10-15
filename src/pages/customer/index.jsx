@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { deleteCustomer, listenToCustomers } from "../../firebase/customer";
 import { useAuth } from "../../contexts/authContext/useAuth";
+import { useWorkspace } from "../../contexts/WorkspaceContext";
 import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 import CustomerModal from "../../components/customer/CustomerForm";
 import CustomerViewModal from "../../components/customer/CustomerViewModal";
@@ -16,6 +17,7 @@ const ITEMS_PER_PAGE = 10;
 
 export default function CustomerDashboard() {
   const { currentUser } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,16 +29,22 @@ export default function CustomerDashboard() {
   const [loading, setLoading] = useState(false);
 
   const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+  const workspaceId = activeWorkspace?.id;
+
+  const targetScope = useMemo(() => ({
+    workspaceId,
+    userId: targetUid,
+  }), [workspaceId, targetUid]);
 
   useEffect(() => {
-    if (!targetUid) return;
+    if (!targetUid && !workspaceId) return;
     setLoading(true);
     const unsubscribe = listenToCustomers((data) => {
       setCustomers(data);
       setLoading(false);
-    }, targetUid);
+    }, targetScope);
     return () => unsubscribe();
-  }, [targetUid]);
+  }, [targetScope, targetUid, workspaceId]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -110,7 +118,7 @@ export default function CustomerDashboard() {
 
   async function handleDelete() {
     try {
-      await deleteCustomer(selectedCustomer.id, null, targetUid);
+      await deleteCustomer(selectedCustomer.id, null, targetScope);
       setIsDeleteMode(false);
       setSelectedCustomer(null);
       toast.success("Customer deleted successfully");

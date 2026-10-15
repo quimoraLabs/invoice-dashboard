@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/authContext/useAuth";
+import { useWorkspace } from "../contexts/WorkspaceContext";
 import IncomeGraph from "../components/GraphInvoice";
 import { listenToCustomers } from "../firebase/customer";
 import { listenToProducts } from "../firebase/product";
@@ -10,6 +11,7 @@ import * as FiIcons from "react-icons/fi";
 
 function Home() {
   const { currentUser } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const userName = currentUser?.displayName || currentUser?.email || "there";
 
   const [stats, setStats] = useState({
@@ -22,9 +24,15 @@ function Home() {
   });
 
   const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+  const workspaceId = activeWorkspace?.id;
+
+  const targetScope = useMemo(() => ({
+    workspaceId,
+    userId: targetUid,
+  }), [workspaceId, targetUid]);
 
   useEffect(() => {
-    if (!targetUid) return;
+    if (!targetUid && !workspaceId) return;
 
     const unsubscribeInvoices = listenToInvoices((invoices) => {
       const paidInvoices = invoices.filter(
@@ -45,22 +53,22 @@ function Home() {
         pendingInvoices: pendingInvoices.length,
         revenue,
       }));
-    }, targetUid);
+    }, targetScope);
 
     const unsubscribeCustomers = listenToCustomers((customers) => {
       setStats((prev) => ({ ...prev, customers: customers.length }));
-    }, targetUid);
+    }, targetScope);
 
     const unsubscribeProducts = listenToProducts((products) => {
       setStats((prev) => ({ ...prev, products: products.length }));
-    }, targetUid);
+    }, targetScope);
 
     return () => {
       unsubscribeInvoices();
       unsubscribeCustomers();
       unsubscribeProducts();
     };
-  }, [targetUid]);
+  }, [targetScope, targetUid, workspaceId]);
 
   const cardsConfig = [
     {

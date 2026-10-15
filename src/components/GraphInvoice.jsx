@@ -10,13 +10,22 @@ import {
 } from "recharts";
 import { listenToInvoices } from "../firebase/invoice";
 import { useAuth } from "../contexts/authContext/useAuth";
+import { useWorkspace } from "../contexts/WorkspaceContext";
 
 function IncomeGraph() {
   const { currentUser } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const [invoices, setInvoices] = useState([]);
 
+  const targetUid = currentUser?.uid || currentUser?.id;
+  const workspaceId = activeWorkspace?.id;
+
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!targetUid && !workspaceId) return;
+    const targetScope = {
+      workspaceId,
+      userId: targetUid,
+    };
     const unsubscribe = listenToInvoices((allInvoices) => {
       const paidInvoices = allInvoices.filter(
         (invoice) => invoice.status?.toLowerCase() === "paid",
@@ -53,9 +62,9 @@ function IncomeGraph() {
       );
 
       setInvoices(formattedData);
-    }, currentUser.uid);
+    }, targetScope);
     return () => unsubscribe();
-  }, [currentUser?.uid]);
+  }, [targetUid, workspaceId]);
 
   return (
     <div className="rounded-3xl border border-border bg-surface-elevated p-6 shadow-sm">

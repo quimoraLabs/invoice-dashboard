@@ -1,18 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom"; 
 import InvoiceForm from "../../components/invoice/InvoiceForm";
 import { listenToCustomers } from "../../firebase/customer";
 import { listenToProducts } from "../../firebase/product";
 import { getInvoiceById, updateInvoice } from "../../firebase/invoice"; 
 import { useAuth } from "../../contexts/authContext/useAuth";
+import { useWorkspace } from "../../contexts/WorkspaceContext";
 import toast from "react-hot-toast";
 
 export default function EditInvoice() {
   const { currentUser } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const { invoiceId } = useParams(); 
   const navigate = useNavigate();
 
   const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+  const workspaceId = activeWorkspace?.id;
+
+  const targetScope = useMemo(() => ({
+    workspaceId,
+    userId: targetUid,
+  }), [workspaceId, targetUid]);
   
   const [allCustomers, setAllCustomers] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
@@ -21,21 +29,21 @@ export default function EditInvoice() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!targetUid) return;
-    const unsubCust = listenToCustomers(setAllCustomers, targetUid);
-    const unsubProd = listenToProducts(setAllProducts, targetUid);
+    if (!targetUid && !workspaceId) return;
+    const unsubCust = listenToCustomers(setAllCustomers, targetScope);
+    const unsubProd = listenToProducts(setAllProducts, targetScope);
     return () => { 
       unsubCust(); 
       unsubProd(); 
     };
-  }, [targetUid]);
+  }, [targetScope, targetUid, workspaceId]);
 
   useEffect(() => {
     async function loadTargetInvoice() {
-      if (!invoiceId || !targetUid) return;
+      if (!invoiceId || (!targetUid && !workspaceId)) return;
       try {
         setLoading(true);
-        const data = await getInvoiceById(invoiceId, targetUid);
+        const data = await getInvoiceById(invoiceId, targetScope);
         if (data) {
           setInvoiceData(data);
         } else {
@@ -51,12 +59,12 @@ export default function EditInvoice() {
       }
     }
     loadTargetInvoice();
-  }, [invoiceId, navigate, targetUid]);
+  }, [invoiceId, navigate, targetScope, targetUid, workspaceId]);
 
   const handleUpdateSubmit = async (finalInvoice) => {
     setSubmitting(true);
     try {
-      await updateInvoice(invoiceId, finalInvoice, setSubmitting, targetUid);
+      await updateInvoice(invoiceId, finalInvoice, setSubmitting, targetScope);
       toast.success("Invoice successfully modified!");
       setTimeout(() => {
         navigate(-1);

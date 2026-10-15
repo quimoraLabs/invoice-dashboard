@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/authContext/useAuth";
+import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { getBusinessProfile, saveBusinessProfile } from "../../firebase/profile";
 import ImageUploader from "../../components/ImageUploader";
 import Loader from "../../components/Loader";
@@ -18,6 +19,7 @@ import {
 
 export default function BusinessProfilePage() {
   const { currentUser } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const [initialLoading, setInitialLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -41,20 +43,27 @@ export default function BusinessProfilePage() {
   const [savedData, setSavedData] = useState(null);
 
   const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+  const workspaceId = activeWorkspace?.id;
 
   // Load business profile on mount
   useEffect(() => {
     let isMounted = true;
 
     async function loadProfile() {
-      if (!targetUid) {
+      if (!targetUid && !workspaceId) {
         setInitialLoading(false);
         return;
       }
 
       try {
         setInitialLoading(true);
-        const profile = await getBusinessProfile(targetUid);
+        let profile = null;
+        if (workspaceId) {
+          profile = await getBusinessProfile(workspaceId);
+        }
+        if (!profile && targetUid) {
+          profile = await getBusinessProfile(targetUid);
+        }
         if (isMounted && profile) {
           const loaded = {
             companyName: profile.companyName || "",
@@ -86,7 +95,7 @@ export default function BusinessProfilePage() {
     return () => {
       isMounted = false;
     };
-  }, [targetUid]);
+  }, [targetUid, workspaceId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -141,14 +150,19 @@ export default function BusinessProfilePage() {
       }
     }
 
-    if (!targetUid) {
+    if (!targetUid && !workspaceId) {
       toast.error("User authentication required");
       return;
     }
 
     try {
       setSaving(true);
-      await saveBusinessProfile(targetUid, formData, targetUid, setSaving);
+      if (workspaceId) {
+        await saveBusinessProfile(workspaceId, formData, targetUid, setSaving);
+      }
+      if (targetUid) {
+        await saveBusinessProfile(targetUid, formData, targetUid, setSaving);
+      }
       setSavedData({ ...formData });
       toast.success("Business profile saved successfully!");
     } catch (err) {

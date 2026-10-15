@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { deleteProduct, listenToProducts } from "../../firebase/product";
 import { useAuth } from "../../contexts/authContext/useAuth";
+import { useWorkspace } from "../../contexts/WorkspaceContext";
 import ProductModal from "../../components/product/ProductForm";
 import ProductViewModal from "../../components/product/ProductViewModal";
 import toast from "react-hot-toast";
@@ -12,6 +13,7 @@ import Loader from "../../components/Loader";
 
 function ProductsDashboard() {
   const { currentUser } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const [products, setProducts] = useState([]);
 
   // The unified modal manager
@@ -23,16 +25,22 @@ function ProductsDashboard() {
   const [loading, setLoading] = useState(false);
 
   const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+  const workspaceId = activeWorkspace?.id;
+
+  const targetScope = useMemo(() => ({
+    workspaceId,
+    userId: targetUid,
+  }), [workspaceId, targetUid]);
 
   useEffect(() => {
-    if (!targetUid) return;
+    if (!targetUid && !workspaceId) return;
     setLoading(true);
     const unsubscribe = listenToProducts((data) => {
       setProducts(data);
       setLoading(false);
-    }, targetUid);
+    }, targetScope);
     return () => unsubscribe();
-  }, [targetUid]);
+  }, [targetScope, targetUid, workspaceId]);
 
 
   const categories = useMemo(() => {
@@ -78,7 +86,7 @@ function ProductsDashboard() {
     if (!targetProduct?.id) return;
 
     try {
-      await deleteProduct(targetProduct.id, null, targetUid);
+      await deleteProduct(targetProduct.id, null, targetScope);
       closeModal();
       toast.success("Product deleted successfully");
     } catch (error) {

@@ -2,11 +2,13 @@ import { IoClose } from "react-icons/io5";
 import { useState, useEffect } from "react";
 import { createProduct, updateProduct } from "../../firebase/product";
 import { useAuth } from "../../contexts/authContext/useAuth";
+import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { toast } from "react-hot-toast";
 import ImageUploader from "../ImageUploader";
 
 export default function ProductModal({ onClose, product }) {
   const { currentUser } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const isEditMode = !!product;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -46,21 +48,28 @@ export default function ProductModal({ onClose, product }) {
 
     try {
       const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
-      if (!targetUid) {
+      const workspaceId = activeWorkspace?.id;
+      if (!targetUid && !workspaceId) {
         toast.error("User authentication required to save product.");
         return;
       }
 
-      const payload = {
-        ...formData,
+      const targetScope = {
+        workspaceId,
         userId: targetUid,
       };
 
+      const payload = {
+        ...formData,
+      };
+      if (targetUid) payload.userId = targetUid;
+      if (workspaceId) payload.workspaceId = workspaceId;
+
       if (!isEditMode) {
-        await createProduct(payload, setLoading, targetUid);
+        await createProduct(payload, setLoading, targetScope);
         toast.success("Product added successfully!");
       } else {
-        await updateProduct(product.id, payload, setLoading, targetUid);
+        await updateProduct(product.id, payload, setLoading, targetScope);
         toast.success("Product updated successfully!");
       }
       onClose();

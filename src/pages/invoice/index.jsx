@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { listenToInvoices } from "../../firebase/invoice";
 import { useAuth } from "../../contexts/authContext/useAuth";
+import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useDebounce } from "../../hooks/useDebounce";
 import InvoiceListHeader from "../../components/invoice/InvoiceListHeader";
 import InvoiceFilters from "../../components/invoice/InvoiceFilters";
@@ -11,10 +12,12 @@ import Loader from "../../components/Loader";
 
 function Invoice() {
   const { currentUser } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [invoices, setInvoices] = useState([]);
   const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+  const workspaceId = activeWorkspace?.id;
   const [dataLoaded, setDataLoaded] = useState(false);
 
   // Sync state with URL params
@@ -33,15 +36,17 @@ function Invoice() {
 
   // Real-time listener for user invoices
   useEffect(() => {
-    if (!targetUid) return;
+    if (!targetUid && !workspaceId) return;
+    setDataLoaded(false);
+    const targetScope = { workspaceId, userId: targetUid };
     const unsubscribe = listenToInvoices((data) => {
       setInvoices(data);
       setDataLoaded(true);
-    }, targetUid);
+    }, targetScope);
     return () => unsubscribe();
-  }, [targetUid]);
+  }, [targetUid, workspaceId]);
 
-  const loading = Boolean(targetUid && !dataLoaded);
+  const loading = Boolean((targetUid || workspaceId) && !dataLoaded);
 
   // Helper to update search params while resetting page to 1
   const updateFilters = useCallback(

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import InvoiceForm from "../../components/invoice/InvoiceForm";
 import { listenToCustomers } from "../../firebase/customer";
@@ -6,26 +6,34 @@ import { listenToProducts } from "../../firebase/product";
 import { createInvoiceWithNumber } from "../../firebase/invoice";
 import { formatCurrentDate } from "../../components/helper";
 import { useAuth } from "../../contexts/authContext/useAuth";
+import { useWorkspace } from "../../contexts/WorkspaceContext";
 import toast from "react-hot-toast";
 
 export default function AddInvoice() {
   const { currentUser } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const [allCustomers, setAllCustomers] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+  const workspaceId = activeWorkspace?.id;
+
+  const targetScope = useMemo(() => ({
+    workspaceId,
+    userId: targetUid,
+  }), [workspaceId, targetUid]);
 
   useEffect(() => {
-    if (!targetUid) return;
-    const unsubCust = listenToCustomers(setAllCustomers, targetUid);
-    const unsubProd = listenToProducts(setAllProducts, targetUid);
+    if (!targetUid && !workspaceId) return;
+    const unsubCust = listenToCustomers(setAllCustomers, targetScope);
+    const unsubProd = listenToProducts(setAllProducts, targetScope);
     return () => {
       unsubCust();
       unsubProd();
     };
-  }, [targetUid]);
+  }, [targetScope, targetUid, workspaceId]);
 
   const emptyInvoiceState = {
     invoiceNumber: "INV-00",
@@ -39,14 +47,15 @@ export default function AddInvoice() {
 
 
   const handleCreateSubmit = async (finalInvoice) => {
-    if (!targetUid) {
-      toast.error("User authentication required to create invoice.");
+    if (!targetUid && !workspaceId) {
+      toast.error("Authentication required to create invoice.");
       return;
     }
     setSubmitting(true);
     try {
-      finalInvoice.userId = targetUid;
-      const created = await createInvoiceWithNumber(targetUid, finalInvoice, setSubmitting);
+      if (targetUid) finalInvoice.userId = targetUid;
+      if (workspaceId) finalInvoice.workspaceId = workspaceId;
+      const created = await createInvoiceWithNumber(targetScope, finalInvoice, setSubmitting);
       toast.success(`Invoice #${created.invoiceNumber} successfully created!`);
       setTimeout(() => {
         navigate(-1);

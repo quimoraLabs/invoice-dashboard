@@ -26,10 +26,12 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 import InvoicePDF from "../../components/InvoiceView";
 
 import { useAuth } from "../../contexts/authContext/useAuth";
+import { useWorkspace } from "../../contexts/WorkspaceContext";
 
 export default function InvoiceDetailPage() {
   const { invoiceId } = useParams();
   const { currentUser } = useAuth();
+  const { activeWorkspace } = useWorkspace();
 
   const [invoice, setInvoice] = useState(null);
   const [companyProfile, setCompanyProfile] = useState(null);
@@ -46,13 +48,20 @@ export default function InvoiceDetailPage() {
 
   const isDeletingRef = useRef(false);
   const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
+  const workspaceId = activeWorkspace?.id;
+
+  const targetScope = {
+    workspaceId,
+    userId: targetUid,
+  };
 
   useEffect(() => {
     if (!invoiceId) return;
 
-    // Load business profile for the user
-    if (targetUid) {
-      getBusinessProfile(targetUid)
+    // Load business profile for the workspace or user
+    const profileLookupKey = workspaceId || targetUid;
+    if (profileLookupKey) {
+      getBusinessProfile(profileLookupKey)
         .then((profile) => setCompanyProfile(profile))
         .catch((err) => console.error("Could not fetch business profile for PDF:", err));
     }
@@ -85,7 +94,7 @@ export default function InvoiceDetailPage() {
     );
 
     return () => unsubscribe();
-  }, [invoiceId, navigate, targetUid]);
+  }, [invoiceId, navigate, targetUid, workspaceId]);
 
   const statusColors = {
     Paid: "bg-success-muted text-success border-success/30",
@@ -97,7 +106,7 @@ export default function InvoiceDetailPage() {
   // 1. Mark As Paid Action (with mandatory payment method modal)
   async function handleConfirmPayment(paymentMethod) {
     try {
-      await updateInvoiceStatusAndDueDate(invoiceId, "Paid", paymentMethod, null, targetUid);
+      await updateInvoiceStatusAndDueDate(invoiceId, "Paid", paymentMethod, null, targetScope);
       toast.success(`Invoice marked as Paid via ${paymentMethod}!`);
     } catch (error) {
       toast.error(error?.message || "Failed to update status");
@@ -107,7 +116,7 @@ export default function InvoiceDetailPage() {
 
   // 2. Duplicate Action
   async function handleConfirmDuplicate() {
-    if (!invoice || !targetUid || isDuplicating) return;
+    if (!invoice || (!targetUid && !workspaceId) || isDuplicating) return;
 
     setIsDuplicating(true);
     try {
@@ -124,7 +133,7 @@ export default function InvoiceDetailPage() {
         paymentType: null,
       };
 
-      const created = await createInvoiceWithNumber(targetUid, duplicatePayload);
+      const created = await createInvoiceWithNumber(targetScope, duplicatePayload);
       toast.success(`Cloned as new invoice #${created.invoiceNumber}!`);
       setShowDuplicateModal(false);
       navigate(`/invoice/view/${created.id}`);
@@ -143,7 +152,7 @@ export default function InvoiceDetailPage() {
       setIsDeleting(true);
       setShowDeleteModal(false);
       navigate("/invoice", { replace: true });
-      await deleteInvoice(invoiceId, null, targetUid);
+      await deleteInvoice(invoiceId, null, targetScope);
       toast.success("Invoice deleted successfully!");
     } catch (error) {
       isDeletingRef.current = false;
