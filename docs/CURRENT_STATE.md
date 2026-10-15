@@ -4,10 +4,8 @@ Last reviewed against code: 2026-10-08
 
 This is the only doc that describes what the code does **today**. Target-state docs are listed in [INDEX.md](./INDEX.md).
 
-> **Phase 0 Status:** Security hardening patch applied (`firestore.rules` domain read boundaries tightened, `workspace_members` create hole patched with docId & ownership check, workspace listener error guard, `currentRole` null fallback, `authorizedParties`, dependency cleanup, composite index updated to `invoiceNumber`, and legacy dual-read fallback for invoice numbering).
-> **Known Invite Flow Limitations (Scheduled for Phase 2):**
-> 1. Invite Read: `request.auth.token.email` custom claim token me nahi hai, isliye non-member invitees client Firestore se seedhe invite read nahi kar sakte (sirf existing workspace members read kar sakte hain).
-> 2. Invite Accept: Client-side `workspace_members` creation invitee ke liye restricted hai (self-join as owner block kiya gaya hai). Full invite read + accept flow dedicated serverless endpoint (`/api/accept-invite`) ke sath Phase 2 me implement hoga.
+> **Phase 0 & B2B Status:** Security hardening and B2B multi-tenancy implementation complete. Domain collections, sequential counters, and business profiles scoped to active workspace with backward compatibility.
+> **Invite Flow:** Serverless invite acceptance implemented via `/api/accept-invite` and auto-join on login in `/api/create-firebase-token` using Firebase Admin SDK. Non-member invitees are seamlessly attached to invited workspaces without client-side permission errors.
 
 ---
 
@@ -20,7 +18,7 @@ This is the only doc that describes what the code does **today**. Target-state d
 | Database | Cloud Firestore (default database, `nam5`) |
 | Image uploads | Cloudinary (`src/firebase/getFileUrl.js`, `VITE_CLOUDINARY_URL`, `VITE_CLOUDINARY_PRESET`). Firebase Storage is not used and `firebase.json` has no storage config. |
 | Hosting | Vercel. `vercel.json` rewrites everything except `/api/*` to `/` (SPA). |
-| Serverless | One function: `api/create-firebase-token.js` |
+| Serverless | Two functions: `api/create-firebase-token.js` and `api/accept-invite.js` |
 | Firebase config in repo | `firebase.json` (Firestore rules and indexes only), `firestore.rules`, `firestore.indexes.json` |
 
 ---
@@ -174,8 +172,7 @@ To avoid cross-tenant leaks or breaking live production during migration to mult
 ## 12. Remaining Operational Items
 
 1. Run live data migration script (`scripts/migrate-to-b2b.js`) against target cloud Firestore environment when scheduled by user.
-2. Optional: Server-side invite acceptance (`/api/accept-invite`) if needed for invite emails.
-3. User sign-off prior to merging `phase-0-hardening` into `main`.
+2. User sign-off prior to merging `phase-0-hardening` into `main`.
 
 ---
 
