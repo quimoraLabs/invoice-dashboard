@@ -59,7 +59,7 @@ export default async function handler(req, res) {
         body = {};
       }
     }
-    const { clerkToken, workspaceId: requestedWorkspaceId } = body || {};
+    const { clerkToken, workspaceId: requestedWorkspaceId, userEmail, displayName } = body || {};
 
     if (!clerkToken) {
       return res.status(400).json({ error: "Missing 'clerkToken' in request body." });
@@ -96,6 +96,9 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Invalid Clerk token: missing subject (userId)." });
     }
 
+    const emailFromClaims = verifiedClaims?.email || verifiedClaims?.primary_email_address || verifiedClaims?.email_address;
+    const effectiveEmail = (emailFromClaims || userEmail || "").toLowerCase().trim();
+
     // 2. Resolve custom claims for B2B multi-tenancy (workspaceId & role)
     const customClaims = {};
     let resolvedWorkspaceId = null;
@@ -113,6 +116,51 @@ export default async function handler(req, res) {
     // If client requested a specific workspace or token didn't contain claims, resolve from Firestore
     try {
       const adminDb = getAdminFirestore();
+
+      // Auto-join pending invites for this user's email if any
+      if (effectiveEmail) {
+        const pendingInvitesSnap = await adminDb
+          .collection("workspace_invites")
+          .where("invitedEmail", "==", effectiveEmail)
+          .where("status", "==", "pending")
+          .get();
+
+        if (!pendingInvitesSnap.empty) {
+          const batch = adminDb.batch();
+          for (const inviteDoc of pendingInvitesSnap.docs) {
+            const inviteData = inviteDoc.data() || {};
+            const memberDocRef = adminDb
+              .collection("workspace_members")
+              .doc(`${inviteData.workspaceId}_${userId}`);
+
+            batch.set(
+              memberDocRef,
+              {
+                workspaceId: inviteData.workspaceId,
+                userId,
+                email: effectiveEmail,
+                displayName: displayName || effectiveEmail.split("@")[0],
+                role: inviteData.role || "accountant",
+                joinedAt: new Date(),
+              },
+              { merge: true }
+            );
+
+            batch.update(inviteDoc.ref, {
+              status: "accepted",
+              acceptedAt: new Date(),
+              acceptedBy: userId,
+            });
+
+            if (!resolvedWorkspaceId) {
+              resolvedWorkspaceId = inviteData.workspaceId;
+              resolvedRole = inviteData.role || "accountant";
+            }
+          }
+          await batch.commit();
+        }
+      }
+
       if (requestedWorkspaceId && typeof requestedWorkspaceId === "string") {
         const memberDoc = await adminDb
           .collection("workspace_members")

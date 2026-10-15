@@ -8,6 +8,7 @@ import React, {
   useRef,
 } from "react";
 import { useAuth } from "./authContext/useAuth";
+import { useSession } from "@clerk/react";
 import {
   listenToUserWorkspaces,
   createWorkspace,
@@ -26,6 +27,7 @@ export const STORAGE_KEY = "invomora_active_workspace_id";
 
 export function WorkspaceProvider({ children }) {
   const { currentUser, userLoggedIn } = useAuth();
+  const { session } = useSession();
   const [workspaces, setWorkspaces] = useState([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(() => {
     return localStorage.getItem(STORAGE_KEY) || null;
@@ -52,15 +54,22 @@ export function WorkspaceProvider({ children }) {
     setLoading(true);
     setError(null);
 
-    checkAndAcceptPendingInvites(currentUser)
-      .then((acceptedCount) => {
-        if (acceptedCount > 0) {
+    let isMounted = true;
+
+    async function syncInvites() {
+      try {
+        const clerkToken = await session?.getToken({ template: "firebase", skipCache: true })
+          .catch(() => session?.getToken());
+        const acceptedCount = await checkAndAcceptPendingInvites(currentUser, clerkToken);
+        if (isMounted && acceptedCount > 0) {
           toast.success(`You joined ${acceptedCount} new workspace(s)!`);
         }
-      })
-      .catch((err) =>
-        console.error("Error auto-joining invited workspaces:", err)
-      );
+      } catch (err) {
+        console.error("Error auto-joining invited workspaces:", err);
+      }
+    }
+
+    syncInvites();
 
     const unsubscribe = listenToUserWorkspaces(
       userId,
@@ -97,7 +106,7 @@ export function WorkspaceProvider({ children }) {
     );
 
     return () => unsubscribe();
-  }, [userLoggedIn, userId, currentUser]);
+  }, [userLoggedIn, userId, currentUser, session]);
 
   // 2. Resolve active workspace
   const activeWorkspace = useMemo(() => {

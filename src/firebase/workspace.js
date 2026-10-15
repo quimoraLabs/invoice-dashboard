@@ -254,11 +254,33 @@ export async function removeWorkspaceMember(workspaceId, memberUserId) {
 }
 
 // ---------- Accept pending invites (atomic batch per invite) ----------
-export async function checkAndAcceptPendingInvites(user) {
+export async function checkAndAcceptPendingInvites(user, clerkToken) {
   if (!user?.email || (!user?.id && !user?.uid)) return 0;
   const userId = user.id || user.uid;
   const userEmail = user.email.toLowerCase().trim();
 
+  // 1. Try serverless endpoint first if clerkToken is provided
+  if (clerkToken) {
+    try {
+      const response = await fetch("/api/accept-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clerkToken,
+          userEmail,
+          displayName: user.displayName || userEmail.split("@")[0],
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data.acceptedCount || 0;
+      }
+    } catch (apiErr) {
+      console.warn("Serverless invite acceptance attempt failed, falling back:", apiErr.message);
+    }
+  }
+
+  // 2. Client-side fallback
   try {
     const q = query(
       invitesCollection,
@@ -299,8 +321,8 @@ export async function checkAndAcceptPendingInvites(user) {
     }
 
     return acceptedCount;
-  } catch (err) {
-    console.error("Error accepting pending invites:", err);
+  } catch {
+    // If client lacks direct read on un-joined workspace invites, fail silently
     return 0;
   }
 }
