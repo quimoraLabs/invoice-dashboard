@@ -295,7 +295,7 @@ export default function ActivityLogPage() {
                         </span>
                       </div>
 
-                      <p className="text-xs text-muted-foreground leading-relaxed break-words">
+                      <p className="text-xs text-muted-foreground leading-relaxed wrap-break-word">
                         {log.details || "No additional details"}
                       </p>
                     </div>
@@ -312,7 +312,7 @@ export default function ActivityLogPage() {
                           {log.actorName || "User"}
                         </p>
                         {log.actorEmail && (
-                          <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">
+                          <p className="text-[10px] text-muted-foreground truncate max-w-35">
                             {log.actorEmail}
                           </p>
                         )}

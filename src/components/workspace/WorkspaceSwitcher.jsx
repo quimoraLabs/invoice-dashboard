@@ -34,7 +34,7 @@ export default function WorkspaceSwitcher() {
           <div className="flex h-6 w-6 md:h-5 md:w-5 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-[11px] md:text-xs">
             {activeWorkspace.name ? activeWorkspace.name.charAt(0).toUpperCase() : <HiBriefcase size={12} />}
           </div>
-          <span className="hidden md:inline-block max-w-[120px] lg:max-w-[160px] truncate">
+          <span className="hidden md:inline-block max-w-30 lg:max-w-40 truncate">
             {activeWorkspace.name}
           </span>
           {currentRole && (
