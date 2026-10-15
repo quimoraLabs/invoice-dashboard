@@ -41,7 +41,7 @@ export function resolveCustomClaims({ verifiedClaims, requestedWorkspaceId, memb
 }
 
 // Error payload sanitizer to ensure no internal error details leak
-export function sanitizeAuthError(error) {
+export function sanitizeAuthError() {
   return {
     error: "Authentication exchange failed",
   };
