@@ -30,13 +30,28 @@ export function formatInvoiceNumber(n, prefix = "INV-", padding = 3) {
   return `${prefix}${String(n).padStart(padding, "0")}`;
 }
 
-// Option B: Scan user's existing invoices to find highest numeric invoice number
-// Runs once only when /users/{userId}/counters/invoice does not exist
-// TODO Phase 2: pagination if invoice count > 5000
-export async function scanForHighestNumber(userId) {
-  if (!userId) return 0;
+export function resolveScope(scopeOrUserId, fallbackObj = {}) {
+  if (scopeOrUserId && typeof scopeOrUserId === "object") {
+    return {
+      workspaceId: scopeOrUserId.workspaceId || fallbackObj.workspaceId || null,
+      userId: scopeOrUserId.userId || fallbackObj.userId || null,
+    };
+  }
+  const idStr = scopeOrUserId || fallbackObj.userId || fallbackObj.workspaceId;
+  return {
+    workspaceId: fallbackObj.workspaceId || (idStr && idStr.startsWith("ws_") ? idStr : null),
+    userId: fallbackObj.userId || (idStr && !idStr.startsWith("ws_") ? idStr : null),
+  };
+}
+
+// Scan existing invoices to find highest numeric invoice number
+export async function scanForHighestNumber(scopeOrUserId) {
+  const scope = resolveScope(scopeOrUserId);
+  if (!scope.workspaceId && !scope.userId) return 0;
   try {
-    const q = query(invoiceCollection, where("userId", "==", userId));
+    const q = scope.workspaceId
+      ? query(invoiceCollection, where("workspaceId", "==", scope.workspaceId))
+      : query(invoiceCollection, where("userId", "==", scope.userId));
     const snapshot = await getDocs(q);
     if (snapshot.empty) return 0;
 
@@ -60,8 +75,6 @@ export async function scanForHighestNumber(userId) {
     );
   }
 }
-
-
 
 // Helper to normalize date to YYYY-MM-DD string for comparison
 export function toDateString(d) {
@@ -144,9 +157,12 @@ export function validateInvoiceData(invoicePayload, existingDate = null) {
   }
 }
 
+// Strict item calculation and subtotal/tax rounding
+export function normalizeInvoiceCalculations(invoicePayload) {
+  if (!Array.isArray(invoicePayload.items)) {
+    return invoicePayload;
+  }
 
-// Normalize calculation values with strict 2-decimal rounding
-function normalizeInvoiceCalculations(invoicePayload) {
   const items = invoicePayload.items.map((item) => {
     const qty = Number(item.quantity) || 1;
     const price = round2(item.price);
@@ -180,12 +196,15 @@ function normalizeInvoiceCalculations(invoicePayload) {
 }
 
 // Atomically create invoice with sequential number using Firestore transaction
-export async function createInvoiceWithNumber(userId, invoice, setLoading) {
+export async function createInvoiceWithNumber(scopeOrUserId, invoice, setLoading) {
   setLoading?.(true);
   try {
-    const targetUid = userId || invoice.userId;
-    if (!targetUid) {
-      throw new Error("User authentication required to create invoice.");
+    const scope = resolveScope(scopeOrUserId, invoice);
+    const targetUid = scope.userId || invoice.userId;
+    const workspaceId = scope.workspaceId || invoice.workspaceId;
+
+    if (!targetUid && !workspaceId) {
+      throw new Error("User authentication or workspace required to create invoice.");
     }
 
     // 1. Business Validations (performed before transaction)
@@ -209,12 +228,15 @@ export async function createInvoiceWithNumber(userId, invoice, setLoading) {
     }
 
     // 3. Step A: Outside transaction - check if counter exists or scan legacy invoices
-    const counterRef = doc(db, "users", targetUid, "counters", "invoice");
+    const counterRef = workspaceId
+      ? doc(db, "workspaces", workspaceId, "counters", "invoice")
+      : doc(db, "users", targetUid, "counters", "invoice");
+
     const counterSnap = await getDoc(counterRef);
     let initialNextNumber = 1;
 
     if (!counterSnap.exists()) {
-      const maxExisting = await scanForHighestNumber(targetUid);
+      const maxExisting = await scanForHighestNumber(workspaceId ? { workspaceId } : targetUid);
       initialNextNumber = maxExisting + 1;
     }
 
@@ -232,7 +254,6 @@ export async function createInvoiceWithNumber(userId, invoice, setLoading) {
 
       const invoicePayload = {
         ...normalizedData,
-        userId: targetUid,
         invoiceNumber: generatedInvoiceNumber,
         invoice_no: generatedInvoiceNumber, // Dual-write for backward compatibility
         invoiceDate,
@@ -243,6 +264,13 @@ export async function createInvoiceWithNumber(userId, invoice, setLoading) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
+
+      if (workspaceId) {
+        invoicePayload.workspaceId = workspaceId;
+      }
+      if (targetUid) {
+        invoicePayload.userId = targetUid;
+      }
 
       delete invoicePayload.created_at;
       delete invoicePayload.updated_at;
@@ -276,21 +304,24 @@ export async function createInvoiceWithNumber(userId, invoice, setLoading) {
 }
 
 // Backward compatible wrapper for existing callers
-export async function createInvoice(invoice, setLoading, userId) {
-  return createInvoiceWithNumber(userId || invoice.userId, invoice, setLoading);
+export async function createInvoice(invoice, setLoading, scopeOrUserId) {
+  return createInvoiceWithNumber(scopeOrUserId || invoice.userId, invoice, setLoading);
 }
 
 // Get next invoice number preview (reads counter or scans, does not increment)
-export async function getNextInvoiceNumber(userId) {
-  if (!userId) return "—";
+export async function getNextInvoiceNumber(scopeOrUserId) {
+  const scope = resolveScope(scopeOrUserId);
+  if (!scope.workspaceId && !scope.userId) return "—";
   try {
-    const counterRef = doc(db, "users", userId, "counters", "invoice");
+    const counterRef = scope.workspaceId
+      ? doc(db, "workspaces", scope.workspaceId, "counters", "invoice")
+      : doc(db, "users", scope.userId, "counters", "invoice");
     const counterSnap = await getDoc(counterRef);
     if (counterSnap.exists()) {
       const data = counterSnap.data();
       return formatInvoiceNumber(data.nextNumber || 1, data.prefix || "INV-", data.padding || 3);
     }
-    const maxExisting = await scanForHighestNumber(userId);
+    const maxExisting = await scanForHighestNumber(scope);
     return formatInvoiceNumber(maxExisting + 1, "INV-", 3);
   } catch (error) {
     console.warn("Unable to determine next invoice number preview:", error);
@@ -298,17 +329,18 @@ export async function getNextInvoiceNumber(userId) {
   }
 }
 
+// Stream live snapshot data isolated per workspace or user ID
+export function listenToInvoices(callback, scopeOrUserId) {
+  const scope = resolveScope(scopeOrUserId);
 
-// Stream live snapshot data isolated per user ID
-export function listenToInvoices(callback, userId) {
-  const targetUid = userId;
-
-  if (!targetUid) {
+  if (!scope.workspaceId && !scope.userId) {
     callback([]);
     return () => {};
   }
 
-  const q = query(invoiceCollection, where("userId", "==", targetUid));
+  const q = scope.workspaceId
+    ? query(invoiceCollection, where("workspaceId", "==", scope.workspaceId))
+    : query(invoiceCollection, where("userId", "==", scope.userId));
 
   return onSnapshot(
     q,
@@ -327,14 +359,18 @@ export function listenToInvoices(callback, userId) {
 }
 
 // Fetch single invoice payload matching document ID
-export async function getInvoiceById(id, userId) {
+export async function getInvoiceById(id, scopeOrUserId) {
   try {
     const docRef = doc(db, "invoices", id);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      if (userId && data.userId && data.userId !== userId) {
+      const scope = resolveScope(scopeOrUserId);
+      if (scope.workspaceId && data.workspaceId && data.workspaceId !== scope.workspaceId) {
+        throw new Error("Unauthorized: You do not have permission to view this invoice.");
+      }
+      if (!data.workspaceId && scope.userId && data.userId && data.userId !== scope.userId) {
         throw new Error("Unauthorized: You do not have permission to view this invoice.");
       }
       return { id: docSnap.id, ...data };
@@ -348,7 +384,7 @@ export async function getInvoiceById(id, userId) {
 }
 
 // Update invoice fields (guard: invoiceNumber is immutable)
-export async function updateInvoice(id, updatedData, setLoading, userId) {
+export async function updateInvoice(id, updatedData, setLoading, scopeOrUserId) {
   setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
@@ -359,7 +395,11 @@ export async function updateInvoice(id, updatedData, setLoading, userId) {
     }
 
     const existingData = docSnap.data();
-    if (userId && existingData.userId && existingData.userId !== userId) {
+    const scope = resolveScope(scopeOrUserId);
+    if (scope.workspaceId && existingData.workspaceId && existingData.workspaceId !== scope.workspaceId) {
+      throw new Error("Unauthorized: You do not have permission to update this invoice.");
+    }
+    if (!existingData.workspaceId && scope.userId && existingData.userId && existingData.userId !== scope.userId) {
       throw new Error("Unauthorized: You do not have permission to update this invoice.");
     }
 
@@ -373,7 +413,6 @@ export async function updateInvoice(id, updatedData, setLoading, userId) {
     // Guard: invoiceNumber & invoice_no are strictly immutable!
     delete cleanData.invoiceNumber;
     delete cleanData.invoice_no;
-
 
     cleanData.updatedAt = serverTimestamp();
 
@@ -392,15 +431,22 @@ export async function updateInvoiceStatusAndDueDate(
   status = "Paid",
   type = "",
   setLoading,
-  userId,
+  scopeOrUserId,
 ) {
   setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
-    if (userId) {
+    const scope = resolveScope(scopeOrUserId);
+    if (scope.userId || scope.workspaceId) {
       const docSnap = await getDoc(docRef);
-      if (docSnap.exists() && docSnap.data().userId && docSnap.data().userId !== userId) {
-        throw new Error("Unauthorized: You do not have permission to modify this invoice status.");
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (scope.workspaceId && data.workspaceId && data.workspaceId !== scope.workspaceId) {
+          throw new Error("Unauthorized: You do not have permission to modify this invoice status.");
+        }
+        if (!data.workspaceId && scope.userId && data.userId && data.userId !== scope.userId) {
+          throw new Error("Unauthorized: You do not have permission to modify this invoice status.");
+        }
       }
     }
     let payload = {};
@@ -431,14 +477,21 @@ export async function updateInvoiceStatusAndDueDate(
 }
 
 // Delete invoice document (Numbers are never reused / no counter rollback per GST compliance)
-export async function deleteInvoice(id, setLoading, userId) {
+export async function deleteInvoice(id, setLoading, scopeOrUserId) {
   setLoading?.(true);
   try {
     const docRef = doc(db, "invoices", id);
-    if (userId) {
+    const scope = resolveScope(scopeOrUserId);
+    if (scope.userId || scope.workspaceId) {
       const docSnap = await getDoc(docRef);
-      if (docSnap.exists() && docSnap.data().userId && docSnap.data().userId !== userId) {
-        throw new Error("Unauthorized: You do not have permission to delete this invoice.");
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (scope.workspaceId && data.workspaceId && data.workspaceId !== scope.workspaceId) {
+          throw new Error("Unauthorized: You do not have permission to delete this invoice.");
+        }
+        if (!data.workspaceId && scope.userId && data.userId && data.userId !== scope.userId) {
+          throw new Error("Unauthorized: You do not have permission to delete this invoice.");
+        }
       }
     }
     await deleteDoc(docRef);
