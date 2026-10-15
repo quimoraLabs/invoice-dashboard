@@ -117,49 +117,6 @@ export default async function handler(req, res) {
     try {
       const adminDb = getAdminFirestore();
 
-      // Auto-join pending invites for this user's email if any
-      if (effectiveEmail) {
-        const pendingInvitesSnap = await adminDb
-          .collection("workspace_invites")
-          .where("invitedEmail", "==", effectiveEmail)
-          .where("status", "==", "pending")
-          .get();
-
-        if (!pendingInvitesSnap.empty) {
-          const batch = adminDb.batch();
-          for (const inviteDoc of pendingInvitesSnap.docs) {
-            const inviteData = inviteDoc.data() || {};
-            const memberDocRef = adminDb
-              .collection("workspace_members")
-              .doc(`${inviteData.workspaceId}_${userId}`);
-
-            batch.set(
-              memberDocRef,
-              {
-                workspaceId: inviteData.workspaceId,
-                userId,
-                email: effectiveEmail,
-                displayName: displayName || effectiveEmail.split("@")[0],
-                role: inviteData.role || "accountant",
-                joinedAt: new Date(),
-              },
-              { merge: true }
-            );
-
-            batch.update(inviteDoc.ref, {
-              status: "accepted",
-              acceptedAt: new Date(),
-              acceptedBy: userId,
-            });
-
-            if (!resolvedWorkspaceId) {
-              resolvedWorkspaceId = inviteData.workspaceId;
-              resolvedRole = inviteData.role || "accountant";
-            }
-          }
-          await batch.commit();
-        }
-      }
 
       if (requestedWorkspaceId && typeof requestedWorkspaceId === "string") {
         const memberDoc = await adminDb

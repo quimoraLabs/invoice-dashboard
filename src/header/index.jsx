@@ -14,17 +14,23 @@ import {
   HiMoon,
   HiSun,
   HiOfficeBuilding,
+  HiClipboardList,
+  HiMail,
 } from "react-icons/hi";
 import ProfileModal from "../components/modals/ProfileViewModal";
 import WorkspaceSwitcher from "../components/workspace/WorkspaceSwitcher";
+import InvitationsModal from "../components/workspace/InvitationsModal";
+import { useWorkspace } from "../contexts/WorkspaceContext";
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { userLoggedIn, currentUser, signOut } = useAuth();
+  const { myPendingInvites } = useWorkspace();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isInvitationsOpen, setIsInvitationsOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() =>
     document.documentElement.classList.contains("dark"),
   );
@@ -49,6 +55,7 @@ const Header = () => {
     { to: "/customers", label: "Customers", icon: <HiUsers size={18} /> },
     { to: "/products", label: "Products", icon: <HiCube size={18} /> },
     { to: "/invoice", label: "Invoices", icon: <HiDocumentText size={18} /> },
+    { to: "/activity-log", label: "Audit Log", icon: <HiClipboardList size={18} /> },
     { to: "/business-profile", label: "Business Profile", icon: <HiOfficeBuilding size={18} /> },
   ];
   const handleLogout = async () => {
@@ -159,8 +166,29 @@ const Header = () => {
                 })}
               </div>
 
-              {/* Right Side: Theme Toggle + Profile Dropdown */}
+              {/* Right Side: Theme Toggle + Invitations + Profile Dropdown */}
               <div className="hidden md:flex items-center gap-2">
+                {/* Invitations Button */}
+                <button
+                  onClick={() => setIsInvitationsOpen(true)}
+                  title="Workspace Invitations"
+                  className="relative flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface-elevated transition hover:bg-surface focus:outline-none cursor-pointer"
+                >
+                  <HiMail
+                    size={18}
+                    className={
+                      myPendingInvites?.length > 0
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    }
+                  />
+                  {myPendingInvites?.length > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-xs animate-pulse">
+                      {myPendingInvites.length}
+                    </span>
+                  )}
+                </button>
+
                 {/* Theme Toggle Button */}
                 <button
                   onClick={toggleTheme}
@@ -283,6 +311,23 @@ const Header = () => {
                   </Link>
                 ))}
                 <button
+                  onClick={() => {
+                    setIsInvitationsOpen(true);
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm font-medium text-foreground hover:bg-surface"
+                >
+                  <div className="flex items-center gap-3">
+                    <HiMail size={18} className="text-primary" />
+                    <span>Invitations</span>
+                  </div>
+                  {myPendingInvites?.length > 0 && (
+                    <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
+                      {myPendingInvites.length}
+                    </span>
+                  )}
+                </button>
+                <button
                   onClick={toggleTheme}
                   aria-pressed={isDarkMode}
                   className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium text-foreground"
@@ -333,6 +378,11 @@ const Header = () => {
       <ProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
+      />
+
+      <InvitationsModal
+        isOpen={isInvitationsOpen}
+        onClose={() => setIsInvitationsOpen(false)}
       />
     </>
   );

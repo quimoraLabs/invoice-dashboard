@@ -50,10 +50,21 @@ export default async function handler(req, res) {
         body = {};
       }
     }
-    const { clerkToken, inviteId, userEmail, displayName } = body || {};
+    const {
+      clerkToken,
+      inviteId,
+      passcode,
+      action = "accept", // "accept" | "decline"
+      userEmail,
+      displayName,
+    } = body || {};
 
     if (!clerkToken) {
       return res.status(400).json({ error: "Missing 'clerkToken' in request body." });
+    }
+
+    if (!inviteId) {
+      return res.status(400).json({ error: "Missing 'inviteId' in request body." });
     }
 
     const secretKey = process.env.CLERK_SECRET_KEY;
@@ -88,99 +99,110 @@ export default async function handler(req, res) {
     const emailFromClaims = verifiedClaims?.email || verifiedClaims?.primary_email_address || verifiedClaims?.email_address;
     const effectiveEmail = (emailFromClaims || userEmail || "").toLowerCase().trim();
 
-    if (!effectiveEmail && !inviteId) {
-      return res.status(400).json({ error: "Either userEmail or inviteId must be provided." });
+    const adminDb = getAdminFirestore();
+    const inviteRef = adminDb.collection("workspace_invites").doc(inviteId);
+    const inviteSnap = await inviteRef.get();
+
+    if (!inviteSnap.exists) {
+      return res.status(404).json({ error: "Invitation not found." });
     }
 
-    const adminDb = getAdminFirestore();
-    let acceptedCount = 0;
-    const acceptedWorkspaces = [];
+    const inviteData = inviteSnap.data() || {};
+    if (inviteData.status !== "pending") {
+      return res.status(400).json({ error: `Invitation is already ${inviteData.status}.` });
+    }
 
-    if (inviteId) {
-      const inviteRef = adminDb.collection("workspace_invites").doc(inviteId);
-      const inviteSnap = await inviteRef.get();
+    if (
+      inviteData.invitedEmail &&
+      effectiveEmail &&
+      inviteData.invitedEmail.toLowerCase().trim() !== effectiveEmail
+    ) {
+      return res.status(403).json({ error: "This invitation was sent to a different email address." });
+    }
 
-      if (!inviteSnap.exists) {
-        return res.status(404).json({ error: "Invite not found." });
-      }
-
-      const inviteData = inviteSnap.data() || {};
-      if (inviteData.status !== "pending") {
-        return res.status(400).json({ error: `Invite is already ${inviteData.status}.` });
-      }
-
-      if (inviteData.invitedEmail && effectiveEmail && inviteData.invitedEmail.toLowerCase() !== effectiveEmail) {
-        return res.status(403).json({ error: "This invitation was sent to a different email address." });
-      }
-
-      const memberDocRef = adminDb.collection("workspace_members").doc(`${inviteData.workspaceId}_${userId}`);
-      const batch = adminDb.batch();
-
-      batch.set(
-        memberDocRef,
-        {
-          workspaceId: inviteData.workspaceId,
-          userId,
-          email: effectiveEmail || inviteData.invitedEmail || "",
-          displayName: displayName || (effectiveEmail ? effectiveEmail.split("@")[0] : "Team Member"),
-          role: inviteData.role || "accountant",
-          joinedAt: new Date(),
-        },
-        { merge: true }
-      );
-
-      batch.update(inviteRef, {
-        status: "accepted",
-        acceptedAt: new Date(),
-        acceptedBy: userId,
+    // Handle DECLINE
+    if (action === "decline") {
+      await inviteRef.update({
+        status: "declined",
+        declinedAt: new Date(),
+        declinedBy: userId,
       });
 
-      await batch.commit();
-      acceptedCount = 1;
-      acceptedWorkspaces.push({ workspaceId: inviteData.workspaceId, role: inviteData.role || "accountant" });
-    } else {
-      const invitesSnap = await adminDb
-        .collection("workspace_invites")
-        .where("invitedEmail", "==", effectiveEmail)
-        .where("status", "==", "pending")
-        .get();
+      return res.status(200).json({
+        success: true,
+        action: "declined",
+        message: "Invitation declined successfully.",
+      });
+    }
 
-      if (!invitesSnap.empty) {
-        const batch = adminDb.batch();
-        for (const doc of invitesSnap.docs) {
-          const invite = doc.data() || {};
-          const memberDocRef = adminDb.collection("workspace_members").doc(`${invite.workspaceId}_${userId}`);
+    // Handle ACCEPT: Passcode verification is required
+    const wsRef = adminDb.collection("workspaces").doc(inviteData.workspaceId);
+    const wsSnap = await wsRef.get();
 
-          batch.set(
-            memberDocRef,
-            {
-              workspaceId: invite.workspaceId,
-              userId,
-              email: effectiveEmail,
-              displayName: displayName || effectiveEmail.split("@")[0],
-              role: invite.role || "accountant",
-              joinedAt: new Date(),
-            },
-            { merge: true }
-          );
+    if (!wsSnap.exists) {
+      return res.status(404).json({ error: "Target workspace no longer exists." });
+    }
 
-          batch.update(doc.ref, {
-            status: "accepted",
-            acceptedAt: new Date(),
-            acceptedBy: userId,
-          });
+    const wsData = wsSnap.data() || {};
+    const expectedPasscode = wsData.invitePasscode;
 
-          acceptedCount++;
-          acceptedWorkspaces.push({ workspaceId: invite.workspaceId, role: invite.role || "accountant" });
-        }
-        await batch.commit();
+    if (expectedPasscode) {
+      const providedPasscode = String(passcode || "").trim();
+      if (!providedPasscode || providedPasscode !== String(expectedPasscode).trim()) {
+        return res.status(400).json({
+          error: "Invalid 6-digit security passcode. Please ask the workspace owner for the correct passcode to join.",
+        });
       }
     }
+
+    // Validated! Batch commit membership, update invite, and log activity
+    const memberDocRef = adminDb.collection("workspace_members").doc(`${inviteData.workspaceId}_${userId}`);
+    const resolvedName = displayName || (effectiveEmail ? effectiveEmail.split("@")[0] : "Team Member");
+
+    const batch = adminDb.batch();
+
+    batch.set(
+      memberDocRef,
+      {
+        workspaceId: inviteData.workspaceId,
+        userId,
+        email: effectiveEmail || inviteData.invitedEmail || "",
+        displayName: resolvedName,
+        role: inviteData.role || "accountant",
+        joinedAt: new Date(),
+      },
+      { merge: true }
+    );
+
+    batch.update(inviteRef, {
+      status: "accepted",
+      acceptedAt: new Date(),
+      acceptedBy: userId,
+    });
+
+    // Write audit log entry
+    const logDocRef = adminDb.collection("activity_logs").doc();
+    batch.set(logDocRef, {
+      workspaceId: inviteData.workspaceId,
+      actorUid: userId,
+      actorName: resolvedName,
+      actorEmail: effectiveEmail || "",
+      action: "member_join",
+      entityType: "member",
+      entityId: userId,
+      entityTitle: resolvedName,
+      details: `${resolvedName} accepted the invitation and joined as ${inviteData.role || "accountant"}.`,
+      createdAt: new Date(),
+    });
+
+    await batch.commit();
 
     return res.status(200).json({
       success: true,
-      acceptedCount,
-      acceptedWorkspaces,
+      action: "accepted",
+      workspaceId: inviteData.workspaceId,
+      workspaceName: wsData.name || inviteData.workspaceName || "Business Workspace",
+      role: inviteData.role || "accountant",
     });
   } catch (error) {
     console.error("Invite acceptance failed:", error);

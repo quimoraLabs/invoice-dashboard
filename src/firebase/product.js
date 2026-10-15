@@ -11,6 +11,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
+import { logActivity } from "./activity";
 
 // Firestore collection reference
 const productsCollection = collection(db, "products");
@@ -20,12 +21,14 @@ function resolveScope(scopeOrUserId, fallbackObj = {}) {
     return {
       workspaceId: scopeOrUserId.workspaceId || fallbackObj.workspaceId || null,
       userId: scopeOrUserId.userId || fallbackObj.userId || null,
+      actor: scopeOrUserId.actor || fallbackObj.actor || null,
     };
   }
   const idStr = scopeOrUserId || fallbackObj.userId || fallbackObj.workspaceId;
   return {
     workspaceId: fallbackObj.workspaceId || (idStr && idStr.startsWith("ws_") ? idStr : null),
     userId: fallbackObj.userId || (idStr && !idStr.startsWith("ws_") ? idStr : null),
+    actor: fallbackObj.actor || null,
   };
 }
 
@@ -52,6 +55,19 @@ async function createProduct(product, setLoading, scopeOrUserId) {
     }
 
     const docRef = await addDoc(productsCollection, productPayload);
+
+    if (scope.workspaceId) {
+      logActivity({
+        workspaceId: scope.workspaceId,
+        actor: scope.actor || product.actor || { uid: targetUid },
+        action: "product_create",
+        entityType: "product",
+        entityId: docRef.id,
+        entityTitle: product.title || "Product",
+        details: `Added product "${product.title || "Product"}" (₹${product.price || 0})`,
+      });
+    }
+
     return docRef;
   } catch (error) {
     console.error("Error adding product: ", error);
@@ -97,7 +113,7 @@ async function updateProduct(id, updatedData, setLoading, scopeOrUserId) {
 
   try {
     const docRef = doc(db, "products", id);
-    const scope = resolveScope(scopeOrUserId);
+    const scope = resolveScope(scopeOrUserId, updatedData);
     if (scope.userId || scope.workspaceId) {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
@@ -111,6 +127,18 @@ async function updateProduct(id, updatedData, setLoading, scopeOrUserId) {
       }
     }
     await updateDoc(docRef, { ...updatedData, updatedAt: serverTimestamp() });
+
+    if (scope.workspaceId) {
+      logActivity({
+        workspaceId: scope.workspaceId,
+        actor: scope.actor || updatedData.actor,
+        action: "product_update",
+        entityType: "product",
+        entityId: id,
+        entityTitle: updatedData.title || "Product",
+        details: `Updated product details${updatedData.title ? ` (${updatedData.title})` : ""}`,
+      });
+    }
   } catch (error) {
     console.error("Error updating product:", error);
     throw error;
@@ -125,10 +153,12 @@ async function deleteProduct(id, setLoading, scopeOrUserId) {
   try {
     const docRef = doc(db, "products", id);
     const scope = resolveScope(scopeOrUserId);
+    let productTitle = "";
     if (scope.userId || scope.workspaceId) {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
+        productTitle = data.title || "";
         if (scope.workspaceId && data.workspaceId && data.workspaceId !== scope.workspaceId) {
           throw new Error("Unauthorized: You do not have permission to delete this product.");
         }
@@ -138,6 +168,18 @@ async function deleteProduct(id, setLoading, scopeOrUserId) {
       }
     }
     await deleteDoc(docRef);
+
+    if (scope.workspaceId) {
+      logActivity({
+        workspaceId: scope.workspaceId,
+        actor: scope.actor,
+        action: "product_delete",
+        entityType: "product",
+        entityId: id,
+        entityTitle: productTitle || id,
+        details: `Deleted product "${productTitle || id}"`,
+      });
+    }
   } catch (error) {
     console.error("Error deleting product : ", error);
     throw error;

@@ -5,6 +5,7 @@ import {
   getDoc,
   getDocs,
   deleteDoc,
+  updateDoc,
   onSnapshot,
   query,
   where,
@@ -13,6 +14,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
+import { logActivity } from "./activity";
 
 const workspacesCollection = collection(db, "workspaces");
 const membersCollection = collection(db, "workspace_members");
@@ -21,6 +23,11 @@ const invitesCollection = collection(db, "workspace_invites");
 // Firestore 'in' query limit
 const IN_QUERY_LIMIT = 10;
 
+// Helper to generate secure 6-digit numeric string
+export function generate6DigitPasscode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
 // ---------- Create Workspace (atomic) ----------
 export async function createWorkspace(name, ownerUser) {
   if (!ownerUser?.id && !ownerUser?.uid) {
@@ -28,6 +35,7 @@ export async function createWorkspace(name, ownerUser) {
   }
   const userId = ownerUser.id || ownerUser.uid;
   const workspaceName = (name || "My Business").trim();
+  const invitePasscode = generate6DigitPasscode();
 
   // Pre-generate workspace ID so member doc can reference it in same batch
   const workspaceRef = doc(workspacesCollection);
@@ -40,6 +48,7 @@ export async function createWorkspace(name, ownerUser) {
   batch.set(workspaceRef, {
     name: workspaceName,
     ownerId: userId,
+    invitePasscode,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -55,12 +64,60 @@ export async function createWorkspace(name, ownerUser) {
 
   await batch.commit();
 
+  await logActivity({
+    workspaceId,
+    actor: {
+      uid: userId,
+      displayName: ownerUser.displayName || "Owner",
+      email: ownerUser.email || "",
+    },
+    action: "workspace_create",
+    entityType: "workspace",
+    entityId: workspaceId,
+    entityTitle: workspaceName,
+    details: `Workspace "${workspaceName}" was created.`,
+  });
+
   return {
     id: workspaceId,
     name: workspaceName,
     ownerId: userId,
+    invitePasscode,
     role: "owner",
   };
+}
+
+// ---------- Update Workspace Settings (Owner only) ----------
+export async function updateWorkspaceSettings(workspaceId, { name, invitePasscode }, actor) {
+  if (!workspaceId) throw new Error("Workspace ID is required.");
+  const wsRef = doc(db, "workspaces", workspaceId);
+
+  const updates = { updatedAt: serverTimestamp() };
+  if (name && name.trim()) {
+    updates.name = name.trim();
+  }
+  if (invitePasscode && String(invitePasscode).trim().length === 6) {
+    updates.invitePasscode = String(invitePasscode).trim();
+  }
+
+  await updateDoc(wsRef, updates);
+
+  await logActivity({
+    workspaceId,
+    actor,
+    action: "workspace_update",
+    entityType: "workspace",
+    entityId: workspaceId,
+    entityTitle: name || "Settings",
+    details: `Updated workspace settings${name ? ` (Name: "${name}")` : ""}${invitePasscode ? " (Passcode regenerated)" : ""}.`,
+  });
+}
+
+// ---------- Regenerate Workspace Passcode ----------
+export async function regenerateWorkspacePasscode(workspaceId, actor) {
+  const newPasscode = generate6DigitPasscode();
+  await updateWorkspaceSettings(workspaceId, { invitePasscode: newPasscode }, actor);
+  return newPasscode;
 }
 
 // ---------- Listen to user workspaces (N+1 fixed) ----------
@@ -117,7 +174,6 @@ export function listenToUserWorkspaces(userId, callback, onError) {
         callback(workspaces);
       } catch (err) {
         console.error("Error fetching user workspaces:", err);
-        // IMPORTANT: do NOT call callback([]) — that triggers default-ws spam
         if (onError) onError(err);
       }
     },
@@ -160,6 +216,7 @@ export async function inviteMemberToWorkspace({
   invitedEmail,
   role = "accountant",
   invitedBy,
+  actor,
 }) {
   if (!workspaceId || !invitedEmail) {
     throw new Error("Workspace ID and email are required to send invite.");
@@ -188,10 +245,20 @@ export async function inviteMemberToWorkspace({
     createdAt: serverTimestamp(),
   });
 
+  await logActivity({
+    workspaceId,
+    actor: actor || { uid: invitedBy },
+    action: "member_invite",
+    entityType: "member",
+    entityId: emailClean,
+    entityTitle: emailClean,
+    details: `Invited ${emailClean} to join workspace as ${role}.`,
+  });
+
   return docRef.id;
 }
 
-// ---------- Listen to pending invites ----------
+// ---------- Listen to pending invites (Workspace Owner View) ----------
 export function listenToWorkspaceInvites(workspaceId, callback) {
   if (!workspaceId) {
     callback([]);
@@ -221,13 +288,25 @@ export function listenToWorkspaceInvites(workspaceId, callback) {
 }
 
 // ---------- Revoke invite ----------
-export async function revokeWorkspaceInvite(inviteId) {
+export async function revokeWorkspaceInvite(inviteId, workspaceId, actor) {
   if (!inviteId) return;
   await deleteDoc(doc(db, "workspace_invites", inviteId));
+
+  if (workspaceId) {
+    await logActivity({
+      workspaceId,
+      actor,
+      action: "member_remove",
+      entityType: "member",
+      entityId: inviteId,
+      entityTitle: "Invitation Revoked",
+      details: "Cancelled pending invitation.",
+    });
+  }
 }
 
 // ---------- Remove member (with last-owner guard) ----------
-export async function removeWorkspaceMember(workspaceId, memberUserId) {
+export async function removeWorkspaceMember(workspaceId, memberUserId, actor) {
   if (!workspaceId || !memberUserId) return;
 
   const memberDocId = `${workspaceId}_${memberUserId}`;
@@ -251,78 +330,100 @@ export async function removeWorkspaceMember(workspaceId, memberUserId) {
   }
 
   await deleteDoc(memberRef);
+
+  await logActivity({
+    workspaceId,
+    actor,
+    action: "member_remove",
+    entityType: "member",
+    entityId: memberUserId,
+    entityTitle: member.displayName || member.email || "Member",
+    details: `Removed ${member.displayName || member.email || "member"} from workspace.`,
+  });
 }
 
-// ---------- Accept pending invites (atomic batch per invite) ----------
-export async function checkAndAcceptPendingInvites(user, clerkToken) {
-  if (!user?.email || (!user?.id && !user?.uid)) return 0;
-  const userId = user.id || user.uid;
-  const userEmail = user.email.toLowerCase().trim();
+// ---------- Fetch Pending Invites for Current User ----------
+export async function fetchMyPendingInvites(clerkToken) {
+  if (!clerkToken) return [];
 
-  // 1. Try serverless endpoint first if clerkToken is provided
-  if (clerkToken) {
-    try {
-      const response = await fetch("/api/accept-invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clerkToken,
-          userEmail,
-          displayName: user.displayName || userEmail.split("@")[0],
-        }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        return data.acceptedCount || 0;
-      }
-    } catch (apiErr) {
-      console.warn("Serverless invite acceptance attempt failed, falling back:", apiErr.message);
-    }
-  }
-
-  // 2. Client-side fallback
   try {
-    const q = query(
-      invitesCollection,
-      where("invitedEmail", "==", userEmail),
-      where("status", "==", "pending")
-    );
-    const snapshot = await getDocs(q);
+    const res = await fetch("/api/my-invites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clerkToken }),
+    });
 
-    if (snapshot.empty) return 0;
-
-    let acceptedCount = 0;
-
-    for (const inviteDoc of snapshot.docs) {
-      const invite = inviteDoc.data();
-      const memberDocId = `${invite.workspaceId}_${userId}`;
-
-      const batch = writeBatch(db);
-      batch.set(doc(db, "workspace_members", memberDocId), {
-        workspaceId: invite.workspaceId,
-        userId,
-        email: userEmail,
-        displayName: user.displayName || userEmail.split("@")[0],
-        role: invite.role || "accountant",
-        joinedAt: serverTimestamp(),
-      });
-      batch.update(doc(db, "workspace_invites", inviteDoc.id), {
-        status: "accepted",
-        acceptedAt: serverTimestamp(),
-      });
-
-      try {
-        await batch.commit();
-        acceptedCount++;
-      } catch (err) {
-        console.error(`Failed to accept invite ${inviteDoc.id}:`, err);
-        // continue — one failed invite shouldn't block others
-      }
+    if (!res.ok) {
+      throw new Error("Failed to fetch pending invitations.");
     }
 
-    return acceptedCount;
-  } catch {
-    // If client lacks direct read on un-joined workspace invites, fail silently
-    return 0;
+    const data = await res.json();
+    return data.invites || [];
+  } catch (err) {
+    console.error("Error fetching user invitations:", err);
+    return [];
   }
+}
+
+// ---------- Accept Pending Invite with Passcode ----------
+export async function acceptWorkspaceInvite({
+  inviteId,
+  passcode,
+  clerkToken,
+  displayName,
+  userEmail,
+}) {
+  if (!inviteId) throw new Error("Invite ID is required.");
+  if (!passcode || String(passcode).trim().length !== 6) {
+    throw new Error("A valid 6-digit security passcode is required.");
+  }
+  if (!clerkToken) throw new Error("Authentication token is required.");
+
+  const res = await fetch("/api/accept-invite", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      clerkToken,
+      inviteId,
+      passcode: String(passcode).trim(),
+      action: "accept",
+      displayName,
+      userEmail,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to accept invitation.");
+  }
+
+  return data;
+}
+
+// ---------- Decline Pending Invite ----------
+export async function declineWorkspaceInvite({
+  inviteId,
+  clerkToken,
+  userEmail,
+}) {
+  if (!inviteId) throw new Error("Invite ID is required.");
+  if (!clerkToken) throw new Error("Authentication token is required.");
+
+  const res = await fetch("/api/accept-invite", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      clerkToken,
+      inviteId,
+      action: "decline",
+      userEmail,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to decline invitation.");
+  }
+
+  return data;
 }

@@ -11,6 +11,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
+import { logActivity } from "./activity";
 
 // Firestore collection reference
 const customersCollection = collection(db, "customers");
@@ -20,12 +21,14 @@ function resolveScope(scopeOrUserId, fallbackObj = {}) {
     return {
       workspaceId: scopeOrUserId.workspaceId || fallbackObj.workspaceId || null,
       userId: scopeOrUserId.userId || fallbackObj.userId || null,
+      actor: scopeOrUserId.actor || fallbackObj.actor || null,
     };
   }
   const idStr = scopeOrUserId || fallbackObj.userId || fallbackObj.workspaceId;
   return {
     workspaceId: fallbackObj.workspaceId || (idStr && idStr.startsWith("ws_") ? idStr : null),
     userId: fallbackObj.userId || (idStr && !idStr.startsWith("ws_") ? idStr : null),
+    actor: fallbackObj.actor || null,
   };
 }
 
@@ -58,6 +61,19 @@ async function createCustomer(customer, setLoading, scopeOrUserId) {
     }
 
     const docRef = await addDoc(customersCollection, customerPayload);
+
+    if (scope.workspaceId) {
+      logActivity({
+        workspaceId: scope.workspaceId,
+        actor: scope.actor || customer.actor || { uid: targetUid },
+        action: "customer_create",
+        entityType: "customer",
+        entityId: docRef.id,
+        entityTitle: customerPayload.name,
+        details: `Added customer "${customerPayload.name}"`,
+      });
+    }
+
     return docRef;
   } catch (error) {
     console.error("Error adding customer: ", error);
@@ -103,7 +119,7 @@ async function updateCustomer(id, updatedData, setLoading, scopeOrUserId) {
 
   try {
     const docRef = doc(db, "customers", id);
-    const scope = resolveScope(scopeOrUserId);
+    const scope = resolveScope(scopeOrUserId, updatedData);
     if (scope.userId || scope.workspaceId) {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
@@ -128,6 +144,18 @@ async function updateCustomer(id, updatedData, setLoading, scopeOrUserId) {
     cleanData.updatedAt = serverTimestamp();
 
     await updateDoc(docRef, cleanData);
+
+    if (scope.workspaceId) {
+      logActivity({
+        workspaceId: scope.workspaceId,
+        actor: scope.actor || updatedData.actor,
+        action: "customer_update",
+        entityType: "customer",
+        entityId: id,
+        entityTitle: cleanData.name || "Customer",
+        details: `Updated customer details${cleanData.name ? ` (${cleanData.name})` : ""}`,
+      });
+    }
   } catch (error) {
     console.error("Error updating customer:", error);
     throw error;
@@ -142,10 +170,12 @@ async function deleteCustomer(id, setLoading, scopeOrUserId) {
   try {
     const docRef = doc(db, "customers", id);
     const scope = resolveScope(scopeOrUserId);
+    let customerName = "";
     if (scope.userId || scope.workspaceId) {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
+        customerName = data.name || "";
         if (scope.workspaceId && data.workspaceId && data.workspaceId !== scope.workspaceId) {
           throw new Error("Unauthorized: You do not have permission to delete this customer.");
         }
@@ -155,6 +185,18 @@ async function deleteCustomer(id, setLoading, scopeOrUserId) {
       }
     }
     await deleteDoc(docRef);
+
+    if (scope.workspaceId) {
+      logActivity({
+        workspaceId: scope.workspaceId,
+        actor: scope.actor,
+        action: "customer_delete",
+        entityType: "customer",
+        entityId: id,
+        entityTitle: customerName || id,
+        details: `Deleted customer "${customerName || id}"`,
+      });
+    }
   } catch (error) {
     console.error("Error deleting customer: ", error);
     throw error;

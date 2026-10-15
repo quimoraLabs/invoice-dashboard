@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import { formatCurrentDate } from "../components/helper";
+import { logActivity } from "./activity";
 
 // Firestore collection reference
 const invoiceCollection = collection(db, "invoices");
@@ -294,6 +295,18 @@ export async function createInvoiceWithNumber(scopeOrUserId, invoice, setLoading
       };
     });
 
+    if (workspaceId) {
+      logActivity({
+        workspaceId,
+        actor: invoice.actor || { uid: targetUid },
+        action: "invoice_create",
+        entityType: "invoice",
+        entityId: result.id,
+        entityTitle: result.invoiceNumber,
+        details: `Created invoice ${result.invoiceNumber} for ${normalizedData.customerName || "Customer"} (₹${normalizedData.totalAmount || 0})`,
+      });
+    }
+
     return result;
   } catch (error) {
     console.error("Error creating invoice with transaction:", error);
@@ -417,6 +430,19 @@ export async function updateInvoice(id, updatedData, setLoading, scopeOrUserId) 
     cleanData.updatedAt = serverTimestamp();
 
     await updateDoc(docRef, cleanData);
+
+    const targetWsId = scope.workspaceId || existingData.workspaceId || updatedData.workspaceId;
+    if (targetWsId) {
+      logActivity({
+        workspaceId: targetWsId,
+        actor: scope.actor || updatedData.actor,
+        action: "invoice_update",
+        entityType: "invoice",
+        entityId: id,
+        entityTitle: existingData.invoiceNumber || existingData.invoice_no || "Invoice",
+        details: `Updated invoice ${existingData.invoiceNumber || existingData.invoice_no || ""}`,
+      });
+    }
   } catch (error) {
     console.error("Error performing updateInvoice:", error);
     throw error;
@@ -468,6 +494,18 @@ export async function updateInvoiceStatusAndDueDate(
     }
 
     await updateDoc(docRef, payload);
+
+    if (scope.workspaceId) {
+      logActivity({
+        workspaceId: scope.workspaceId,
+        actor: scope.actor,
+        action: "invoice_status",
+        entityType: "invoice",
+        entityId: id,
+        entityTitle: `Status: ${status}`,
+        details: `Changed invoice status to ${status}${type ? ` (${type})` : ""}`,
+      });
+    }
   } catch (error) {
     console.error("Error updating invoice status details:", error);
     throw error;
@@ -482,10 +520,12 @@ export async function deleteInvoice(id, setLoading, scopeOrUserId) {
   try {
     const docRef = doc(db, "invoices", id);
     const scope = resolveScope(scopeOrUserId);
+    let invNum = "";
     if (scope.userId || scope.workspaceId) {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
+        invNum = data.invoiceNumber || data.invoice_no || "";
         if (scope.workspaceId && data.workspaceId && data.workspaceId !== scope.workspaceId) {
           throw new Error("Unauthorized: You do not have permission to delete this invoice.");
         }
@@ -495,6 +535,18 @@ export async function deleteInvoice(id, setLoading, scopeOrUserId) {
       }
     }
     await deleteDoc(docRef);
+
+    if (scope.workspaceId) {
+      logActivity({
+        workspaceId: scope.workspaceId,
+        actor: scope.actor,
+        action: "invoice_delete",
+        entityType: "invoice",
+        entityId: id,
+        entityTitle: invNum || id,
+        details: `Deleted invoice ${invNum || id}`,
+      });
+    }
   } catch (error) {
     console.error("Error deleting invoice : ", error);
     throw error;

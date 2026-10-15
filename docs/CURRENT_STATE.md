@@ -5,7 +5,8 @@ Last reviewed against code: 2026-10-08
 This is the only doc that describes what the code does **today**. Target-state docs are listed in [INDEX.md](./INDEX.md).
 
 > **Phase 0 & B2B Status:** Security hardening and B2B multi-tenancy implementation complete. Domain collections, sequential counters, and business profiles scoped to active workspace with backward compatibility.
-> **Invite Flow:** Serverless invite acceptance implemented via `/api/accept-invite` and auto-join on login in `/api/create-firebase-token` using Firebase Admin SDK. Non-member invitees are seamlessly attached to invited workspaces without client-side permission errors.
+> **Passcode Protected Invites:** Workspaces feature a 6-digit security PIN (`invitePasscode`). Invitee must explicitly enter the owner's 6-digit passcode via the Invitations UI or `/api/accept-invite` to join. Silent auto-joining on login has been removed.
+> **Audit Logging:** All mutations (`invoices`, `customers`, `products`, team invites, member joins/removals) are permanently written to an immutable `activity_logs` collection and viewable at `/activity-log`.
 
 ---
 
@@ -18,7 +19,7 @@ This is the only doc that describes what the code does **today**. Target-state d
 | Database | Cloud Firestore (default database, `nam5`) |
 | Image uploads | Cloudinary (`src/firebase/getFileUrl.js`, `VITE_CLOUDINARY_URL`, `VITE_CLOUDINARY_PRESET`). Firebase Storage is not used and `firebase.json` has no storage config. |
 | Hosting | Vercel. `vercel.json` rewrites everything except `/api/*` to `/` (SPA). |
-| Serverless | Two functions: `api/create-firebase-token.js` and `api/accept-invite.js` |
+| Serverless | Three functions: `api/create-firebase-token.js`, `api/accept-invite.js`, and `api/my-invites.js` |
 | Firebase config in repo | `firebase.json` (Firestore rules and indexes only), `firestore.rules`, `firestore.indexes.json` |
 
 ---
@@ -34,67 +35,54 @@ This is the only doc that describes what the code does **today**. Target-state d
 
 Required server env (Vercel): `CLERK_SECRET_KEY` and the Firebase service account (`FIREBASE_SERVICE_ACCOUNT`). Required client env: `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_FIREBASE_*`, `VITE_CLOUDINARY_*`. Note `.env.example` does not list the Cloudinary variables.
 
-Local dev: `npm run dev` also serves the token endpoint through a middleware in `vite.config.js` (a duplicate of the API function). `vercel dev` runs the real function.
-
-`verifyToken` has no effective origin check today; **(Phase 0)** adds `authorizedParties`, which has no effect on template tokens that lack an `azp` claim.
+Local dev: `npm run dev` also serves the token, invite, and audit endpoints through middlewares in `vite.config.js`. `vercel dev` runs the real functions.
 
 ---
 
 ## 3. Data Model (what the code reads and writes)
 
-Tenancy today is **per user**, not per organization or workspace.
+Tenancy today is scoped by **workspace** (`workspaceId`).
 
 | Collection | Key field | Notes |
 | :--- | :--- | :--- |
-| `invoices` | `userId` | Fields include `invoice_no`, `invoiceNumber`, `created_at`. Atomic sequential numbering via `createInvoiceWithNumber` with `users/{userId}/counters/invoice`. |
-| `customers` | `userId` | `created_at`, `gstin`, `state`, `stateCode` |
-| `products` | `userId` | `created_at`, `hsn` |
-| `business_profiles` | doc id = user uid | Stored at `business_profiles/{userId}`. Read via `getBusinessProfile(userId)` in service layer (`src/firebase/profile.js`) for invoice GST headers. |
-| `workspaces` | `ownerId` | Created by `createWorkspace` |
+| `invoices` | `workspaceId`, `userId` | Fields include `invoice_no`, `invoiceNumber`, `created_at`. Atomic sequential numbering via `createInvoiceWithNumber` with `workspaces/{workspaceId}/counters/invoice`. |
+| `customers` | `workspaceId`, `userId` | `name`, `email`, `phone`, `gstin`, `address`, `company` |
+| `products` | `workspaceId`, `userId` | `title`, `price`, `taxRate`, `hsn` |
+| `business_profiles` | `workspaceId` (or user uid) | Read via `getBusinessProfile(scope)` in service layer (`src/firebase/profile.js`) for invoice GST headers. |
+| `workspaces` | `ownerId`, `invitePasscode` | Created by `createWorkspace`. Includes 6-digit `invitePasscode` managed by owner. |
 | `workspace_members` | doc id `{workspaceId}_{userId}`; fields `workspaceId`, `userId`, `role` | Roles used by the UI: `owner`, `accountant` |
-| `workspace_invites` | `workspaceId`, `invitedEmail`, `role`, `status` | Pending invites |
-
-There is no `orgId` anywhere in application code (only in `seed.js`). There are no `organizations`, `organizationMembers`, or `organizationInvites` collections.
+| `workspace_invites` | `workspaceId`, `invitedEmail`, `role`, `status` | Pending invites. |
+| `activity_logs` | `workspaceId`, `actorUid`, `action`, `createdAt` | Immutable workspace audit records. Update and delete blocked by Firestore rules. |
 
 ---
 
 ## 4. Firestore Security Rules
 
-**As of the snapshot:**
-- `invoices`, `customers`, `products`: `read` allowed for any signed-in user (cross-user data exposure). Create/update/delete check `userId`.
-- `workspaces`, `workspace_members`, `workspace_invites`: read and write allowed for any signed-in user.
-- `business_profiles`: doc id must equal the caller uid.
-
-**(Phase 0 Hardened & Phase 2 B2B Multi-Tenancy):**
 - Domain collections (`invoices`, `customers`, `products`):
   - B2B Multi-tenancy branching: If document contains `workspaceId`, access requires matching `request.auth.token.workspaceId` custom claim ($O(1)$ fast-path) or workspace membership check (`exists()`).
   - Immutability: B2B document `workspaceId` cannot be mutated on update.
   - Delete: restricted to workspace managers (owner/admin claims or workspace owner) or the original creator within that workspace.
-  - Backward compatibility: If document has no `workspaceId`, falls back to legacy single-user `userId` checks (`ownsDoc()`).
 - `workspaces`: read for members; create for authenticated owners; update/delete restricted to workspace managers/owners.
-- `workspace_members`: read for members and self; create allowed for self-join on newly created workspace via atomic `writeBatch` (enforced using `isWorkspaceDocOwnerAfter` with `existsAfter`/`getAfter`) or by existing workspace manager/owner; update by workspace manager; delete by self or workspace manager.
-- `workspace_invites`: read for members; create/update/delete by workspace manager.
-- `business_profiles`: read/write allowed for caller UID (legacy) or active workspace manager/member (`canAccessWorkspace`).
-- `users/{userId}/counters/{docId}`: read/write restricted to owner UID.
-- `workspaces/{workspaceId}/counters/{docId}`: read/write allowed for active workspace claim or workspace member.
+- `workspace_members`: read for members and self; create allowed for self-join on newly created workspace via atomic `writeBatch` or by existing workspace manager/owner; update by workspace manager; delete by self or workspace manager.
+- `workspace_invites`: read for members or invitee whose email matches; create/update/delete by workspace manager.
+- `activity_logs`: read and create allowed for authenticated workspace members; update and delete strictly forbidden (`allow update, delete: if false`).
 - Verified: 23/23 rules tests passing in `test/firestore.rules.test.js` against Firebase emulator.
 
 ---
 
-
 ## 5. Routes (`src/App.jsx`)
 
-`/` → `/home`, `/login/*`, `/register/*`, `/home`, `/invoice`, `/invoice/view/:invoiceId`, `/invoice/update/:invoiceId`, `/invoice/create`, `/customers`, `/products`, and `*` → `/login`. Guards are authentication-only (`ProtectedRoute`); there are no role- or workspace-based route guards.
+`/` → `/home`, `/login/*`, `/register/*`, `/home`, `/invoice`, `/invoice/view/:invoiceId`, `/invoice/update/:invoiceId`, `/invoice/create`, `/customers`, `/products`, `/activity-log`, `/business-profile`, and `*` → `/login`. Guards are authentication-only (`ProtectedRoute`).
 
 ---
 
 ## 6. Service Layer (`src/firebase/`)
 
-- `invoice.js`, `customer.js`, `product.js`: CRUD plus realtime listeners with dual-mode scoping (`resolveScope(scopeOrUserId)`). Supports both B2B multi-tenancy (`workspaceId`) and legacy single-user (`userId`) mode.
-- `invoice.js`: Sequential counters operate on workspace scope (`workspaces/{workspaceId}/counters/invoice`) with automatic fallback to user scope (`users/{userId}/counters/invoice`). Strict GST validations (90-day backdating, duplicate items, payment status rules) enforced.
+- `invoice.js`, `customer.js`, `product.js`: CRUD plus realtime listeners with dual-mode scoping (`resolveScope(scopeOrUserId)`). Stamped with automatic activity audit logging.
+- `activity.js`: `logActivity`, `listenToActivityLogs`.
+- `workspace.js`: `createWorkspace` (with 6-digit passcode), `updateWorkspaceSettings`, `regenerateWorkspacePasscode`, `listenToUserWorkspaces`, `listenToWorkspaceMembers`, `inviteMemberToWorkspace`, `listenToWorkspaceInvites`, `revokeWorkspaceInvite`, `removeWorkspaceMember`, `fetchMyPendingInvites`, `acceptWorkspaceInvite`, `declineWorkspaceInvite`.
 - `profile.js`: Dual-writes and loads business profile by `workspaceId` with fallback to `userId`.
-- `workspace.js`: `createWorkspace`, `listenToUserWorkspaces`, `listenToWorkspaceMembers`, `inviteMemberToWorkspace`, `listenToWorkspaceInvites`, `revokeWorkspaceInvite`, `removeWorkspaceMember`, `checkAndAcceptPendingInvites`.
-- `seed.js`: sample data helper. `getFileUrl.js`: Cloudinary upload. `firebaseConfig.js`: Firebase init.
+
 
 ---
 

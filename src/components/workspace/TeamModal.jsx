@@ -8,6 +8,9 @@ import {
   HiTrash,
   HiOutlineMail,
   HiUserGroup,
+  HiKey,
+  HiClipboardCopy,
+  HiCheck,
 } from "react-icons/hi";
 
 export default function TeamModal({ isOpen, onClose }) {
@@ -25,6 +28,7 @@ export default function TeamModal({ isOpen, onClose }) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("accountant");
   const [isSending, setIsSending] = useState(false);
+  const [copiedPasscode, setCopiedPasscode] = useState(false);
 
   if (!isOpen) return null;
 
@@ -132,11 +136,37 @@ export default function TeamModal({ isOpen, onClose }) {
                 <button
                   type="submit"
                   disabled={isSending}
-                  className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-hover disabled:opacity-50 transition shrink-0"
+                  className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-hover disabled:opacity-50 transition shrink-0 cursor-pointer"
                 >
                   {isSending ? "Sending..." : "Send Invite"}
                 </button>
               </form>
+
+              {activeWorkspace?.invitePasscode && (
+                <div className="mt-3 pt-3 border-t border-primary/20 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-1.5 text-foreground">
+                    <HiKey className="text-primary" size={15} />
+                    <span>Invite Passcode:</span>
+                    <span className="font-mono font-bold tracking-widest bg-surface px-2 py-0.5 rounded-md border border-border">
+                      {activeWorkspace.invitePasscode}
+                    </span>
+                    <span className="text-muted-foreground text-[11px]">(Required for invitee to join)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(activeWorkspace.invitePasscode);
+                      setCopiedPasscode(true);
+                      toast.success("Passcode copied!");
+                      setTimeout(() => setCopiedPasscode(false), 2000);
+                    }}
+                    className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                  >
+                    {copiedPasscode ? <HiCheck size={14} className="text-success" /> : <HiClipboardCopy size={14} />}
+                    {copiedPasscode ? "Copied" : "Copy Passcode"}
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="rounded-xl border border-border bg-surface p-3 text-xs text-muted-foreground">

@@ -167,9 +167,18 @@ service cloud.firestore {
     }
     
     match /workspace_invites/{docId} {
-      allow read: if isAuthenticated() && hasWorkspaceId(resource.data) && canAccessWorkspace(resource.data.workspaceId);
+      allow read: if isAuthenticated() && (
+        (hasWorkspaceId(resource.data) && canAccessWorkspace(resource.data.workspaceId)) ||
+        (('invitedEmail' in resource.data) && resource.data.invitedEmail == request.auth.token.email)
+      );
       allow create: if hasWorkspaceId(request.resource.data) && isWorkspaceManager(request.resource.data.workspaceId);
       allow update, delete: if hasWorkspaceId(resource.data) && isWorkspaceManager(resource.data.workspaceId);
+    }
+
+    match /activity_logs/{docId} {
+      allow read: if isAuthenticated() && hasWorkspaceId(resource.data) && canAccessWorkspace(resource.data.workspaceId);
+      allow create: if isAuthenticated() && hasWorkspaceId(request.resource.data) && canAccessWorkspace(request.resource.data.workspaceId);
+      allow update, delete: if false; // Immutable audit log
     }
   }
 }

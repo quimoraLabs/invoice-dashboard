@@ -14,6 +14,7 @@ import AddInvoice from "./pages/invoice/AddInvoice";
 import Products from "./pages/product";
 import Customer from "./pages/customer";
 import BusinessProfilePage from "./pages/profile";
+import ActivityLogPage from "./pages/activity";
 import { Toaster } from "react-hot-toast";
 import InvoiceDetailPage from "./pages/invoice/ViewInvoice";
 import InvoiceEditPage from "./pages/invoice/UpdateInvoice";
@@ -91,6 +92,14 @@ function AppRoutes() {
       element: (
         <ProtectedRoute>
           <Products />
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/activity-log",
+      element: (
+        <ProtectedRoute>
+          <ActivityLogPage />
         </ProtectedRoute>
       ),
     },

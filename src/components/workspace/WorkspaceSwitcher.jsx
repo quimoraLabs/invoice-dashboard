@@ -3,12 +3,14 @@ import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import TeamModal from "./TeamModal";
 import CreateWorkspaceModal from "./CreateWorkspaceModal";
+import WorkspaceSettingsModal from "./WorkspaceSettingsModal";
 import {
   HiChevronDown,
   HiCheck,
   HiPlus,
   HiUserGroup,
   HiBriefcase,
+  HiCog,
 } from "react-icons/hi";
 
 export default function WorkspaceSwitcher() {
@@ -21,6 +23,7 @@ export default function WorkspaceSwitcher() {
 
   const [isTeamOpen, setIsTeamOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   if (!activeWorkspace) return null;
 
@@ -96,6 +99,17 @@ export default function WorkspaceSwitcher() {
             </button>
           </MenuItem>
 
+          {/* Workspace Settings Action */}
+          <MenuItem>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface transition cursor-pointer"
+            >
+              <HiCog size={16} className="text-muted-foreground" />
+              Workspace Settings & PIN
+            </button>
+          </MenuItem>
+
           {/* Create Workspace Action */}
           <MenuItem>
             <button
@@ -112,6 +126,11 @@ export default function WorkspaceSwitcher() {
       <TeamModal
         isOpen={isTeamOpen}
         onClose={() => setIsTeamOpen(false)}
+      />
+
+      <WorkspaceSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
 
       <CreateWorkspaceModal

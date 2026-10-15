@@ -12,12 +12,16 @@ import { useSession } from "@clerk/react";
 import {
   listenToUserWorkspaces,
   createWorkspace,
-  checkAndAcceptPendingInvites,
+  updateWorkspaceSettings,
+  regenerateWorkspacePasscode,
   listenToWorkspaceMembers,
   listenToWorkspaceInvites,
   inviteMemberToWorkspace,
   revokeWorkspaceInvite,
   removeWorkspaceMember,
+  fetchMyPendingInvites,
+  acceptWorkspaceInvite,
+  declineWorkspaceInvite,
 } from "../firebase/workspace";
 import toast from "react-hot-toast";
 
@@ -34,13 +38,35 @@ export function WorkspaceProvider({ children }) {
   });
   const [members, setMembers] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
+  const [myPendingInvites, setMyPendingInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const isCreatingDefaultRef = useRef(false);
 
   const userId = currentUser?.uid || currentUser?.id;
 
-  // 1. Load workspaces + auto-accept invites
+  // 1. Load user's received pending invitations
+  const refreshMyInvites = useCallback(async () => {
+    if (!userLoggedIn || !session) {
+      setMyPendingInvites([]);
+      return;
+    }
+    try {
+      const clerkToken = await session.getToken().catch(() => null);
+      if (clerkToken) {
+        const list = await fetchMyPendingInvites(clerkToken);
+        setMyPendingInvites(list);
+      }
+    } catch (err) {
+      console.warn("Could not load user pending invitations:", err.message);
+    }
+  }, [userLoggedIn, session]);
+
+  useEffect(() => {
+    refreshMyInvites();
+  }, [refreshMyInvites]);
+
+  // 2. Load workspaces
   useEffect(() => {
     if (!userLoggedIn || !userId) {
       setWorkspaces([]);
@@ -53,23 +79,6 @@ export function WorkspaceProvider({ children }) {
 
     setLoading(true);
     setError(null);
-
-    let isMounted = true;
-
-    async function syncInvites() {
-      try {
-        const clerkToken = await session?.getToken({ template: "firebase", skipCache: true })
-          .catch(() => session?.getToken());
-        const acceptedCount = await checkAndAcceptPendingInvites(currentUser, clerkToken);
-        if (isMounted && acceptedCount > 0) {
-          toast.success(`You joined ${acceptedCount} new workspace(s)!`);
-        }
-      } catch (err) {
-        console.error("Error auto-joining invited workspaces:", err);
-      }
-    }
-
-    syncInvites();
 
     const unsubscribe = listenToUserWorkspaces(
       userId,
@@ -106,9 +115,9 @@ export function WorkspaceProvider({ children }) {
     );
 
     return () => unsubscribe();
-  }, [userLoggedIn, userId, currentUser, session]);
+  }, [userLoggedIn, userId, currentUser]);
 
-  // 2. Resolve active workspace
+  // 3. Resolve active workspace
   const activeWorkspace = useMemo(() => {
     if (workspaces.length === 0) return null;
     const found = workspaces.find((w) => w.id === activeWorkspaceId);
@@ -118,7 +127,7 @@ export function WorkspaceProvider({ children }) {
     return fallback;
   }, [workspaces, activeWorkspaceId]);
 
-  // 3. Listen to members of active workspace
+  // 4. Listen to members of active workspace
   useEffect(() => {
     if (!activeWorkspace?.id) {
       setMembers([]);
@@ -128,7 +137,7 @@ export function WorkspaceProvider({ children }) {
     return () => unsub();
   }, [activeWorkspace?.id]);
 
-  // 4. Listen to pending invites (owner only, but listener harmless)
+  // 5. Listen to pending invites (owner only)
   useEffect(() => {
     if (!activeWorkspace?.id) {
       setPendingInvites([]);
@@ -138,7 +147,7 @@ export function WorkspaceProvider({ children }) {
     return () => unsub();
   }, [activeWorkspace?.id]);
 
-  // 5. Switch workspace
+  // 6. Switch workspace
   const switchWorkspace = useCallback(
     (workspaceId) => {
       const target = workspaces.find((w) => w.id === workspaceId);
@@ -151,7 +160,7 @@ export function WorkspaceProvider({ children }) {
     [workspaces]
   );
 
-  // 6. Create workspace
+  // 7. Create workspace
   const createNewWorkspace = useCallback(
     async (name) => {
       if (!currentUser) throw new Error("Authentication required.");
@@ -164,31 +173,123 @@ export function WorkspaceProvider({ children }) {
     [currentUser]
   );
 
-  // 7. Member actions (owner-only guards enforced by rules too)
+  // 8. Workspace Settings updates
+  const updateSettings = useCallback(
+    async ({ name, invitePasscode }) => {
+      if (!activeWorkspace?.id) throw new Error("No active workspace selected.");
+      const actor = {
+        uid: userId,
+        displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "Owner",
+        email: currentUser?.email || "",
+      };
+      await updateWorkspaceSettings(activeWorkspace.id, { name, invitePasscode }, actor);
+      toast.success("Workspace settings updated successfully!");
+    },
+    [activeWorkspace, userId, currentUser]
+  );
+
+  const regeneratePasscode = useCallback(async () => {
+    if (!activeWorkspace?.id) throw new Error("No active workspace selected.");
+    const actor = {
+      uid: userId,
+      displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "Owner",
+      email: currentUser?.email || "",
+    };
+    const newCode = await regenerateWorkspacePasscode(activeWorkspace.id, actor);
+    toast.success(`New 6-digit passcode generated: ${newCode}`);
+    return newCode;
+  }, [activeWorkspace, userId, currentUser]);
+
+  // 9. Member management
   const inviteMember = useCallback(
     async (email, role = "accountant") => {
       if (!activeWorkspace) throw new Error("No active workspace.");
+      const actor = {
+        uid: userId,
+        displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "User",
+        email: currentUser?.email || "",
+      };
       return inviteMemberToWorkspace({
         workspaceId: activeWorkspace.id,
         workspaceName: activeWorkspace.name,
         invitedEmail: email,
         role,
         invitedBy: userId,
+        actor,
       });
     },
-    [activeWorkspace, userId]
+    [activeWorkspace, userId, currentUser]
   );
 
-  const revokeInvite = useCallback(async (inviteId) => {
-    await revokeWorkspaceInvite(inviteId);
-  }, []);
+  const revokeInvite = useCallback(
+    async (inviteId) => {
+      if (!activeWorkspace) return;
+      const actor = {
+        uid: userId,
+        displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "User",
+        email: currentUser?.email || "",
+      };
+      await revokeWorkspaceInvite(inviteId, activeWorkspace.id, actor);
+    },
+    [activeWorkspace, userId, currentUser]
+  );
 
   const removeMember = useCallback(
     async (memberUserId) => {
       if (!activeWorkspace) throw new Error("No active workspace.");
-      await removeWorkspaceMember(activeWorkspace.id, memberUserId);
+      const actor = {
+        uid: userId,
+        displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "User",
+        email: currentUser?.email || "",
+      };
+      await removeWorkspaceMember(activeWorkspace.id, memberUserId, actor);
     },
-    [activeWorkspace]
+    [activeWorkspace, userId, currentUser]
+  );
+
+  // 10. Accept & Decline Invitations
+  const acceptInvite = useCallback(
+    async (inviteId, passcode) => {
+      if (!session) throw new Error("You must be logged in.");
+      const clerkToken = await session.getToken().catch(() => null);
+      if (!clerkToken) throw new Error("Authentication token expired. Please refresh.");
+
+      const result = await acceptWorkspaceInvite({
+        inviteId,
+        passcode,
+        clerkToken,
+        displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "Team Member",
+        userEmail: currentUser?.email || "",
+      });
+
+      toast.success(`Joined ${result.workspaceName || "workspace"} successfully!`);
+      await refreshMyInvites();
+      if (result.workspaceId) {
+        setActiveWorkspaceId(result.workspaceId);
+        localStorage.setItem(STORAGE_KEY, result.workspaceId);
+      }
+      return result;
+    },
+    [session, currentUser, refreshMyInvites]
+  );
+
+  const declineInvite = useCallback(
+    async (inviteId) => {
+      if (!session) throw new Error("You must be logged in.");
+      const clerkToken = await session.getToken().catch(() => null);
+      if (!clerkToken) throw new Error("Authentication token expired. Please refresh.");
+
+      const result = await declineWorkspaceInvite({
+        inviteId,
+        clerkToken,
+        userEmail: currentUser?.email || "",
+      });
+
+      toast.success("Invitation declined.");
+      await refreshMyInvites();
+      return result;
+    },
+    [session, currentUser, refreshMyInvites]
   );
 
   const currentRole = activeWorkspace?.role || null;
@@ -202,6 +303,7 @@ export function WorkspaceProvider({ children }) {
       userWorkspaces: workspaces,
       members,
       pendingInvites,
+      myPendingInvites,
       currentRole,
       isOwner,
       isAccountant,
@@ -210,15 +312,21 @@ export function WorkspaceProvider({ children }) {
       workspaceError: error,
       switchWorkspace,
       createNewWorkspace,
+      updateSettings,
+      regeneratePasscode,
       inviteMember,
       revokeInvite,
       removeMember,
+      refreshMyInvites,
+      acceptInvite,
+      declineInvite,
     }),
     [
       activeWorkspace,
       workspaces,
       members,
       pendingInvites,
+      myPendingInvites,
       currentRole,
       isOwner,
       isAccountant,
@@ -227,9 +335,14 @@ export function WorkspaceProvider({ children }) {
       error,
       switchWorkspace,
       createNewWorkspace,
+      updateSettings,
+      regeneratePasscode,
       inviteMember,
       revokeInvite,
       removeMember,
+      refreshMyInvites,
+      acceptInvite,
+      declineInvite,
     ]
   );
 
