@@ -67,17 +67,19 @@ There is no `orgId` anywhere in application code (only in `seed.js`). There are 
 - `workspaces`, `workspace_members`, `workspace_invites`: read and write allowed for any signed-in user.
 - `business_profiles`: doc id must equal the caller uid.
 
-**(Phase 0 Hardened):**
+**(Phase 0 Hardened & Phase 2 B2B Multi-Tenancy):**
 - Domain collections (`invoices`, `customers`, `products`):
-  - `read`, `delete`: require `ownsDoc()` (`resource.data.userId == request.auth.uid`).
-  - `create`: requires `creatingOwnDoc()` (`request.resource.data.userId == request.auth.uid`).
-  - `update`: requires `ownsDoc()` AND immutable `userId` (`request.resource.data.userId == resource.data.userId`).
-- `workspaces`: read for members; create for authenticated owners; update/delete restricted to workspace owner (`isWorkspaceOwner`).
-- `workspace_members`: read for members and self; create allowed for self-join on newly created workspace via atomic `writeBatch` (enforced using `isWorkspaceDocOwnerAfter` with `existsAfter`/`getAfter`) or by existing workspace owner; update by workspace owner; delete by self or workspace owner.
-- `workspace_invites`: read for members; create/update/delete by workspace owner.
-- `business_profiles`: read/write restricted to caller UID.
+  - B2B Multi-tenancy branching: If document contains `workspaceId`, access requires matching `request.auth.token.workspaceId` custom claim ($O(1)$ fast-path) or workspace membership check (`exists()`).
+  - Immutability: B2B document `workspaceId` cannot be mutated on update.
+  - Delete: restricted to workspace managers (owner/admin claims or workspace owner) or the original creator within that workspace.
+  - Backward compatibility: If document has no `workspaceId`, falls back to legacy single-user `userId` checks (`ownsDoc()`).
+- `workspaces`: read for members; create for authenticated owners; update/delete restricted to workspace managers/owners.
+- `workspace_members`: read for members and self; create allowed for self-join on newly created workspace via atomic `writeBatch` (enforced using `isWorkspaceDocOwnerAfter` with `existsAfter`/`getAfter`) or by existing workspace manager/owner; update by workspace manager; delete by self or workspace manager.
+- `workspace_invites`: read for members; create/update/delete by workspace manager.
+- `business_profiles`: read/write allowed for caller UID (legacy) or active workspace manager/member (`canAccessWorkspace`).
 - `users/{userId}/counters/{docId}`: read/write restricted to owner UID.
-- Side effect: accepting invites by email remains client-side pending server endpoint in Phase 2. Rules do not use custom claims and do not enforce roles beyond membership/owner.
+- `workspaces/{workspaceId}/counters/{docId}`: read/write allowed for active workspace claim or workspace member.
+- Verified: 23/23 rules tests passing in `test/firestore.rules.test.js` against Firebase emulator.
 
 ---
 
