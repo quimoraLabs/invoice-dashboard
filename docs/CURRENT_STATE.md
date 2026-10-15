@@ -92,18 +92,20 @@ There is no `orgId` anywhere in application code (only in `seed.js`). There are 
 
 ## 6. Service Layer (`src/firebase/`)
 
-- `invoice.js`, `customer.js`, `product.js`: CRUD plus realtime listeners, scoped with `where("userId", "==", uid)`.
+- `invoice.js`, `customer.js`, `product.js`: CRUD plus realtime listeners with dual-mode scoping (`resolveScope(scopeOrUserId)`). Supports both B2B multi-tenancy (`workspaceId`) and legacy single-user (`userId`) mode.
+- `invoice.js`: Sequential counters operate on workspace scope (`workspaces/{workspaceId}/counters/invoice`) with automatic fallback to user scope (`users/{userId}/counters/invoice`). Strict GST validations (90-day backdating, duplicate items, payment status rules) enforced.
+- `profile.js`: Dual-writes and loads business profile by `workspaceId` with fallback to `userId`.
 - `workspace.js`: `createWorkspace`, `listenToUserWorkspaces`, `listenToWorkspaceMembers`, `inviteMemberToWorkspace`, `listenToWorkspaceInvites`, `revokeWorkspaceInvite`, `removeWorkspaceMember`, `checkAndAcceptPendingInvites`.
 - `seed.js`: sample data helper. `getFileUrl.js`: Cloudinary upload. `firebaseConfig.js`: Firebase init.
-- No service takes `orgId`, and none stamps audit metadata (`actorUserId`).
 
 ---
 
-## 7. Workspace Feature (partial)
+## 7. Workspace Feature (connected)
 
-Exists: `WorkspaceContext`, `WorkspaceSwitcher`, `CreateWorkspaceModal`, `TeamModal`, default workspace auto-creation, invite creation and revocation, member list.
-
-Not connected: switching workspace does not change which invoices, customers, or products are shown. All domain data is still loaded for the signed-in user's own `userId`, so an invited member does not see the owner's data.
+Exists & Connected:
+- `WorkspaceContext`, `WorkspaceSwitcher`, `CreateWorkspaceModal`, `TeamModal`, default workspace auto-creation, invite creation and revocation, member list.
+- **UI Integration (Phases 6 & 7):** All pages and domain components (`Home`, `InvoiceList`, `AddInvoice`, `UpdateInvoice`, `ViewInvoice`, `CustomerList`, `CustomerForm`, `ProductList`, `ProductForm`, `BusinessProfilePage`, `GraphInvoice`) consume `useWorkspace()` and scope all queries, mutations, and listeners to the active workspace (`{ workspaceId: activeWorkspace?.id, userId: targetUid }`).
+- Data isolation: switching active workspace seamlessly triggers realtime listeners for that workspace's invoices, customers, and products.
 
 Known problems & Phase 0 Hardening Status:
 - `currentRole` falls back to `null` when no role is found. **(Fixed in Phase 0)**
@@ -111,14 +113,14 @@ Known problems & Phase 0 Hardening Status:
 - `createWorkspace` and `checkAndAcceptPendingInvites` use atomic `writeBatch`. **(Fixed in Phase 0)**
 - Workspace IDs query avoids N+1 reads using chunked `where(documentId(), 'in', chunk)`. **(Fixed in Phase 0)**
 - `TeamModal` refactored to consume centralized `WorkspaceContext` without duplicate listeners. **(Fixed in Phase 0)**
-- Invite acceptance is client-side and unverified (full server-verified accept moves to `/api/accept-invite` in Phase 2).
+- Invite acceptance is client-side and unverified (full server-verified accept moves to `/api/accept-invite`).
 
 ---
 
 ## 8. Known Issues
 
-1. Domain reads are open to any signed-in user in the uploaded rules (see section 4). **(Fixed in Phase 0 rules hardening)**
-2. Invoice numbering orders `invoice_no` as a string (breaks at `INV-1000`) and is not transactional. **(Fixed in Phase 0: atomic runTransaction with /users/{userId}/counters/invoice counter, dual-write, and scan failure explicitly throwing error without fallback duplicate generation)**
+1. Domain reads are open to any signed-in user in the uploaded rules (see section 4). **(Fixed in Phase 0 rules hardening and Phase 2 B2B isolation)**
+2. Invoice numbering orders `invoice_no` as a string (breaks at `INV-1000`) and is not transactional. **(Fixed in Phase 0: atomic runTransaction with /users/{userId}/counters/invoice and /workspaces/{workspaceId}/counters/invoice, dual-write, and scan failure explicitly throwing error without fallback duplicate generation)**
 3. Backdated invoice updates: 90-day backdating rule enforced on creation and only when `invoiceDate` changes during update; edits to existing backdated invoices without date modification are preserved. **(Fixed in Phase 0)**
 4. Both `@clerk/clerk-react` and `@clerk/react` are in `package.json`; only `@clerk/react` is used. **(Phase 0)**
 5. `vercel.json` contained an `env.NODE_OPTIONS` workaround. **(Phase 0)** removes it and pins `engines.node`; verify the API function on a preview deployment.
@@ -143,13 +145,13 @@ Check both against the repo before relying on them.
 
 | Topic | Target-state docs say | Code does today |
 | :--- | :--- | :--- |
-| Tenant key | `orgId` | `userId` |
-| Tenant entity | `organizations` | `workspaces` (not linked to domain data) |
-| Auth into rules | Custom claims (`orgId`, `role`) | `uid` only, no claims |
-| Field names | camelCase (`invoiceNumber`, `createdAt`) | snake_case (`invoice_no`, `created_at`) |
-| Service signatures | Take `orgId`, stamp `actorUserId` | Take `userId`, no audit stamping |
-| Role enforcement | Rules and UI | None beyond workspace membership |
-| Migration script | `scripts/migrate-to-b2b.js` | Implemented in `scripts/migrate-to-b2b.js` with dry-run/repair tooling; execution deferred to Phase 4 |
+| Tenant key | `orgId` | `workspaceId` (standardized across code, rules, and scripts) |
+| Tenant entity | `organizations` | `workspaces` (connected to domain data and UI) |
+| Auth into rules | Custom claims (`orgId`, `role`) | Custom claims (`workspaceId`, `role`) minted into Firebase token |
+| Field names | camelCase (`invoiceNumber`, `createdAt`) | Dual-support: camelCase primary (`invoiceNumber`, `workspaceId`) with legacy snake_case backward compatibility |
+| Service signatures | Take `orgId`, stamp `actorUserId` | Take `scopeOrUserId` (`{ workspaceId, userId }`), stamps `workspaceId` and `userId` |
+| Role enforcement | Rules and UI | Rules enforce manager/owner deletion and fast-path claim verification |
+| Migration script | `scripts/migrate-to-b2b.js` | Aligned with `workspaces`, Timestamp parsing, and dual-profile creation (`scripts/migrate-to-b2b.js`, `scripts/migrate-repair.js`) |
 | File storage | Firebase Storage | Cloudinary |
 
 ---
@@ -161,17 +163,19 @@ To avoid cross-tenant leaks or breaking live production during migration to mult
 2. **Phase 1 (Auth Bridge):** Implemented Clerk Custom Claims (`workspaceId`, `role`) minting via `/api/create-firebase-token.js` with fallback to `workspace_members`. *(Complete)*
 3. **Phase 2 (Rules Hardening):** Implemented `request.auth.token.workspaceId` custom claims support and dual-mode backward compatibility in `firestore.rules`. Verified with 23 emulator tests. *(Complete)*
 4. **Phase 3 (Composite Indexes):** Staged `firestore.indexes.json` with composite indexes for `workspaceId` across `invoices`, `customers`, `products`, and `workspace_members`. *(Complete)*
-5. **Phase 4 (Data Migration):** Verify and dry-run `scripts/migrate-to-b2b.js`, test with canary user (`--user=`), then execute full batch to stamp existing documents with `workspaceId`.
-6. **Phase 5 (Service Layer Cutover):** Re-scope client queries (`invoice.js`, `customer.js`, `product.js`) to `workspaceId`.
-7. **Phase 6 & 7 (WorkspaceContext & UI):** Connect `useWorkspace()` to queries and manage token revalidation on workspace switch.
+5. **Phase 4 (Migration Scripts):** Aligned `scripts/migrate-to-b2b.js` and `scripts/migrate-repair.js` to `workspaces` schema, Timestamp conversions, and business profiles. Ready for live environment execution. *(Complete)*
+6. **Phase 5 (Service Layer Cutover):** Re-scoped client queries (`invoice.js`, `customer.js`, `product.js`) to dual-mode `workspaceId`/`userId`. *(Complete)*
+7. **Phase 6 & 7 (WorkspaceContext & UI):** Connected all UI pages and components to `useWorkspace()`. *(Complete)*
 8. **Synchronized Production Deployment:** Deploy Firestore security rules, indexes, and client code together within the same maintenance window.
 9. **Rollback Strategy:** Revert git commit via tag, restore rules version in Firebase Console Rules History, and restore Firestore data from step 1 export if data corruption occurs.
 
 ---
 
-## 12. Not Started (Remaining Phases)
+## 12. Remaining Operational Items
 
-Phase 4 (live migration execution); Phase 5 (service layer query cutover to `workspaceId`); Phase 6/7 (UI/pages consuming `activeWorkspaceId`); server-side invite acceptance (`/api/accept-invite`).
+1. Run live data migration script (`scripts/migrate-to-b2b.js`) against target cloud Firestore environment when scheduled by user.
+2. Optional: Server-side invite acceptance (`/api/accept-invite`) if needed for invite emails.
+3. User sign-off prior to merging `phase-0-hardening` into `main`.
 
 ---
 
