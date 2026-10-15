@@ -158,18 +158,20 @@ Check both against the repo before relying on them.
 
 To avoid cross-tenant leaks or breaking live production during migration to multi-tenancy:
 1. **Firestore Data Backup:** Full Firestore export (`gcloud firestore export`) or PITR snapshot before running any migration scripts.
-2. **Phase 1 (Auth Bridge):** Implement Clerk Custom Claims (`orgId`, `role`) minting via `/api/create-firebase-token.js` without altering live database rules.
-3. **Phase 2 & 3 (Rules & Indexes Staging):** Prepare `request.auth.token.orgId` rules and composite indexes.
-4. **Phase 4 (Data Migration):** Run `scripts/migrate-to-b2b.js` in dry-run mode, verify migration report, test with single canary user (`--user=`), then execute full batch.
-5. **Phase 5 (Service Layer Cutover):** Re-scope client queries (`invoice.js`, `customer.js`, `product.js`) to `workspaceId`/`orgId`.
-6. **Synchronized Production Deployment:** Deploy Firestore security rules and client code together within the same maintenance window.
-7. **Rollback Strategy:** Revert git commit via tag, restore rules version in Firebase Console Rules History, and restore Firestore data from step 1 export if data corruption occurs.
+2. **Phase 1 (Auth Bridge):** Implemented Clerk Custom Claims (`workspaceId`, `role`) minting via `/api/create-firebase-token.js` with fallback to `workspace_members`. *(Complete)*
+3. **Phase 2 (Rules Hardening):** Implemented `request.auth.token.workspaceId` custom claims support and dual-mode backward compatibility in `firestore.rules`. Verified with 23 emulator tests. *(Complete)*
+4. **Phase 3 (Composite Indexes):** Staged `firestore.indexes.json` with composite indexes for `workspaceId` across `invoices`, `customers`, `products`, and `workspace_members`. *(Complete)*
+5. **Phase 4 (Data Migration):** Verify and dry-run `scripts/migrate-to-b2b.js`, test with canary user (`--user=`), then execute full batch to stamp existing documents with `workspaceId`.
+6. **Phase 5 (Service Layer Cutover):** Re-scope client queries (`invoice.js`, `customer.js`, `product.js`) to `workspaceId`.
+7. **Phase 6 & 7 (WorkspaceContext & UI):** Connect `useWorkspace()` to queries and manage token revalidation on workspace switch.
+8. **Synchronized Production Deployment:** Deploy Firestore security rules, indexes, and client code together within the same maintenance window.
+9. **Rollback Strategy:** Revert git commit via tag, restore rules version in Firebase Console Rules History, and restore Firestore data from step 1 export if data corruption occurs.
 
 ---
 
-## 12. Not Started (Phase 1+)
+## 12. Not Started (Remaining Phases)
 
-`orgId`/`workspaceId` on domain documents and queries; role enforcement beyond owner/member; user provisioning webhook; server-side invite acceptance (`/api/accept-invite`); live migration execution (Phase 4).
+Phase 4 (live migration execution); Phase 5 (service layer query cutover to `workspaceId`); Phase 6/7 (UI/pages consuming `activeWorkspaceId`); server-side invite acceptance (`/api/accept-invite`).
 
 ---
 
