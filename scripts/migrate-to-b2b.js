@@ -2,6 +2,20 @@ import { db, admin, clerk, rateLimitedClerkUpdate, withRetry } from "./migrate-h
 import { runClerkRepair } from "./migrate-repair.js";
 import fs from "fs";
 
+function parseDateToTimestamp(rawDate) {
+  if (!rawDate) return null;
+  if (rawDate instanceof admin.firestore.Timestamp) return rawDate;
+  if (rawDate?.toDate) {
+    const d = rawDate.toDate();
+    return !isNaN(d.getTime()) ? admin.firestore.Timestamp.fromDate(d) : null;
+  }
+  const d = new Date(rawDate);
+  if (!isNaN(d.getTime())) {
+    return admin.firestore.Timestamp.fromDate(d);
+  }
+  return null;
+}
+
 async function runMigration() {
   const isRepairClerk = process.argv.includes("--repair-clerk");
   const isExecute = process.argv.includes("--execute");
@@ -22,7 +36,7 @@ async function runMigration() {
     startTime: new Date().toISOString(),
     isDryRun,
     usersProcessed: 0,
-    organizationsCreated: 0,
+    workspacesCreated: 0,
     membersCreated: 0,
     documentsStamped: { invoices: 0, customers: 0, products: 0 },
     profilesReseated: 0,
@@ -39,7 +53,7 @@ async function runMigration() {
     let offset = 0;
     while (true) {
       const batch = await clerk.users.getUserList({ limit: 100, offset });
-      if (!batch || batch.data ? batch.data.length === 0 : batch.length === 0) break;
+      if (!batch || (batch.data ? batch.data.length === 0 : batch.length === 0)) break;
       const userList = batch.data || batch;
       users.push(...userList);
       offset += 100;
@@ -63,55 +77,50 @@ async function runMigration() {
       console.log(`\n👤 Processing User: ${userLabel} (${userId})`);
       report.usersProcessed++;
 
-      // Step A: Idempotent Organization Provisioning
-      const orgQuery = await db.collection("organizations").where("ownerId", "==", userId).limit(1).get();
-      let orgId;
+      // Step A: Idempotent Workspace Provisioning
+      const wsQuery = await db.collection("workspaces").where("ownerId", "==", userId).limit(1).get();
+      let workspaceId;
 
-      if (!orgQuery.empty) {
-        orgId = orgQuery.docs[0].id;
-        console.log(`  ℹ️ Organization already exists: ${orgId}`);
+      if (!wsQuery.empty) {
+        workspaceId = wsQuery.docs[0].id;
+        console.log(`  ℹ️ Workspace already exists: ${workspaceId}`);
       } else {
-        const orgName = `${user.firstName ? user.firstName + "'s" : "My"} Business`;
+        const wsName = `${user.firstName ? user.firstName + "'s" : "My"} Business`;
         const now = admin.firestore.FieldValue.serverTimestamp();
-        const trialEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14-day trial
 
         if (!isDryRun) {
-          const orgRef = await db.collection("organizations").add({
-            name: orgName,
+          const wsRef = await db.collection("workspaces").add({
+            name: wsName,
             ownerId: userId,
-            plan: "free",
-            status: "active",
-            trialEndsAt: admin.firestore.Timestamp.fromDate(trialEnd),
             createdAt: now,
             updatedAt: now
           });
-          orgId = orgRef.id;
+          workspaceId = wsRef.id;
 
-          // Create organizationMembers doc
-          const memberDocId = `${orgId}_${userId}`;
-          await db.collection("organizationMembers").doc(memberDocId).set({
-            orgId,
+          // Create workspace_members doc
+          const memberDocId = `${workspaceId}_${userId}`;
+          await db.collection("workspace_members").doc(memberDocId).set({
+            workspaceId,
             userId,
             email: user.emailAddresses?.[0]?.emailAddress?.toLowerCase() || "",
             displayName: userLabel,
             role: "owner",
-            status: "active",
             joinedAt: now,
             updatedAt: now
           });
         } else {
-          orgId = `dry_run_org_${userId.slice(-6)}`;
+          workspaceId = `dry_run_ws_${userId.slice(-6)}`;
         }
-        report.organizationsCreated++;
+        report.workspacesCreated++;
         report.membersCreated++;
-        console.log(`  ✅ Created Organization & Owner Member: ${orgId}`);
+        console.log(`  ✅ Created Workspace & Owner Member: ${workspaceId}`);
       }
 
       // Step B: Batch Stamp Domain Collections (invoices, customers, products)
       for (const collName of ["invoices", "customers", "products"]) {
         const snap = await db.collection(collName).where("userId", "==", userId).get();
-        // Client-side filtering ensures documents without an orgId field are caught accurately
-        const unmigratedDocs = snap.docs.filter((d) => !d.data().orgId);
+        // Client-side filtering ensures documents without a workspaceId field are caught accurately
+        const unmigratedDocs = snap.docs.filter((d) => !d.data().workspaceId);
 
         if (unmigratedDocs.length > 0) {
           console.log(`  📦 Stamping ${unmigratedDocs.length} ${collName}...`);
@@ -125,12 +134,13 @@ async function runMigration() {
               chunk.forEach((docSnap) => {
                 const data = docSnap.data();
                 const updatePayload = {
-                  orgId: orgId,
-                  createdBy: userId,
-                  createdAt: data.createdAt || data.created_at || admin.firestore.FieldValue.serverTimestamp()
+                  workspaceId,
+                  userId,
+                  createdAt: data.createdAt || data.created_at || admin.firestore.FieldValue.serverTimestamp(),
+                  updatedAt: data.updatedAt || data.updated_at || admin.firestore.FieldValue.serverTimestamp()
                 };
 
-                // Step B.5: Convert legacy snake_case fields & string dates to camelCase Timestamps
+                // Convert legacy snake_case fields & string dates to camelCase Timestamps
                 if (collName === "customers") {
                   if (data.full_name) updatePayload.name = data.full_name;
                   if (data.phone_number) updatePayload.phone = data.phone_number;
@@ -139,18 +149,15 @@ async function runMigration() {
                   if (data.tax_percentage !== undefined) updatePayload.taxRate = data.tax_percentage;
                   if (data.total_price !== undefined) updatePayload.totalAmount = data.total_price;
                   if (data.payment_type !== undefined) updatePayload.paymentType = data.payment_type;
-                  if (typeof data.invoice_date === "string" || typeof data.invoiceDate === "string") {
-                    const dStr = data.invoice_date || data.invoiceDate;
-                    updatePayload.invoiceDate = admin.firestore.Timestamp.fromDate(new Date(dStr + "T00:00:00.000Z"));
-                  }
-                  if (typeof data.due_date === "string" || typeof data.dueDate === "string") {
-                    const dStr = data.due_date || data.dueDate;
-                    updatePayload.dueDate = admin.firestore.Timestamp.fromDate(new Date(dStr + "T00:00:00.000Z"));
-                  }
-                  if (typeof data.paid_date === "string" || typeof data.paidDate === "string") {
-                    const dStr = data.paid_date || data.paidDate;
-                    updatePayload.paidDate = admin.firestore.Timestamp.fromDate(new Date(dStr + "T00:00:00.000Z"));
-                  }
+
+                  const parsedInvDate = parseDateToTimestamp(data.invoiceDate || data.invoice_date);
+                  if (parsedInvDate) updatePayload.invoiceDate = parsedInvDate;
+
+                  const parsedDueDate = parseDateToTimestamp(data.dueDate || data.due_date);
+                  if (parsedDueDate) updatePayload.dueDate = parsedDueDate;
+
+                  const parsedPaidDate = parseDateToTimestamp(data.paidDate || data.paid_date);
+                  if (parsedPaidDate) updatePayload.paidDate = parsedPaidDate;
                 }
 
                 if (isVerbose) {
@@ -167,19 +174,18 @@ async function runMigration() {
         }
       }
 
-      // Step C: Reseat Business Profile
+      // Step C: Dual-Write / Reseat Business Profile
       const legacyProfileRef = db.collection("business_profiles").doc(userId);
       const legacyProfileSnap = await legacyProfileRef.get();
 
       if (legacyProfileSnap.exists) {
-        console.log(`  🏢 Reseating business profile: ${userId} -> ${orgId}`);
+        console.log(`  🏢 Reseating business profile: ${userId} -> ${workspaceId}`);
         if (!isDryRun) {
           const profileData = legacyProfileSnap.data();
           const reseatedProfile = {
             ...profileData,
-            orgId: orgId,
-            userId: userId,
-            createdBy: userId,
+            workspaceId,
+            userId,
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
           };
           if (profileData.account_number) reseatedProfile.accountNumber = profileData.account_number;
@@ -187,12 +193,8 @@ async function runMigration() {
           if (profileData.bank_name) reseatedProfile.bankName = profileData.bank_name;
           if (profileData.tax_id) reseatedProfile.taxId = profileData.tax_id;
 
-          await db.collection("business_profiles").doc(orgId).set(reseatedProfile);
-          // Verify copy exists before deletion
-          const verifySnap = await db.collection("business_profiles").doc(orgId).get();
-          if (verifySnap.exists) {
-            await legacyProfileRef.delete();
-          }
+          // Write to workspaceId doc and preserve legacy doc for zero disruption
+          await db.collection("business_profiles").doc(workspaceId).set(reseatedProfile);
         }
         report.profilesReseated++;
       }
@@ -201,11 +203,12 @@ async function runMigration() {
       if (!isDryRun) {
         await withRetry(() =>
           rateLimitedClerkUpdate(userId, {
-            activeOrgId: orgId,
-            activeRole: "owner"
+            activeWorkspaceId: workspaceId,
+            activeRole: "owner",
+            activeOrgId: workspaceId // Backward compat alias
           })
         );
-        console.log(`  🔐 Updated Clerk private_metadata: activeOrgId=${orgId}, activeRole=owner`);
+        console.log(`  🔐 Updated Clerk private_metadata: activeWorkspaceId=${workspaceId}, activeRole=owner`);
       }
 
     } catch (err) {
@@ -217,21 +220,24 @@ async function runMigration() {
   // 3. Post-Migration Assertion Checks (Zero-Missing Field Validation)
   if (!isDryRun) {
     console.log(`\n🔍 Running Post-Migration Assertion Checks...`);
+    let hasAssertionFailure = false;
     for (const collName of ["invoices", "customers", "products"]) {
       const fullSnapshot = await db.collection(collName).get();
       const unscopedDocs = fullSnapshot.docs.filter((docSnap) => {
         const data = docSnap.data();
-        return !data.orgId || data.orgId === "";
+        return !data.workspaceId || data.workspaceId === "";
       });
       console.log(`  - ${collName} total docs: ${fullSnapshot.size} | Unscoped remaining: ${unscopedDocs.length}`);
-      console.assert(unscopedDocs.length === 0, `❌ CRITICAL: ${unscopedDocs.length} ${collName} are still missing orgId!`);
+      if (unscopedDocs.length > 0) {
+        console.error(`❌ CRITICAL: ${unscopedDocs.length} ${collName} are still missing workspaceId!`);
+        hasAssertionFailure = true;
+      }
     }
 
-    // Verify all business_profiles docIds are organization IDs
-    const profilesSnapshot = await db.collection("business_profiles").get();
-    const legacyDocIds = profilesSnapshot.docs.filter((d) => d.id.startsWith("user_"));
-    console.log(`  - business_profiles total docs: ${profilesSnapshot.size} | Legacy user_* docIds: ${legacyDocIds.length}`);
-    console.assert(legacyDocIds.length === 0, `❌ CRITICAL: ${legacyDocIds.length} legacy user-keyed business profiles remain!`);
+    if (hasAssertionFailure) {
+      console.error("Migration finished with unmigrated documents remaining!");
+      process.exit(1);
+    }
   }
 
   // 4. Save Migration Report
@@ -243,4 +249,7 @@ async function runMigration() {
   console.log(`\n📊 Migration Report saved to scripts/migration-report.json`);
 }
 
-runMigration().catch(console.error);
+runMigration().catch((err) => {
+  console.error("Migration execution fatal error:", err);
+  process.exit(1);
+});
