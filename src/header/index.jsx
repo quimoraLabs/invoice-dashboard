@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import InvitationsModal from "../components/workspace/InvitationsModal";
 import ConfigureDropdown from "./ConfigureDropdown";
+import InvomoraLogo from "../components/InvomoraLogo";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 
 const Header = () => {
@@ -89,10 +90,8 @@ const Header = () => {
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Left Section: Brand Logo */}
           <div className="flex items-center gap-3 shrink-0">
-            <Link to="/home" className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-              <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-violet-500 text-sm sm:text-base font-semibold text-primary-foreground shadow-sm">
-                I
-              </div>
+            <Link to="/home" className="group flex items-center gap-2.5 sm:gap-3 shrink-0">
+              <InvomoraLogo size={38} className="sm:w-10 sm:h-10 transition-transform group-hover:scale-105" />
               <div className="leading-tight hidden xs:block">
                 <p className="text-sm font-semibold text-foreground">
                   Invomora

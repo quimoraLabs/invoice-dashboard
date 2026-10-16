@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/authContext/useAuth";
-import { useSession } from "@clerk/react";
+import { useSession, useUser } from "@clerk/react";
 import { logActivity } from "../../firebase/activity";
+import { getWorkspaceById } from "../../firebase/workspace";
 import toast from "react-hot-toast";
 import { Lock, AlertTriangle, ShieldCheck, Mail, Loader2 } from "lucide-react";
 
@@ -14,6 +15,7 @@ export default function InactivityLock() {
   const { activeWorkspace, isOwner } = useWorkspace();
   const { currentUser, userLoggedIn } = useAuth();
   const { session } = useSession();
+  const { user } = useUser();
 
   const [isLocked, setIsLocked] = useState(() => {
     return sessionStorage.getItem(SESSION_LOCK_KEY) === "true";
@@ -98,7 +100,19 @@ export default function InactivityLock() {
     setIsSubmitting(true);
     setErrorMsg("");
 
-    const correctCode = String(activeWorkspace?.invitePasscode || "").trim();
+    let correctCode = String(activeWorkspace?.invitePasscode || "").trim();
+
+    // If local state doesn't match or is missing, fetch authoritative workspace doc
+    if (entered !== correctCode && activeWorkspace?.id) {
+      try {
+        const freshWs = await getWorkspaceById(activeWorkspace.id);
+        if (freshWs?.invitePasscode) {
+          correctCode = String(freshWs.invitePasscode).trim();
+        }
+      } catch (err) {
+        console.warn("Could not fetch fresh workspace doc:", err);
+      }
+    }
 
     if (entered === correctCode) {
       // Success: Unlock dashboard
@@ -171,7 +185,10 @@ export default function InactivityLock() {
   const handleForgotPasscode = async () => {
     if (isSendingForgot || cooldown > 0) return;
 
-    const targetEmail = currentUser?.email || activeWorkspace?.ownerEmail;
+    const targetEmail =
+      user?.primaryEmailAddress?.emailAddress ||
+      currentUser?.email ||
+      activeWorkspace?.ownerEmail;
     if (!targetEmail) {
       toast.error("No registered email found for this account.");
       return;
@@ -182,19 +199,24 @@ export default function InactivityLock() {
       const clerkToken = session ? await session.getToken().catch(() => null) : null;
       const res = await fetch("/api/send-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(clerkToken ? { Authorization: `Bearer ${clerkToken}` } : {}),
+        },
         body: JSON.stringify({
           clerkToken,
           type: "forgot_passcode",
           workspaceId: activeWorkspace?.id,
           workspaceName: activeWorkspace?.name || "Workspace",
           toEmail: targetEmail,
-          passcode: activeWorkspace?.invitePasscode,
+          passcode: activeWorkspace?.invitePasscode || undefined,
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        throw new Error("Failed to send passcode recovery email.");
+        throw new Error(data.error || "Failed to send passcode recovery email.");
       }
 
       toast.success(`Passcode sent! Check your inbox (${targetEmail})`);

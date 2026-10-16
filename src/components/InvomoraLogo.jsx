@@ -1,0 +1,146 @@
+import React from "react";
+
+export default function InvomoraLogo({ size = 36, className = "" }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 512 512"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`shrink-0 ${className}`}
+    >
+      <defs>
+        {/* Background Superellipse Gradient */}
+        <linearGradient id="invomoraBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#4338CA" />
+          <stop offset="50%" stopColor="#6366F1" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+
+        {/* Back Sheet Gradient */}
+        <linearGradient id="backSheetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#A5B4FC" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#C4B5FD" stopOpacity="0.15" />
+        </linearGradient>
+
+        {/* Corner Fold Gradient */}
+        <linearGradient id="foldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#C7D2FE" />
+          <stop offset="100%" stopColor="#818CF8" />
+        </linearGradient>
+
+        {/* Verified Badge Gradient */}
+        <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#10B981" />
+          <stop offset="100%" stopColor="#059669" />
+        </linearGradient>
+
+        {/* Drop Shadows */}
+        <filter id="docShadow" x="-15%" y="-15%" width="130%" height="130%">
+          <feDropShadow dx="0" dy="16" stdDeviation="20" floodColor="#0F172A" floodOpacity="0.3" />
+        </filter>
+        <filter id="badgeShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="8" stdDeviation="10" floodColor="#064E3B" floodOpacity="0.35" />
+        </filter>
+      </defs>
+
+      {/* 1. App Icon Squircle Container */}
+      <rect
+        x="24"
+        y="24"
+        width="464"
+        height="464"
+        rx="112"
+        fill="url(#invomoraBg)"
+      />
+      <rect
+        x="25"
+        y="25"
+        width="462"
+        height="462"
+        rx="111"
+        stroke="rgba(255, 255, 255, 0.2)"
+        strokeWidth="2"
+      />
+
+      {/* 2. Secondary Offset Invoice Sheet Behind */}
+      <rect
+        x="172"
+        y="80"
+        width="212"
+        height="280"
+        rx="22"
+        transform="rotate(6 278 220)"
+        fill="url(#backSheetGrad)"
+      />
+
+      {/* 3. Primary Invoice Sheet with Folded Top-Right Corner */}
+      <g filter="url(#docShadow)">
+        <path
+          d="M 144 140
+             C 144 116, 144 116, 168 116
+             L 300 116
+             L 368 184
+             L 368 376
+             C 368 400, 368 400, 344 400
+             L 168 400
+             C 144 400, 144 400, 144 376
+             Z"
+          fill="#FFFFFF"
+        />
+
+        {/* Origami Fold on Top-Right Corner */}
+        <path
+          d="M 300 116
+             L 300 162
+             C 300 178, 306 184, 322 184
+             L 368 184
+             Z"
+          fill="url(#foldGrad)"
+        />
+        <path
+          d="M 300 116 L 368 184"
+          stroke="#4F46E5"
+          strokeWidth="1.5"
+          strokeOpacity="0.3"
+        />
+
+        {/* Invoice Header Badge */}
+        <rect x="180" y="156" width="86" height="20" rx="10" fill="#4F46E5" />
+
+        {/* Divider line */}
+        <rect x="180" y="196" width="152" height="4" rx="2" fill="#E2E8F0" />
+
+        {/* Invoice Line Items */}
+        <rect x="180" y="222" width="94" height="12" rx="6" fill="#94A3B8" />
+        <rect x="296" y="222" width="36" height="12" rx="6" fill="#64748B" />
+
+        <rect x="180" y="250" width="76" height="12" rx="6" fill="#CBD5E1" />
+        <rect x="296" y="250" width="36" height="12" rx="6" fill="#64748B" />
+
+        <rect x="180" y="278" width="88" height="12" rx="6" fill="#CBD5E1" />
+        <rect x="296" y="278" width="36" height="12" rx="6" fill="#64748B" />
+
+        {/* Total Summary Row Pill */}
+        <rect x="178" y="312" width="156" height="32" rx="10" fill="#EEF2FF" />
+        <rect x="190" y="322" width="56" height="12" rx="6" fill="#4F46E5" />
+        <rect x="282" y="320" width="40" height="16" rx="6" fill="#4338CA" />
+      </g>
+
+      {/* 4. Verification / Paid Badge (Checkmark Emblem) */}
+      <g filter="url(#badgeShadow)">
+        <circle cx="348" cy="356" r="44" fill="url(#badgeGrad)" />
+        <circle cx="348" cy="356" r="44" stroke="#FFFFFF" strokeWidth="4" />
+        <path
+          d="M 334 356 L 344 366 L 364 346"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+    </svg>
+  );
+}

@@ -120,6 +120,15 @@ export async function regenerateWorkspacePasscode(workspaceId, actor) {
   return newPasscode;
 }
 
+// ---------- Get Workspace By ID ----------
+export async function getWorkspaceById(workspaceId) {
+  if (!workspaceId) return null;
+  const wsRef = doc(db, "workspaces", workspaceId);
+  const snap = await getDoc(wsRef);
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() };
+}
+
 // ---------- Listen to user workspaces (N+1 fixed) ----------
 export function listenToUserWorkspaces(userId, callback, onError) {
   if (!userId) {

@@ -21,6 +21,7 @@ import InvoiceEditPage from "./pages/invoice/UpdateInvoice";
 import { ProtectedRoute, PublicOnlyRoute } from "./components/ProtectedRoute";
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 import InactivityLock from "./components/workspace/InactivityLock";
+import PWAInstallBanner from "./components/PWAInstallBanner";
 function AppRoutes() {
   const routesArray = [
     { path: "/", element: <Navigate to="/home" replace /> },
@@ -128,6 +129,7 @@ function AppShell() {
     <>
       {!isAuthPage && <Header />}
       {!isAuthPage && <InactivityLock />}
+      <PWAInstallBanner />
       <Toaster position="top-right" />
       <main className={isAuthPage ? "min-h-screen" : "pt-16 min-h-screen"}>
         <AppRoutes />

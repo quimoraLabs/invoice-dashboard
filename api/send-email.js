@@ -179,25 +179,76 @@ export default async function handler(req, res) {
 
     // 3. Handle Forgot Passcode Email
     if (type === "forgot_passcode") {
-      let recipientEmail = toEmail || body.ownerEmail;
-      let passcode = body.passcode;
+      let recipientEmail = (toEmail && typeof toEmail === "string" && toEmail.trim()) ||
+        (body.ownerEmail && typeof body.ownerEmail === "string" && body.ownerEmail.trim()) ||
+        null;
+      let passcode = (body.passcode && String(body.passcode).trim()) || null;
       let wsName = body.workspaceName || "Business Workspace";
 
-      if (workspaceId && (!passcode || !recipientEmail)) {
+      let wsData = null;
+      if (workspaceId) {
         const wsDoc = await adminDb.collection("workspaces").doc(workspaceId).get();
         if (wsDoc.exists) {
-          const wsData = wsDoc.data() || {};
-          passcode = passcode || wsData.invitePasscode;
+          wsData = wsDoc.data() || {};
+          passcode = passcode || (wsData.invitePasscode ? String(wsData.invitePasscode).trim() : null);
           wsName = wsData.name || wsName;
+
+          // 1. If recipientEmail is not provided, look up the caller's membership doc
+          if (!recipientEmail) {
+            const callerMemberDoc = await adminDb.collection("workspace_members").doc(`${workspaceId}_${callerId}`).get();
+            if (callerMemberDoc.exists) {
+              recipientEmail = callerMemberDoc.data()?.email;
+            }
+          }
+
+          // 2. If still missing, look up the workspace owner's membership doc
           if (!recipientEmail && wsData.ownerId) {
             const ownerDoc = await adminDb.collection("workspace_members").doc(`${workspaceId}_${wsData.ownerId}`).get();
-            if (ownerDoc.exists) recipientEmail = ownerDoc.data()?.email;
+            if (ownerDoc.exists) {
+              recipientEmail = ownerDoc.data()?.email;
+            }
+          }
+        }
+      }
+
+      // 3. Fallback: Check verifiedClaims from Clerk token
+      if (!recipientEmail) {
+        recipientEmail = verifiedClaims?.email || verifiedClaims?.email_address || null;
+      }
+
+      // 4. Fallback: Search workspace_members for caller's email across any membership
+      if (!recipientEmail) {
+        const callerSnap = await adminDb.collection("workspace_members")
+          .where("userId", "==", callerId)
+          .limit(1)
+          .get();
+        if (!callerSnap.empty) {
+          recipientEmail = callerSnap.docs[0].data()?.email;
+        }
+      }
+
+      // 5. If passcode is not set on workspace (legacy/unmigrated), auto-generate & persist it!
+      if (!passcode) {
+        passcode = String(Math.floor(100000 + Math.random() * 900000));
+        if (workspaceId) {
+          try {
+            await adminDb.collection("workspaces").doc(workspaceId).set(
+              { invitePasscode: passcode, updatedAt: new Date() },
+              { merge: true }
+            );
+            console.log(`[api/send-email] Generated and saved passcode for workspace ${workspaceId}`);
+          } catch (persistErr) {
+            console.warn("[api/send-email] Failed to persist generated passcode:", persistErr.message);
           }
         }
       }
 
       if (!recipientEmail || !passcode) {
-        return res.status(400).json({ error: "Missing recipient email or passcode." });
+        return res.status(400).json({
+          error: !recipientEmail
+            ? "Could not find a registered email address for this account."
+            : "Missing security passcode.",
+        });
       }
 
       const sent = await sendForgotPasscodeEmail({
@@ -206,7 +257,13 @@ export default async function handler(req, res) {
         passcode,
       });
 
-      return res.status(200).json({ success: true, emailSent: sent });
+      if (!sent) {
+        return res.status(500).json({
+          error: "Email delivery failed. Please ensure EMAIL_USER and EMAIL_PASS are configured on server.",
+        });
+      }
+
+      return res.status(200).json({ success: true, emailSent: true });
     }
 
     return res.status(400).json({ error: "Unknown email type requested." });

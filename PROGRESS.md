@@ -60,10 +60,15 @@ Tenancy is scoped by **workspace** (`workspaceId`):
 7. **Transactional GST Counters:** Scoped numeric counters for sequential invoice numbering (`INV-001`).
 8. **UI & Icon Modernization Refactor:**
    - **Elimination of `react-icons`:** Uninstalled `react-icons` and migrated all 25+ files cleanly to `lucide-react`.
-   - **"Forgot Passcode" Recovery:** Implemented secure email recovery pipeline (`api/mailer.js`, `api/send-email.js`, `InactivityLock.jsx`) with 60s cooldown and exact message format: *"Your account wants to open, your passcode is [passcode]"*.
+   - **"Forgot Passcode" Recovery:** Implemented secure email recovery pipeline (`api/mailer.js`, `api/send-email.js`, `InactivityLock.jsx`) with 60s cooldown, multi-tier recipient email resolution (Clerk `useUser`, membership docs, verified claims), automatic 6-digit PIN generation & Firestore persistence for unmigrated workspaces, and exact message format: *"Your account wants to open, your passcode is [passcode]"*.
    - **Clerk Component Standardization:** Integrated official Clerk `<UserButton />` in header navigation for session and profile management.
    - **Unified `CustomDropdown`:** Replaced all legacy `<select>` dropdowns across the application with the accessible Headless UI `CustomDropdown`.
    - **Relocated Lock Screen Trigger:** Dedicated lock button in header between theme toggle and notifications, plus quick action in Configure dropdown.
+9. **Progressive Web App (PWA) Implementation:**
+   - **Web App Manifest (`public/manifest.json`):** Standalone app mode, background/theme branding colors (`#09090b` / `#4f46e5`), shortcut intents for Invoices, Clients, and Products.
+   - **Multi-Resolution Icons:** Generated 192x192, 512x512, maskable, and SVG vector app icons.
+   - **Offline Service Worker (`public/sw.js`):** Pre-caches app shell, stale-while-revalidate for static assets, network-first for SPA navigation with offline cache fallback, and explicit bypass for `/api/*`, Clerk, and Firebase.
+   - **Install Prompt Banner (`PWAInstallBanner.jsx`):** Detects `beforeinstallprompt` to offer seamless native desktop and mobile installation.
 
 ---
 
