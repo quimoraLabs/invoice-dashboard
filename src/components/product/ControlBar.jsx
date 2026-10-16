@@ -1,4 +1,4 @@
-import { HiSearch, HiX } from "react-icons/hi";
+import { Search, X } from "lucide-react";
 import CustomDropdown from "../CustomDropdown";
 
 export default function ControlBar({
@@ -36,7 +36,7 @@ export default function ControlBar({
     <div className="mb-8 grid grid-cols-1 md:flex md:items-center gap-4">
       {/* Search Bar Wrapper Container */}
       <div className="relative flex-grow md:max-w-md">
-        <HiSearch
+        <Search
           className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
           size={20}
         />
@@ -55,7 +55,7 @@ export default function ControlBar({
             onClick={() => setSearchQuery("")}
             className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-muted-foreground hover:bg-surface hover:text-foreground transition-colors"
           >
-            <HiX size={16} />
+            <X size={16} />
           </button>
         )}
       </div>

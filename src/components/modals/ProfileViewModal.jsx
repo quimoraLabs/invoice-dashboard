@@ -1,4 +1,4 @@
-import { HiX } from "react-icons/hi";
+import { X } from "lucide-react";
 import { useAuth } from "../../contexts/authContext/useAuth";
 import { useState, useEffect } from "react";
 import ImageUploader from "../ImageUploader";
@@ -112,7 +112,7 @@ export default function ProfileModal({ isOpen, onClose }) {
             onClick={onClose}
             className="rounded-full p-1.5 text-muted-foreground transition hover:bg-surface hover:text-foreground"
           >
-            <HiX size={18} />
+            <X size={18} />
           </button>
         </div>
 

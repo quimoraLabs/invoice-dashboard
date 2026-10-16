@@ -1,5 +1,18 @@
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useState } from "react";
+import CustomDropdown from "../CustomDropdown";
+
+const statusOptions = [
+  { value: "Paid", label: "Paid" },
+  { value: "Unpaid", label: "Unpaid" },
+  { value: "Pending", label: "Pending" },
+];
+
+const paymentMethodOptions = [
+  { value: "UPI", label: "UPI" },
+  { value: "Card", label: "Card" },
+  { value: "Cash", label: "Cash" },
+];
 
 export default function UpdateStatusModal({
   isOpen,
@@ -56,37 +69,33 @@ export default function UpdateStatusModal({
               </Dialog.Title>
 
               {/* Status Radio / Select */}
-              <div>
-                <label className="text-sm text-foreground block mb-1">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm text-foreground block">
                   Status
                 </label>
-                <select
+                <CustomDropdown
                   value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full border border-border bg-surface text-foreground rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                >
-                  <option value="Paid">Paid</option>
-                  <option value="Unpaid">Unpaid</option>
-                  <option value="Pending">Pending</option>
-                </select>
+                  onChange={(val) => setStatus(val)}
+                  options={statusOptions}
+                  className="w-full"
+                  buttonClassName="w-full !rounded-xl"
+                />
               </div>
 
               {/* Conditional Payment Method Field */}
               {status === "Paid" && (
-                <div>
-                  <label className="text-sm text-foreground block mb-1">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm text-foreground block">
                     Payment Method *
                   </label>
-                  <select
+                  <CustomDropdown
                     value={method}
-                    onChange={(e) => setMethod(e.target.value)}
-                    className="w-full border border-border bg-surface text-foreground rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  >
-                    <option value="">Choose Method...</option>
-                    <option value="UPI">UPI</option>
-                    <option value="Card">Card</option>
-                    <option value="Cash">Cash</option>
-                  </select>
+                    onChange={(val) => setMethod(val)}
+                    options={paymentMethodOptions}
+                    placeholder="Choose Method..."
+                    className="w-full"
+                    buttonClassName="w-full !rounded-xl"
+                  />
                 </div>
               )}
 

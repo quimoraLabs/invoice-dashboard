@@ -1,6 +1,5 @@
 import React from "react";
-import { IoClose } from "react-icons/io5";
-import { HiOutlineDocumentDuplicate } from "react-icons/hi2";
+import { X, Copy } from "lucide-react";
 
 export default function ConfirmDuplicateModal({
   isOpen,
@@ -17,7 +16,7 @@ export default function ConfirmDuplicateModal({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-muted text-primary">
-              <HiOutlineDocumentDuplicate size={22} />
+              <Copy size={22} />
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-primary">Clone Invoice</p>
@@ -29,7 +28,7 @@ export default function ConfirmDuplicateModal({
             onClick={onClose}
             className="rounded-full p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground cursor-pointer"
           >
-            <IoClose size={18} />
+            <X size={18} />
           </button>
         </div>
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import CustomerActionsMenu from "../ActionMenu";
 
 export default function CustomerTable({
@@ -100,7 +100,7 @@ export default function CustomerTable({
               disabled={currentPage === 1}
               className="rounded-lg border border-border p-2 text-muted-foreground transition disabled:opacity-50 hover:bg-surface"
             >
-              <HiChevronLeft size={16} />
+              <ChevronLeft size={16} />
             </button>
             <div className="flex items-center gap-2">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(
@@ -124,7 +124,7 @@ export default function CustomerTable({
               disabled={currentPage === totalPages}
               className="rounded-lg border border-border p-2 text-muted-foreground transition disabled:opacity-50 hover:bg-surface"
             >
-              <HiChevronRight size={16} />
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>

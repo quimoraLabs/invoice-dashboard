@@ -1,5 +1,5 @@
 import { uploadMedia } from "../firebase/mediaAdapter";
-import { IoCloudUpload, IoCameraOutline } from "react-icons/io5";
+import { UploadCloud, Camera } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 export default function ImageUploader({
@@ -75,14 +75,14 @@ export default function ImageUploader({
               />
               {!loading && (
                 <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity duration-200 max-sm:group-hover:opacity-100 flex items-center justify-center text-white sm:hidden">
-                  <IoCameraOutline size={20} />
+                  <Camera size={20} />
                 </div>
               )}
             </>
           ) : (
             !loading && (
               <div className="flex flex-col items-center text-muted-foreground transition-colors max-sm:group-hover:text-primary">
-                <IoCameraOutline size={28} className="sm:size-8" />
+                <Camera size={28} className="sm:size-8" />
               </div>
             )
           )}
@@ -107,7 +107,7 @@ export default function ImageUploader({
                 htmlFor={id}
                 className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface-elevated px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition hover:bg-surface hover:border-border cursor-pointer active:scale-95"
               >
-                <IoCloudUpload size={16} className="text-muted-foreground" />
+                <UploadCloud size={16} className="text-muted-foreground" />
                 <span>{label}</span>
               </label>
               <p className="mt-2 text-xs text-muted-foreground">

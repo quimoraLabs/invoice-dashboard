@@ -1,4 +1,4 @@
-import { IoClose } from "react-icons/io5";
+import { X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createCustomer, updateCustomer } from "../../firebase/customer";
 import { useAuth } from "../../contexts/authContext/useAuth";
@@ -115,7 +115,7 @@ export default function CustomerModal({ onClose, customer }) {
             onClick={onClose}
             className="rounded-full p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
           >
-            <IoClose size={20} />
+            <X size={20} />
           </button>
         </div>
 

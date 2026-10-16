@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import toast from "react-hot-toast";
 import {
-  HiX,
-  HiCog,
-  HiKey,
-  HiRefresh,
-  HiClipboardCopy,
-  HiCheck,
-  HiShieldCheck,
-} from "react-icons/hi";
+  X,
+  Settings,
+  Key,
+  RefreshCw,
+  Copy,
+  Check,
+  ShieldCheck,
+} from "lucide-react";
 
 export default function WorkspaceSettingsModal({ isOpen, onClose }) {
   const {
@@ -95,7 +95,7 @@ export default function WorkspaceSettingsModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-muted text-primary">
-              <HiCog size={22} />
+              <Settings size={22} />
             </div>
             <div>
               <h3 className="text-base font-bold text-foreground">
@@ -110,7 +110,7 @@ export default function WorkspaceSettingsModal({ isOpen, onClose }) {
             onClick={onClose}
             className="rounded-lg p-1.5 text-muted-foreground hover:bg-surface hover:text-foreground transition cursor-pointer"
           >
-            <HiX size={20} />
+            <X size={20} />
           </button>
         </div>
 
@@ -135,13 +135,13 @@ export default function WorkspaceSettingsModal({ isOpen, onClose }) {
           <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <HiKey className="text-primary" size={18} />
+                <Key className="text-primary" size={18} />
                 <span className="text-sm font-semibold text-foreground">
                   Invite Security Passcode
                 </span>
               </div>
               <span className="flex items-center gap-1 text-[11px] font-medium text-success bg-success-muted px-2 py-0.5 rounded-md border border-success/20">
-                <HiShieldCheck size={14} /> Required to Join
+                <ShieldCheck size={14} /> Required to Join
               </span>
             </div>
 
@@ -163,9 +163,9 @@ export default function WorkspaceSettingsModal({ isOpen, onClose }) {
                     title="Copy Passcode"
                   >
                     {copied ? (
-                      <HiCheck size={16} className="text-success" />
+                      <Check size={16} className="text-success" />
                     ) : (
-                      <HiClipboardCopy size={16} />
+                      <Copy size={16} />
                     )}
                     <span>{copied ? "Copied" : "Copy"}</span>
                   </button>
@@ -177,7 +177,7 @@ export default function WorkspaceSettingsModal({ isOpen, onClose }) {
                     className="flex items-center gap-1 rounded-xl border border-border bg-surface px-3 py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition cursor-pointer disabled:opacity-50"
                     title="Generate New Passcode"
                   >
-                    <HiRefresh size={16} className={isRegenerating ? "animate-spin" : ""} />
+                    <RefreshCw size={16} className={isRegenerating ? "animate-spin" : ""} />
                     <span>Regenerate</span>
                   </button>
                 </>

@@ -1,14 +1,14 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { dateFormat, formatCurrentDate } from "../../components/helper";
 import {
-  HiOutlineArrowLeft,
-  HiOutlinePrinter,
-  HiOutlinePencil,
-  HiOutlineCheckCircle,
-  HiOutlineTrash,
-  HiOutlineDocumentDuplicate,
-  HiOutlineArrowDownTray,
-} from "react-icons/hi2";
+  ArrowLeft,
+  Printer,
+  Pencil,
+  CheckCircle2,
+  Trash2,
+  Copy,
+  Download,
+} from "lucide-react";
 import {
   updateInvoiceStatusAndDueDate,
   deleteInvoice,
@@ -208,7 +208,7 @@ export default function InvoiceDetailPage() {
           title="Back to invoices"
           className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition cursor-pointer"
         >
-          <HiOutlineArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" />
         </button>
 
         <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
@@ -218,7 +218,7 @@ export default function InvoiceDetailPage() {
             title="Delete Invoice"
             className="p-2.5 text-danger bg-surface border border-border rounded-xl hover:bg-danger-muted transition shadow-sm cursor-pointer"
           >
-            <HiOutlineTrash className="w-5 h-5" />
+            <Trash2 className="w-5 h-5" />
           </button>
 
           {/* Duplicate Action */}
@@ -228,7 +228,7 @@ export default function InvoiceDetailPage() {
             disabled={isDuplicating}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-foreground bg-surface border border-border rounded-xl hover:bg-surface-elevated transition shadow-sm cursor-pointer disabled:opacity-50"
           >
-            <HiOutlineDocumentDuplicate className="w-4 h-4 text-primary" />
+            <Copy className="w-4 h-4 text-primary" />
             <span className="hidden sm:inline">Duplicate</span>
           </button>
 
@@ -241,7 +241,7 @@ export default function InvoiceDetailPage() {
           >
             {({ loading: pdfLoading }) => (
               <>
-                <HiOutlineArrowDownTray className="w-4 h-4 text-primary" />
+                <Download className="w-4 h-4 text-primary" />
                 <span className="hidden sm:inline">{pdfLoading ? "Preparing..." : "PDF"}</span>
               </>
             )}
@@ -253,7 +253,7 @@ export default function InvoiceDetailPage() {
             title="Print Invoice"
             className="p-2.5 text-muted-foreground bg-surface border border-border rounded-xl hover:bg-surface-elevated hover:text-foreground transition shadow-sm cursor-pointer"
           >
-            <HiOutlinePrinter className="w-5 h-5" />
+            <Printer className="w-5 h-5" />
           </button>
 
           {/* Edit Routing */}
@@ -262,7 +262,7 @@ export default function InvoiceDetailPage() {
             title="Edit invoice"
             className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-foreground bg-surface border border-border rounded-xl hover:bg-surface-elevated transition shadow-sm"
           >
-            <HiOutlinePencil className="w-4 h-4" />
+            <Pencil className="w-4 h-4" />
             <span className="hidden sm:inline">Edit</span>
           </Link>
 
@@ -273,7 +273,7 @@ export default function InvoiceDetailPage() {
               title="Mark as Paid"
               onClick={() => setShowPaymentModal(true)}
             >
-              <HiOutlineCheckCircle className="w-4 h-4" />
+              <CheckCircle2 className="w-4 h-4" />
               <span>Mark Paid</span>
             </button>
           )}

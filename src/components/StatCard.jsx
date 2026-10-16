@@ -1,10 +1,36 @@
 import React from "react";
-import * as FiIcons from "react-icons/fi";
+import {
+  FileText,
+  Users,
+  Box,
+  DollarSign,
+  HelpCircle,
+  Package,
+  Layers,
+  AlertCircle,
+} from "lucide-react";
 
-// A clean dictionary to map icon name strings to React Icons components
+const ICON_MAP = {
+  FiFileText: FileText,
+  FileText: FileText,
+  FiUsers: Users,
+  Users: Users,
+  FiBox: Box,
+  Box: Box,
+  Package: Package,
+  FiDollarSign: DollarSign,
+  DollarSign: DollarSign,
+  FiHelpCircle: HelpCircle,
+  HelpCircle: HelpCircle,
+  FiAlertCircle: AlertCircle,
+  AlertCircle: AlertCircle,
+  FiLayers: Layers,
+  Layers: Layers,
+};
+
+// A clean dictionary to map icon name strings to Lucide icon components
 const IconController = ({ name, className }) => {
-  const IconComponent = FiIcons[name];
-  if (!IconComponent) return <FiIcons.FiHelpCircle className={className} />;
+  const IconComponent = ICON_MAP[name] || HelpCircle;
   return <IconComponent className={className} />;
 };
 

@@ -16,6 +16,7 @@ export default function CustomDropdown({
   align = "left",
   placeholder = "Select option",
   className = "",
+  buttonClassName = "",
 }) {
   const selectedOption = options.find((opt) => opt.value === value);
   const rawLabel = selectedOption ? selectedOption.label : value || placeholder;
@@ -36,7 +37,7 @@ export default function CustomDropdown({
                   ? "opacity-60 bg-surface border-border"
                   : "hover:bg-surface focus:outline-none focus:ring-2 focus:ring-ring/20"
               }
-              ${open ? "border-primary ring-2 ring-ring/10" : "border-border"}`}
+              ${open ? "border-primary ring-2 ring-ring/10" : "border-border"} ${buttonClassName}`}
           >
             <span className="capitalize">{displayLabel}</span>
             <ChevronDown

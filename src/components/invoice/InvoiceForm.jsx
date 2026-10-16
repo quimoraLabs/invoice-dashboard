@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import CustomDropdown from "../CustomDropdown";
-import {
-  HiOutlineTrash,
-  HiOutlinePlusCircle,
-  HiCurrencyRupee,
-} from "react-icons/hi";
+import { Trash2, PlusCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
 function InvoiceForm({
@@ -390,7 +386,7 @@ function InvoiceForm({
                     title="Delete item"
                     className="text-muted-foreground hover:text-danger"
                   >
-                    <HiOutlineTrash size={20} />
+                    <Trash2 size={20} />
                   </button>
                 )}
                 <button
@@ -399,7 +395,7 @@ function InvoiceForm({
                   title="add item"
                   className="hover:text-primary text-muted-foreground"
                 >
-                  <HiOutlinePlusCircle size={20} />
+                  <PlusCircle size={20} />
                 </button>
               </div>
             </div>

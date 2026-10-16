@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { IoClose } from "react-icons/io5";
-import { HiOutlineCheckCircle } from "react-icons/hi2";
+import { X, CheckCircle2 } from "lucide-react";
 
 export default function PaymentMethodModal({ isOpen, onClose, onConfirm, invoiceNumber }) {
   const [paymentType, setPaymentType] = useState("UPI");
@@ -26,7 +25,7 @@ export default function PaymentMethodModal({ isOpen, onClose, onConfirm, invoice
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success-muted text-success">
-              <HiOutlineCheckCircle size={22} />
+              <CheckCircle2 size={22} />
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-success">Settle Payment</p>
@@ -38,7 +37,7 @@ export default function PaymentMethodModal({ isOpen, onClose, onConfirm, invoice
             onClick={onClose}
             className="rounded-full p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground cursor-pointer"
           >
-            <IoClose size={18} />
+            <X size={18} />
           </button>
         </div>
 

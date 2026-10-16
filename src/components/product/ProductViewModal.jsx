@@ -1,5 +1,5 @@
 import React from "react";
-import { IoClose } from "react-icons/io5";
+import { X } from "lucide-react";
 
 export default function ProductViewModal({ product, onClose }) {
   if (!product) return null;
@@ -21,7 +21,7 @@ export default function ProductViewModal({ product, onClose }) {
               onClick={onClose}
               className="p-1.5 rounded-xl text-muted-foreground hover:bg-surface hover:text-foreground transition-colors"
             >
-              <IoClose className="text-xl" title="close" />
+              <X className="w-5 h-5" title="close" />
             </button>
           </div>
 

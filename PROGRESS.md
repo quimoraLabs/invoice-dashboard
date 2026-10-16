@@ -58,6 +58,12 @@ Tenancy is scoped by **workspace** (`workspaceId`):
 5. **Tailwind CSS v4 Compliance:** Standardized theme tokens and suppressed CSS lint false-positives via `.vscode/settings.json`.
 6. **Immutable Audit Trail:** `/activity-log` page and `activity_logs` Firestore collection integrated across all mutations.
 7. **Transactional GST Counters:** Scoped numeric counters for sequential invoice numbering (`INV-001`).
+8. **UI & Icon Modernization Refactor:**
+   - **Elimination of `react-icons`:** Uninstalled `react-icons` and migrated all 25+ files cleanly to `lucide-react`.
+   - **"Forgot Passcode" Recovery:** Implemented secure email recovery pipeline (`api/mailer.js`, `api/send-email.js`, `InactivityLock.jsx`) with 60s cooldown and exact message format: *"Your account wants to open, your passcode is [passcode]"*.
+   - **Clerk Component Standardization:** Integrated official Clerk `<UserButton />` in header navigation for session and profile management.
+   - **Unified `CustomDropdown`:** Replaced all legacy `<select>` dropdowns across the application with the accessible Headless UI `CustomDropdown`.
+   - **Relocated Lock Screen Trigger:** Dedicated lock button in header between theme toggle and notifications, plus quick action in Configure dropdown.
 
 ---
 

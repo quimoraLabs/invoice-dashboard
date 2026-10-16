@@ -1,5 +1,5 @@
 import React from "react";
-import { HiSearch, HiX, HiFilter } from "react-icons/hi";
+import { Search, X, Filter } from "lucide-react";
 import CustomDropdown from "../CustomDropdown";
 
 function InvoiceFilters({
@@ -92,7 +92,7 @@ function InvoiceFilters({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         {/* Search Input */}
         <div className="relative flex-1">
-          <HiSearch
+          <Search
             className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
             size={18}
           />
@@ -109,7 +109,7 @@ function InvoiceFilters({
               onClick={() => setSearchTerm("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-muted-foreground hover:bg-surface hover:text-foreground transition-colors cursor-pointer"
             >
-              <HiX size={16} />
+              <X size={16} />
             </button>
           )}
         </div>
@@ -142,7 +142,7 @@ function InvoiceFilters({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/50 p-2.5 text-xs text-muted-foreground">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold text-foreground flex items-center gap-1">
-            <HiFilter size={14} className="text-primary" /> Date Range:
+            <Filter size={14} className="text-primary" /> Date Range:
           </span>
           <input
             type="date"
@@ -186,7 +186,7 @@ function InvoiceFilters({
             onClick={onResetFilters}
             className="flex items-center gap-1 text-danger font-semibold hover:underline self-end sm:self-auto cursor-pointer"
           >
-            <HiX size={14} /> Clear all filters
+            <X size={14} /> Clear all filters
           </button>
         )}
       </div>

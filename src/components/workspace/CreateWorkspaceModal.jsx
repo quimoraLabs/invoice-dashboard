@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import toast from "react-hot-toast";
-import { HiX, HiBriefcase } from "react-icons/hi";
+import { X, Briefcase } from "lucide-react";
 
 export default function CreateWorkspaceModal({ isOpen, onClose }) {
   const { createNewWorkspace } = useWorkspace();
@@ -37,7 +37,7 @@ export default function CreateWorkspaceModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-muted text-primary">
-              <HiBriefcase size={22} />
+              <Briefcase size={22} />
             </div>
             <div>
               <h3 className="text-base font-bold text-foreground">
@@ -52,7 +52,7 @@ export default function CreateWorkspaceModal({ isOpen, onClose }) {
             onClick={onClose}
             className="rounded-lg p-1.5 text-muted-foreground hover:bg-surface hover:text-foreground transition"
           >
-            <HiX size={20} />
+            <X size={20} />
           </button>
         </div>
 

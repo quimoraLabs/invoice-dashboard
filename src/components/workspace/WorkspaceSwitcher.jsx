@@ -5,13 +5,13 @@ import TeamModal from "./TeamModal";
 import CreateWorkspaceModal from "./CreateWorkspaceModal";
 import WorkspaceSettingsModal from "./WorkspaceSettingsModal";
 import {
-  HiChevronDown,
-  HiCheck,
-  HiPlus,
-  HiUserGroup,
-  HiBriefcase,
-  HiCog,
-} from "react-icons/hi";
+  ChevronDown,
+  Check,
+  Plus,
+  Users,
+  Briefcase,
+  Settings,
+} from "lucide-react";
 
 export default function WorkspaceSwitcher() {
   const {
@@ -32,7 +32,7 @@ export default function WorkspaceSwitcher() {
       <Menu as="div" className="relative inline-block text-left">
         <MenuButton className="flex items-center gap-1.5 sm:gap-2 rounded-xl border border-border bg-surface p-1.5 md:px-3 md:py-1.5 text-xs font-semibold text-foreground transition hover:bg-surface-elevated hover:border-border focus:outline-none cursor-pointer">
           <div className="flex h-6 w-6 md:h-5 md:w-5 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-[11px] md:text-xs">
-            {activeWorkspace.name ? activeWorkspace.name.charAt(0).toUpperCase() : <HiBriefcase size={12} />}
+            {activeWorkspace.name ? activeWorkspace.name.charAt(0).toUpperCase() : <Briefcase size={12} />}
           </div>
           <span className="hidden md:inline-block max-w-30 lg:max-w-40 truncate">
             {activeWorkspace.name}
@@ -48,7 +48,7 @@ export default function WorkspaceSwitcher() {
               {currentRole}
             </span>
           )}
-          <HiChevronDown size={14} className="text-muted-foreground" />
+          <ChevronDown size={14} className="text-muted-foreground" />
         </MenuButton>
 
         <MenuItems
@@ -79,7 +79,7 @@ export default function WorkspaceSwitcher() {
                         {ws.role || "member"}
                       </span>
                     </div>
-                    {isActive && <HiCheck size={14} className="text-primary shrink-0" />}
+                    {isActive && <Check size={14} className="text-primary shrink-0" />}
                   </button>
                 </MenuItem>
               );
@@ -94,7 +94,7 @@ export default function WorkspaceSwitcher() {
               onClick={() => setIsTeamOpen(true)}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface transition cursor-pointer"
             >
-              <HiUserGroup size={16} className="text-primary" />
+              <Users size={16} className="text-primary" />
               Manage Team & Invites
             </button>
           </MenuItem>
@@ -105,7 +105,7 @@ export default function WorkspaceSwitcher() {
               onClick={() => setIsSettingsOpen(true)}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface transition cursor-pointer"
             >
-              <HiCog size={16} className="text-muted-foreground" />
+              <Settings size={16} className="text-muted-foreground" />
               Workspace Settings & PIN
             </button>
           </MenuItem>
@@ -116,7 +116,7 @@ export default function WorkspaceSwitcher() {
               onClick={() => setIsCreateOpen(true)}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface transition cursor-pointer"
             >
-              <HiPlus size={16} className="text-muted-foreground" />
+              <Plus size={16} className="text-muted-foreground" />
               New Workspace
             </button>
           </MenuItem>

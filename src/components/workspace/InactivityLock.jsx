@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/authContext/useAuth";
+import { useSession } from "@clerk/react";
 import { logActivity } from "../../firebase/activity";
 import toast from "react-hot-toast";
-import { HiLockClosed, HiShieldExclamation, HiShieldCheck } from "react-icons/hi";
+import { Lock, AlertTriangle, ShieldCheck, Mail, Loader2 } from "lucide-react";
 
 // Default inactivity timeout: 15 minutes (in milliseconds)
 const DEFAULT_IDLE_TIMEOUT = 15 * 60 * 1000;
@@ -12,6 +13,7 @@ const SESSION_LOCK_KEY = "invomora_dashboard_locked";
 export default function InactivityLock() {
   const { activeWorkspace, isOwner } = useWorkspace();
   const { currentUser, userLoggedIn } = useAuth();
+  const { session } = useSession();
 
   const [isLocked, setIsLocked] = useState(() => {
     return sessionStorage.getItem(SESSION_LOCK_KEY) === "true";
@@ -20,13 +22,23 @@ export default function InactivityLock() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSendingForgot, setIsSendingForgot] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   const timeoutRef = useRef(null);
   const lastActiveRef = useRef(Date.now());
 
+  // Cooldown countdown timer for forgot passcode
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
   // Lock the dashboard
   const lockDashboard = useCallback(() => {
-    // Only lock if user is logged in and has an active workspace
     if (!userLoggedIn || !activeWorkspace) return;
     setIsLocked(true);
     sessionStorage.setItem(SESSION_LOCK_KEY, "true");
@@ -40,7 +52,6 @@ export default function InactivityLock() {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    // Only schedule if NOT locked and user is logged in
     if (!isLocked && userLoggedIn && activeWorkspace) {
       timeoutRef.current = setTimeout(() => {
         lockDashboard();
@@ -129,11 +140,13 @@ export default function InactivityLock() {
         // 2. Dispatch automated email alert to owner
         try {
           const ownerEmail = activeWorkspace?.ownerEmail || currentUser?.email;
+          const clerkToken = session ? await session.getToken().catch(() => null) : null;
           if (ownerEmail) {
             await fetch("/api/send-email", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
+                clerkToken,
                 type: "security_alert",
                 ownerEmail,
                 workspaceName: activeWorkspace?.name || "Invomora Workspace",
@@ -154,6 +167,46 @@ export default function InactivityLock() {
     setIsSubmitting(false);
   };
 
+  // Forgot Passcode Handler
+  const handleForgotPasscode = async () => {
+    if (isSendingForgot || cooldown > 0) return;
+
+    const targetEmail = currentUser?.email || activeWorkspace?.ownerEmail;
+    if (!targetEmail) {
+      toast.error("No registered email found for this account.");
+      return;
+    }
+
+    setIsSendingForgot(true);
+    try {
+      const clerkToken = session ? await session.getToken().catch(() => null) : null;
+      const res = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clerkToken,
+          type: "forgot_passcode",
+          workspaceId: activeWorkspace?.id,
+          workspaceName: activeWorkspace?.name || "Workspace",
+          toEmail: targetEmail,
+          passcode: activeWorkspace?.invitePasscode,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to send passcode recovery email.");
+      }
+
+      toast.success(`Passcode sent! Check your inbox (${targetEmail})`);
+      setCooldown(60); // 60s cooldown
+    } catch (err) {
+      console.error("Forgot passcode error:", err);
+      toast.error(err.message || "Could not send recovery email. Please try again.");
+    } finally {
+      setIsSendingForgot(false);
+    }
+  };
+
   // If not locked or user not logged in, render nothing
   if (!isLocked || !userLoggedIn || !activeWorkspace) {
     return null;
@@ -165,9 +218,9 @@ export default function InactivityLock() {
       style={{ isolation: "isolate" }}
     >
       <div className="relative w-full max-w-md rounded-2xl bg-surface-elevated border border-border shadow-2xl p-6 sm:p-8 text-center">
-        {/* Shield / Lock Icon */}
+        {/* Lock Icon */}
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary border border-primary/20 mb-5 shadow-inner">
-          <HiLockClosed size={32} className="animate-pulse" />
+          <Lock size={32} className="animate-pulse" />
         </div>
 
         {/* Title */}
@@ -212,7 +265,7 @@ export default function InactivityLock() {
 
           {errorMsg && (
             <div className="flex items-center gap-2 p-3 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs text-left">
-              <HiShieldExclamation size={18} className="shrink-0" />
+              <AlertTriangle size={18} className="shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -222,13 +275,37 @@ export default function InactivityLock() {
             disabled={isSubmitting || passcode.length !== 6}
             className="w-full py-3 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
           >
-            <HiShieldCheck size={18} />
+            <ShieldCheck size={18} />
             <span>{isSubmitting ? "Verifying..." : "Unlock Dashboard"}</span>
           </button>
         </form>
 
+        {/* Forgot Passcode Recovery Button */}
+        <div className="mt-4 pt-3 border-t border-border flex items-center justify-center">
+          <button
+            type="button"
+            onClick={handleForgotPasscode}
+            disabled={isSendingForgot || cooldown > 0}
+            className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {isSendingForgot ? (
+              <>
+                <Loader2 size={13} className="animate-spin" />
+                <span>Sending passcode...</span>
+              </>
+            ) : cooldown > 0 ? (
+              <span>Resend passcode in {cooldown}s</span>
+            ) : (
+              <>
+                <Mail size={13} />
+                <span>Forgot Passcode? Send to Email</span>
+              </>
+            )}
+          </button>
+        </div>
+
         {/* Footer Note */}
-        <p className="mt-5 text-[11px] text-muted-foreground">
+        <p className="mt-3 text-[11px] text-muted-foreground">
           {isOwner ? (
             <span>You can find or regenerate your 6-digit passcode in Workspace Settings.</span>
           ) : (

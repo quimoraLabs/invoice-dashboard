@@ -2,21 +2,20 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { listenToActivityLogs } from "../../firebase/activity";
 import {
-  HiClipboardList,
-  HiSearch,
-  HiDocumentText,
-  HiUsers,
-  HiCube,
-  HiUserGroup,
-  HiCog,
-  HiClock,
-  HiCheckCircle,
-  HiExclamationCircle,
-  HiTrash,
-  HiPencilAlt,
-  HiUserAdd,
-  HiRefresh,
-} from "react-icons/hi";
+  ClipboardList,
+  Search,
+  FileText,
+  Users,
+  Box,
+  Settings,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+  Pencil,
+  UserPlus,
+  RefreshCw,
+} from "lucide-react";
 
 export default function ActivityLogPage() {
   const { activeWorkspace } = useWorkspace();
@@ -97,7 +96,7 @@ export default function ActivityLogPage() {
         return {
           label: "Created",
           bg: "bg-success-muted text-success border-success/20",
-          icon: <HiCheckCircle size={14} />,
+          icon: <CheckCircle2 size={14} />,
         };
       case "invoice_update":
       case "customer_update":
@@ -106,13 +105,13 @@ export default function ActivityLogPage() {
         return {
           label: "Updated",
           bg: "bg-primary-muted text-primary border-primary/20",
-          icon: <HiPencilAlt size={14} />,
+          icon: <Pencil size={14} />,
         };
       case "invoice_status":
         return {
           label: "Status Changed",
           bg: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-          icon: <HiRefresh size={14} />,
+          icon: <RefreshCw size={14} />,
         };
       case "invoice_delete":
       case "customer_delete":
@@ -121,25 +120,25 @@ export default function ActivityLogPage() {
         return {
           label: "Deleted",
           bg: "bg-danger-muted text-danger border-danger/20",
-          icon: <HiTrash size={14} />,
+          icon: <Trash2 size={14} />,
         };
       case "member_invite":
         return {
           label: "Invited",
           bg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
-          icon: <HiUserAdd size={14} />,
+          icon: <UserPlus size={14} />,
         };
       case "member_join":
         return {
           label: "Joined",
           bg: "bg-success-muted text-success border-success/20",
-          icon: <HiCheckCircle size={14} />,
+          icon: <CheckCircle2 size={14} />,
         };
       default:
         return {
           label: action || "Change",
           bg: "bg-muted text-muted-foreground border-border",
-          icon: <HiExclamationCircle size={14} />,
+          icon: <AlertCircle size={14} />,
         };
     }
   };
@@ -147,17 +146,17 @@ export default function ActivityLogPage() {
   const getEntityIcon = (entityType) => {
     switch (entityType) {
       case "invoice":
-        return <HiDocumentText className="text-primary" size={18} />;
+        return <FileText className="text-primary" size={18} />;
       case "customer":
-        return <HiUsers className="text-violet-500" size={18} />;
+        return <Users className="text-violet-500" size={18} />;
       case "product":
-        return <HiCube className="text-emerald-500" size={18} />;
+        return <Box className="text-emerald-500" size={18} />;
       case "member":
-        return <HiUserGroup className="text-amber-500" size={18} />;
+        return <Users className="text-amber-500" size={18} />;
       case "workspace":
-        return <HiCog className="text-cyan-500" size={18} />;
+        return <Settings className="text-cyan-500" size={18} />;
       default:
-        return <HiClipboardList className="text-muted-foreground" size={18} />;
+        return <ClipboardList className="text-muted-foreground" size={18} />;
     }
   };
 
@@ -184,7 +183,7 @@ export default function ActivityLogPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-muted text-primary shadow-xs">
-              <HiClipboardList size={22} />
+              <ClipboardList size={22} />
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -234,7 +233,7 @@ export default function ActivityLogPage() {
 
         {/* Search Input */}
         <div className="relative w-full lg:w-72">
-          <HiSearch className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
+          <Search className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
           <input
             type="text"
             placeholder="Search activities or members..."
@@ -255,7 +254,7 @@ export default function ActivityLogPage() {
         ) : filteredLogs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface border border-border text-muted-foreground mb-3">
-              <HiClipboardList size={24} />
+              <ClipboardList size={24} />
             </div>
             <h3 className="text-base font-bold text-foreground">No Activity Records Found</h3>
             <p className="text-xs text-muted-foreground max-w-sm mt-1">
@@ -320,7 +319,7 @@ export default function ActivityLogPage() {
                     </div>
 
                     <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <HiClock size={12} />
+                      <Clock size={12} />
                       <span>{formatTimestamp(log.createdAt)}</span>
                     </div>
                   </div>

@@ -7,7 +7,13 @@ import { listenToCustomers } from "../firebase/customer";
 import { listenToProducts } from "../firebase/product";
 import { listenToInvoices } from "../firebase/invoice";
 import StatCard from "../components/StatCard";
-import * as FiIcons from "react-icons/fi";
+import { Users, Box, AlertCircle, ChevronRight, Layers } from "lucide-react";
+
+const HOME_ACTION_ICONS = {
+  FiUsers: Users,
+  FiBox: Box,
+  FiAlertCircle: AlertCircle,
+};
 
 function Home() {
   const { currentUser } = useAuth();
@@ -185,7 +191,7 @@ function Home() {
                     "bg-danger-muted text-danger group-hover:bg-danger group-hover:text-white",
                 },
               ].map((action, idx) => {
-                const StartIcon = FiIcons[action.icon] || FiIcons.FiLayers;
+                const StartIcon = HOME_ACTION_ICONS[action.icon] || Layers;
 
                 return (
                   <Link
@@ -204,7 +210,7 @@ function Home() {
                       </span>
                     </div>
 
-                    <FiIcons.FiChevronRight className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-foreground" />
+                    <ChevronRight className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-foreground" />
                   </Link>
                 );
               })}

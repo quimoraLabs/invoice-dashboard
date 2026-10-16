@@ -1,5 +1,5 @@
 import React from "react";
-import { HiSearch } from "react-icons/hi";
+import { Search } from "lucide-react";
 import CustomDropdown from "../CustomDropdown";
 
 export default function SearchBar({
@@ -19,7 +19,7 @@ export default function SearchBar({
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       {/* Search Input */}
       <div className="relative flex-1">
-        <HiSearch
+        <Search
           className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
           size={18}
         />

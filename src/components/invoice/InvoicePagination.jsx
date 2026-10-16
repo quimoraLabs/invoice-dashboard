@@ -1,5 +1,12 @@
 import React from "react";
-import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import CustomDropdown from "../CustomDropdown";
+
+const pageSizeOptions = [
+  { value: 10, label: "10" },
+  { value: 25, label: "25" },
+  { value: 50, label: "50" },
+];
 
 export default function InvoicePagination({
   currentPage,
@@ -28,15 +35,12 @@ export default function InvoicePagination({
         {/* Page Size Selector */}
         <div className="flex items-center gap-1.5 text-xs">
           <span>Per page:</span>
-          <select
+          <CustomDropdown
             value={pageSize}
-            onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="rounded-lg border border-border bg-surface-elevated px-2 py-1 text-xs font-semibold text-foreground focus:border-primary focus:outline-none"
-          >
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-          </select>
+            onChange={(val) => onPageSizeChange(Number(val))}
+            options={pageSizeOptions}
+            buttonClassName="!py-1 !px-2.5 !rounded-lg text-xs"
+          />
         </div>
 
         {/* Navigation Buttons */}
@@ -47,7 +51,7 @@ export default function InvoicePagination({
             aria-label="Previous Page"
             className="flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-surface-elevated text-foreground hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            <HiChevronLeft size={16} />
+            <ChevronLeft size={16} />
           </button>
 
           <span className="px-2 text-xs font-semibold text-foreground">
@@ -60,7 +64,7 @@ export default function InvoicePagination({
             aria-label="Next Page"
             className="flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-surface-elevated text-foreground hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            <HiChevronRight size={16} />
+            <ChevronRight size={16} />
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { IoClose } from "react-icons/io5";
+import { X } from "lucide-react";
 
 export default function ConfirmDeleteModal({ onClose, onConfirm, type }) {
   return (
@@ -10,7 +10,7 @@ export default function ConfirmDeleteModal({ onClose, onConfirm, type }) {
             <h3 className="mt-1 text-xl font-semibold text-foreground">Remove this {type}?</h3>
           </div>
           <button type="button" onClick={onClose} className="rounded-full p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground">
-            <IoClose size={18} />
+            <X size={18} />
           </button>
         </div>
 

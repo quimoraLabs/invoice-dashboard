@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import toast from "react-hot-toast";
 import {
-  HiX,
-  HiMail,
-  HiKey,
-  HiCheck,
-  HiTrash,
-  HiOfficeBuilding,
-} from "react-icons/hi";
+  X,
+  Mail,
+  Key,
+  Check,
+  Trash2,
+  Building2,
+} from "lucide-react";
 
 export default function InvitationsModal({ isOpen, onClose }) {
   const { myPendingInvites, acceptInvite, declineInvite } = useWorkspace();
@@ -63,7 +63,7 @@ export default function InvitationsModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-muted text-primary">
-              <HiMail size={22} />
+              <Mail size={22} />
             </div>
             <div>
               <h3 className="text-base font-bold text-foreground">
@@ -78,7 +78,7 @@ export default function InvitationsModal({ isOpen, onClose }) {
             onClick={onClose}
             className="rounded-lg p-1.5 text-muted-foreground hover:bg-surface hover:text-foreground transition cursor-pointer"
           >
-            <HiX size={20} />
+            <X size={20} />
           </button>
         </div>
 
@@ -87,7 +87,7 @@ export default function InvitationsModal({ isOpen, onClose }) {
           {myPendingInvites.length === 0 ? (
             <div className="text-center py-8">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-surface border border-border text-muted-foreground mb-3">
-                <HiMail size={24} />
+                <Mail size={24} />
               </div>
               <p className="text-sm font-semibold text-foreground">No Pending Invitations</p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -107,7 +107,7 @@ export default function InvitationsModal({ isOpen, onClose }) {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-muted text-primary font-bold text-sm">
-                        <HiOfficeBuilding size={18} />
+                        <Building2 size={18} />
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-foreground">
@@ -127,7 +127,7 @@ export default function InvitationsModal({ isOpen, onClose }) {
                   {/* Passcode input for this invite */}
                   <div className="rounded-xl bg-surface-elevated border border-border p-3 space-y-2">
                     <label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                      <HiKey size={14} className="text-primary" />
+                      <Key size={14} className="text-primary" />
                       Enter 6-Digit Owner Passcode
                     </label>
                     <input
@@ -154,7 +154,7 @@ export default function InvitationsModal({ isOpen, onClose }) {
                       disabled={isProcessing}
                       className="flex items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-danger hover:bg-danger-muted transition cursor-pointer disabled:opacity-50"
                     >
-                      <HiTrash size={14} />
+                      <Trash2 size={14} />
                       Decline
                     </button>
 
@@ -164,7 +164,7 @@ export default function InvitationsModal({ isOpen, onClose }) {
                       disabled={isProcessing || currentPasscode.length !== 6}
                       className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer disabled:opacity-40"
                     >
-                      <HiCheck size={14} />
+                      <Check size={14} />
                       {isProcessing ? "Verifying..." : "Accept & Join"}
                     </button>
                   </div>

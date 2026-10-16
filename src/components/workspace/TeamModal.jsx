@@ -4,16 +4,22 @@ import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useSession } from "@clerk/react";
 import toast from "react-hot-toast";
 import {
-  HiX,
-  HiUserAdd,
-  HiTrash,
-  HiOutlineMail,
-  HiUserGroup,
-  HiKey,
-  HiClipboardCopy,
-  HiCheck,
-  HiShieldCheck,
-} from "react-icons/hi";
+  X,
+  UserPlus,
+  Trash2,
+  Mail,
+  Users,
+  Key,
+  Copy,
+  Check,
+  ShieldCheck,
+} from "lucide-react";
+import CustomDropdown from "../CustomDropdown";
+
+const roleOptions = [
+  { value: "accountant", label: "Accountant" },
+  { value: "owner", label: "Co-Owner" },
+];
 
 export default function TeamModal({ isOpen, onClose }) {
   const { currentUser } = useAuth();
@@ -138,7 +144,7 @@ export default function TeamModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-muted text-primary">
-              <HiUserGroup size={22} />
+              <Users size={22} />
             </div>
             <div>
               <h3 className="text-base font-bold text-foreground">
@@ -153,7 +159,7 @@ export default function TeamModal({ isOpen, onClose }) {
             onClick={onClose}
             className="rounded-lg p-1.5 text-muted-foreground hover:bg-surface hover:text-foreground transition"
           >
-            <HiX size={20} />
+            <X size={20} />
           </button>
         </div>
 
@@ -163,7 +169,7 @@ export default function TeamModal({ isOpen, onClose }) {
           {isOwner ? (
             <div className="rounded-xl border border-primary/20 bg-primary-muted/40 p-4">
               <div className="flex items-center gap-2 mb-3">
-                <HiUserAdd className="text-primary" size={18} />
+                <UserPlus className="text-primary" size={18} />
                 <h4 className="text-sm font-semibold text-foreground">
                   Invite Team Member
                 </h4>
@@ -171,7 +177,7 @@ export default function TeamModal({ isOpen, onClose }) {
               <form onSubmit={handleSendInvite} className="flex flex-col gap-2.5">
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
-                    <HiOutlineMail className="absolute left-3 top-3 text-muted-foreground" size={18} />
+                    <Mail className="absolute left-3 top-3 text-muted-foreground" size={18} />
                     <input
                       type="email"
                       placeholder="colleague@company.com"
@@ -181,20 +187,19 @@ export default function TeamModal({ isOpen, onClose }) {
                       className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
-                  <select
+                  <CustomDropdown
                     value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value)}
-                    className="rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shrink-0"
-                  >
-                    <option value="accountant">Accountant</option>
-                    <option value="owner">Co-Owner</option>
-                  </select>
+                    onChange={(val) => setInviteRole(val)}
+                    options={roleOptions}
+                    className="shrink-0"
+                    buttonClassName="!rounded-xl !py-2"
+                  />
                 </div>
 
                 {/* Double Security: Owner PIN Required to dispatch invite */}
                 <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
                   <div className="relative flex-1 w-full">
-                    <HiKey className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
+                    <Key className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
                     <input
                       type="text"
                       inputMode="numeric"
@@ -212,7 +217,7 @@ export default function TeamModal({ isOpen, onClose }) {
                     disabled={isSending}
                     className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-hover disabled:opacity-50 transition shrink-0 cursor-pointer"
                   >
-                    <HiShieldCheck size={16} />
+                    <ShieldCheck size={16} />
                     {isSending ? "Authorizing..." : "Authorize & Send"}
                   </button>
                 </div>
@@ -221,7 +226,7 @@ export default function TeamModal({ isOpen, onClose }) {
               {activeWorkspace?.invitePasscode && (
                 <div className="mt-3 pt-3 border-t border-primary/20 flex flex-wrap items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-1.5 text-foreground">
-                    <HiKey className="text-primary" size={15} />
+                    <Key className="text-primary" size={15} />
                     <span>Invite Passcode:</span>
                     <span className="font-mono font-bold tracking-widest bg-surface px-2 py-0.5 rounded-md border border-border">
                       {activeWorkspace.invitePasscode}
@@ -238,7 +243,7 @@ export default function TeamModal({ isOpen, onClose }) {
                     }}
                     className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline cursor-pointer"
                   >
-                    {copiedPasscode ? <HiCheck size={14} className="text-success" /> : <HiClipboardCopy size={14} />}
+                    {copiedPasscode ? <Check size={14} className="text-success" /> : <Copy size={14} />}
                     {copiedPasscode ? "Copied" : "Copy Passcode"}
                   </button>
                 </div>
@@ -300,7 +305,7 @@ export default function TeamModal({ isOpen, onClose }) {
                           title="Remove Member"
                           className="rounded-lg p-1.5 text-muted-foreground hover:bg-danger-muted hover:text-danger transition"
                         >
-                          <HiTrash size={16} />
+                          <Trash2 size={16} />
                         </button>
                       )}
                     </div>

@@ -6,7 +6,7 @@ import ProductModal from "../../components/product/ProductForm";
 import ProductViewModal from "../../components/product/ProductViewModal";
 import toast from "react-hot-toast";
 import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
-import { HiPlus } from "react-icons/hi";
+import { Plus } from "lucide-react";
 import ControlBar from "../../components/product/ControlBar";
 import ProductTable from "../../components/product/ProductTable";
 import Loader from "../../components/Loader";
@@ -110,7 +110,7 @@ function ProductsDashboard() {
           onClick={() => setActiveModal({ type: "new", product: null })}
           className="inline-flex items-center justify-center rounded-xl bg-primary p-3 text-primary-foreground shadow-sm transition-all hover:bg-primary-hover active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring"
         >
-          <HiPlus size={20} />
+          <Plus size={20} />
         </button>
       </div>
 

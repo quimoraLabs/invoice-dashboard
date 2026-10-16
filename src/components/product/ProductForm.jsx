@@ -1,10 +1,26 @@
-import { IoClose } from "react-icons/io5";
+import { X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createProduct, updateProduct } from "../../firebase/product";
 import { useAuth } from "../../contexts/authContext/useAuth";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { toast } from "react-hot-toast";
 import ImageUploader from "../ImageUploader";
+import CustomDropdown from "../CustomDropdown";
+
+const CATEGORY_OPTIONS = [
+  { value: "Design Services", label: "Design Services" },
+  { value: "Development", label: "Development" },
+  { value: "Marketing", label: "Marketing" },
+  { value: "DevOps & Cloud", label: "DevOps & Cloud" },
+  { value: "Branding", label: "Branding" },
+  { value: "Database", label: "Database" },
+  { value: "Maintenance", label: "Maintenance" },
+  { value: "Electronics", label: "Electronics" },
+  { value: "Food", label: "Food" },
+  { value: "Clothing", label: "Clothing" },
+  { value: "Books", label: "Books" },
+  { value: "Other", label: "Other" },
+];
 
 export default function ProductModal({ onClose, product }) {
   const { currentUser } = useAuth();
@@ -105,7 +121,7 @@ export default function ProductModal({ onClose, product }) {
               onClick={onClose}
               className="p-1.5 rounded-xl text-muted-foreground hover:bg-surface hover:text-foreground transition-colors"
             >
-              <IoClose className="text-xl" title="close" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
@@ -162,47 +178,20 @@ export default function ProductModal({ onClose, product }) {
               >
                 Category
               </label>
-              <select
-                name="category"
-                id="category"
+              <CustomDropdown
                 value={formData.category}
-                onChange={handleChange}
-                className="w-full bg-surface border border-border text-foreground text-sm rounded-xl px-3 py-2.5 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
-                required
-              >
-                <option value="" disabled>
-                  Select a category
-                </option>
-                <option value="Design Services">Design Services</option>
-                <option value="Development">Development</option>
-                <option value="Marketing">Marketing</option>
-                <option value="DevOps & Cloud">DevOps & Cloud</option>
-                <option value="Branding">Branding</option>
-                <option value="Database">Database</option>
-                <option value="Maintenance">Maintenance</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Food">Food</option>
-                <option value="Clothing">Clothing</option>
-                <option value="Books">Books</option>
-                <option value="Other">Other</option>
-                {formData.category &&
-                  ![
-                    "Design Services",
-                    "Development",
-                    "Marketing",
-                    "DevOps & Cloud",
-                    "Branding",
-                    "Database",
-                    "Maintenance",
-                    "Electronics",
-                    "Food",
-                    "Clothing",
-                    "Books",
-                    "Other",
-                  ].includes(formData.category) && (
-                    <option value={formData.category}>{formData.category}</option>
-                  )}
-              </select>
+                onChange={(val) => setFormData((prev) => ({ ...prev, category: val }))}
+                options={
+                  CATEGORY_OPTIONS.some((c) => c.value === formData.category)
+                    ? CATEGORY_OPTIONS
+                    : formData.category
+                    ? [...CATEGORY_OPTIONS, { value: formData.category, label: formData.category }]
+                    : CATEGORY_OPTIONS
+                }
+                placeholder="Select a category"
+                className="w-full"
+                buttonClassName="w-full !rounded-xl !py-2.5"
+              />
             </div>
 
             {/* Price Input */}

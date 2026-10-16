@@ -6,16 +6,16 @@ import ImageUploader from "../../components/ImageUploader";
 import Loader from "../../components/Loader";
 import toast from "react-hot-toast";
 import {
-  HiOfficeBuilding,
-  HiMail,
-  HiPhone,
-  HiLocationMarker,
-  HiGlobeAlt,
-  HiIdentification,
-  HiUser,
-  HiCreditCard,
-  HiCheck,
-} from "react-icons/hi";
+  Building2,
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  IdCard,
+  User,
+  CreditCard,
+  Check,
+} from "lucide-react";
 
 export default function BusinessProfilePage() {
   const { currentUser } = useAuth();
@@ -189,7 +189,7 @@ export default function BusinessProfilePage() {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <HiOfficeBuilding size={26} />
+                <Building2 size={26} />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground sm:text-2xl">
@@ -293,7 +293,7 @@ export default function BusinessProfilePage() {
                 </label>
                 <div className="relative mt-2">
                   <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground">
-                    <HiUser size={16} />
+                    <User size={16} />
                   </span>
                   <input
                     type="text"
@@ -317,7 +317,7 @@ export default function BusinessProfilePage() {
                 </label>
                 <div className="relative mt-2">
                   <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground">
-                    <HiIdentification size={16} />
+                    <IdCard size={16} />
                   </span>
                   <input
                     type="text"
@@ -342,7 +342,7 @@ export default function BusinessProfilePage() {
                 </label>
                 <div className="relative mt-2">
                   <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground">
-                    <HiMail size={16} />
+                    <Mail size={16} />
                   </span>
                   <input
                     type="email"
@@ -366,7 +366,7 @@ export default function BusinessProfilePage() {
                 </label>
                 <div className="relative mt-2">
                   <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground">
-                    <HiPhone size={16} />
+                    <Phone size={16} />
                   </span>
                   <input
                     type="tel"
@@ -391,7 +391,7 @@ export default function BusinessProfilePage() {
                 </label>
                 <div className="relative mt-2">
                   <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground">
-                    <HiGlobeAlt size={16} />
+                    <Globe size={16} />
                   </span>
                   <input
                     type="url"
@@ -415,7 +415,7 @@ export default function BusinessProfilePage() {
                 </label>
                 <div className="relative mt-2">
                   <span className="pointer-events-none absolute top-3 left-3.5 text-muted-foreground">
-                    <HiLocationMarker size={16} />
+                    <MapPin size={16} />
                   </span>
                   <textarea
                     id="address"
@@ -434,7 +434,7 @@ export default function BusinessProfilePage() {
           {/* 3. Bank & Remittance Details */}
           <div className="rounded-24px border border-border bg-surface-elevated p-6 shadow-sm">
             <div className="flex items-center gap-2.5 mb-1">
-              <HiCreditCard size={20} className="text-primary" />
+              <CreditCard size={20} className="text-primary" />
               <h2 className="text-base font-semibold text-foreground sm:text-lg">
                 Bank & Payment Remittance
               </h2>
@@ -526,7 +526,7 @@ export default function BusinessProfilePage() {
                 </>
               ) : (
                 <>
-                  <HiCheck size={18} />
+                  <Check size={18} />
                   <span>Save Profile</span>
                 </>
               )}

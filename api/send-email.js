@@ -2,7 +2,7 @@
 import { verifyToken } from "@clerk/backend";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import { sendSecurityAlertEmail, sendWorkspaceInviteEmail } from "./mailer.js";
+import { sendSecurityAlertEmail, sendWorkspaceInviteEmail, sendForgotPasscodeEmail } from "./mailer.js";
 
 export const config = {
   runtime: 'nodejs',
@@ -172,6 +172,38 @@ export default async function handler(req, res) {
         role: role || "accountant",
         invitePasscode,
         appUrl: req.headers.origin || "http://localhost:5173",
+      });
+
+      return res.status(200).json({ success: true, emailSent: sent });
+    }
+
+    // 3. Handle Forgot Passcode Email
+    if (type === "forgot_passcode") {
+      let recipientEmail = toEmail || body.ownerEmail;
+      let passcode = body.passcode;
+      let wsName = body.workspaceName || "Business Workspace";
+
+      if (workspaceId && (!passcode || !recipientEmail)) {
+        const wsDoc = await adminDb.collection("workspaces").doc(workspaceId).get();
+        if (wsDoc.exists) {
+          const wsData = wsDoc.data() || {};
+          passcode = passcode || wsData.invitePasscode;
+          wsName = wsData.name || wsName;
+          if (!recipientEmail && wsData.ownerId) {
+            const ownerDoc = await adminDb.collection("workspace_members").doc(`${workspaceId}_${wsData.ownerId}`).get();
+            if (ownerDoc.exists) recipientEmail = ownerDoc.data()?.email;
+          }
+        }
+      }
+
+      if (!recipientEmail || !passcode) {
+        return res.status(400).json({ error: "Missing recipient email or passcode." });
+      }
+
+      const sent = await sendForgotPasscodeEmail({
+        toEmail: recipientEmail.toLowerCase().trim(),
+        workspaceName: wsName,
+        passcode,
       });
 
       return res.status(200).json({ success: true, emailSent: sent });
