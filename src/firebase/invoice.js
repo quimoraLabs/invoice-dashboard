@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   Timestamp,
   runTransaction,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import { formatCurrentDate } from "../components/helper";
@@ -554,3 +555,85 @@ export async function deleteInvoice(id, setLoading, scopeOrUserId) {
     setLoading?.(false);
   }
 }
+
+// Atomically create bulk invoices with sequential numbers in batches of 400
+export async function createBulkInvoices(scopeOrUserId, invoicesList, onProgress) {
+  const scope = resolveScope(scopeOrUserId);
+  const targetUid = scope.userId;
+  const workspaceId = scope.workspaceId;
+
+  if (!targetUid && !workspaceId) {
+    throw new Error("User authentication or workspace required to create invoices.");
+  }
+
+  // 1. Get the current starting sequential counter atomically
+  const counterRef = workspaceId
+    ? doc(db, "workspaces", workspaceId, "counters", "invoice")
+    : doc(db, "users", targetUid, "counters", "invoice");
+
+  let startingSeq = 0;
+  await runTransaction(db, async (txn) => {
+    const counterSnap = await txn.get(counterRef);
+    if (!counterSnap.exists()) {
+      const highest = await scanForHighestNumber(scope);
+      startingSeq = highest;
+    } else {
+      startingSeq = Number(counterSnap.data()?.current || 0);
+    }
+    const newSeq = startingSeq + invoicesList.length;
+    txn.set(counterRef, { current: newSeq, updatedAt: serverTimestamp() }, { merge: true });
+  });
+
+  // 2. Batch write invoices in chunks of 400
+  const BATCH_SIZE = 400;
+  let totalSaved = 0;
+
+  for (let i = 0; i < invoicesList.length; i += BATCH_SIZE) {
+    const chunk = invoicesList.slice(i, i + BATCH_SIZE);
+    const batch = writeBatch(db);
+
+    chunk.forEach((inv, idx) => {
+      const seq = startingSeq + i + idx + 1;
+      const invoiceNumber = formatInvoiceNumber(seq);
+      const docRef = doc(invoiceCollection);
+
+      const normalized = normalizeInvoiceCalculations(inv);
+      const rawDate = normalized.invoiceDate || formatCurrentDate();
+      const invoiceDate = rawDate?.toDate ? rawDate : Timestamp.fromDate(new Date(rawDate));
+
+      const payload = {
+        ...normalized,
+        invoiceNumber,
+        invoice_no: invoiceNumber,
+        invoiceDate,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      if (workspaceId) payload.workspaceId = workspaceId;
+      if (targetUid) payload.userId = targetUid;
+
+      batch.set(docRef, payload);
+    });
+
+    await batch.commit();
+    totalSaved += chunk.length;
+    if (onProgress) {
+      onProgress(totalSaved, invoicesList.length);
+    }
+  }
+
+  if (workspaceId) {
+    logActivity({
+      workspaceId,
+      actor: scope.actor || { uid: targetUid },
+      action: "invoice_bulk_create",
+      entityType: "invoice",
+      entityId: "bulk",
+      entityTitle: `${totalSaved} Invoices`,
+      details: `Bulk imported ${totalSaved} invoices via spreadsheet`,
+    });
+  }
+
+  return totalSaved;
+}
+

@@ -9,9 +9,11 @@ import {
   serverTimestamp,
   query,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import { logActivity } from "./activity";
+import { generateUniqueCode } from "../utils/excelHelper";
 
 // Firestore collection reference
 const productsCollection = collection(db, "products");
@@ -42,6 +44,7 @@ async function createProduct(product, setLoading, scopeOrUserId) {
       throw new Error("User authentication or workspace required to create product.");
     }
     const productPayload = {
+      itemCode: product.itemCode || generateUniqueCode("PRD"),
       ...product,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -188,4 +191,66 @@ async function deleteProduct(id, setLoading, scopeOrUserId) {
   }
 }
 
-export { createProduct, listenToProducts, updateProduct, deleteProduct };
+// Bulk create products via Firestore writeBatch in chunks of 400
+async function createBulkProducts(productsList, onProgress, scopeOrUserId) {
+  const scope = resolveScope(scopeOrUserId);
+  const targetUid = scope.userId;
+  if (!targetUid && !scope.workspaceId) {
+    throw new Error("User authentication or workspace required to import products.");
+  }
+
+  const BATCH_SIZE = 400; // Safe threshold under Firestore 500-limit
+  let totalSaved = 0;
+
+  for (let i = 0; i < productsList.length; i += BATCH_SIZE) {
+    const chunk = productsList.slice(i, i + BATCH_SIZE);
+    const batch = writeBatch(db);
+
+    chunk.forEach((prod) => {
+      const docRef = doc(productsCollection);
+      const payload = {
+        itemCode: prod.itemCode || generateUniqueCode("PRD"),
+        title: (prod.title || "").trim(),
+        type: prod.type === "Service" ? "Service" : "Product",
+        price: Number(prod.price) || 0,
+        costPrice: Number(prod.costPrice) || 0,
+        category: (prod.category || "Other").trim(),
+        taxRate: Number(prod.taxRate) || 18,
+        hsn: (prod.hsn || prod.sac || "").trim(),
+        unit: (prod.unit || (prod.type === "Service" ? "Hours" : "Pcs")).trim(),
+        stockQuantity: prod.type === "Service" ? 0 : Number(prod.stockQuantity) || 0,
+        description: (prod.description || "").trim(),
+        imageUrl: prod.imageUrl || "",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      if (scope.workspaceId) payload.workspaceId = scope.workspaceId;
+      if (targetUid) payload.userId = targetUid;
+
+      batch.set(docRef, payload);
+    });
+
+    await batch.commit();
+    totalSaved += chunk.length;
+    if (onProgress) {
+      onProgress(totalSaved, productsList.length);
+    }
+  }
+
+  if (scope.workspaceId) {
+    logActivity({
+      workspaceId: scope.workspaceId,
+      actor: scope.actor || { uid: targetUid },
+      action: "product_bulk_create",
+      entityType: "product",
+      entityId: "bulk",
+      entityTitle: `${totalSaved} Products`,
+      details: `Bulk imported ${totalSaved} products via spreadsheet`,
+    });
+  }
+
+  return totalSaved;
+}
+
+export { createProduct, createBulkProducts, listenToProducts, updateProduct, deleteProduct };
+

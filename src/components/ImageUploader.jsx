@@ -1,4 +1,4 @@
-import { uploadMedia } from "../firebase/mediaAdapter";
+import { smartUploadMedia } from "../utils/imagekit";
 import { UploadCloud, Camera } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -8,6 +8,8 @@ export default function ImageUploader({
   id = "image-uploader",
   label = "Upload Photo",
   subtext = "PNG, JPG, or WEBP. 1:1 square ratio recommended.",
+  customFileName = "",
+  folder = "/invomora",
 }) {
   const [loading, setLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(currentImage || "");
@@ -26,7 +28,13 @@ export default function ImageUploader({
       const localUrl = URL.createObjectURL(file);
       setPreviewUrl(localUrl);
 
-      const { url: imageUrl } = await uploadMedia(file);
+      const ext = file.name.split(".").pop();
+      const cleanFileName = customFileName ? `${customFileName}.${ext}` : file.name;
+
+      const { url: imageUrl } = await smartUploadMedia(file, {
+        fileName: cleanFileName,
+        folder,
+      });
       if (onUpload) onUpload(imageUrl, file);
     } catch (err) {
       console.error("Image upload failed:", err);

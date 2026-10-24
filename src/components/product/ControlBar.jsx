@@ -35,7 +35,7 @@ export default function ControlBar({
   return (
     <div className="mb-8 grid grid-cols-1 md:flex md:items-center gap-4">
       {/* Search Bar Wrapper Container */}
-      <div className="relative flex-grow md:max-w-md">
+      <div className="relative grow md:max-w-md">
         <Search
           className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
           size={20}

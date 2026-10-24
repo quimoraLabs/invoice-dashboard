@@ -56,6 +56,10 @@ export default function CustomerDashboard() {
     if (!query) return true;
     return [
       customer.name || customer.full_name,
+      customer.companyName,
+      customer.displayTradingName,
+      customer.gstin,
+      customer.customerCode,
       customer.email,
       customer.phone || customer.phone_number,
       customer.address,

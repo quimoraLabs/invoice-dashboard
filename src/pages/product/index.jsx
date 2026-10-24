@@ -51,13 +51,13 @@ function ProductsDashboard() {
   const filteredAndSortedProducts = useMemo(() => {
     return products
       .filter((product) => {
-        const titleMatch = product.title
-          ?.toLowerCase()
-          .includes(searchQuery.toLowerCase());
-        const descMatch = product.description
-          ?.toLowerCase()
-          .includes(searchQuery.toLowerCase());
-        const matchesSearch = titleMatch || descMatch;
+        const q = searchQuery.toLowerCase();
+        const matchesSearch =
+          product.title?.toLowerCase().includes(q) ||
+          product.description?.toLowerCase().includes(q) ||
+          product.itemCode?.toLowerCase().includes(q) ||
+          product.hsn?.toLowerCase().includes(q) ||
+          product.type?.toLowerCase().includes(q);
 
         const matchesCategory =
           categoryFilter === "all" || product.category === categoryFilter;

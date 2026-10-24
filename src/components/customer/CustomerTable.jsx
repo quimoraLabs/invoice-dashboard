@@ -1,6 +1,7 @@
 import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import CustomerActionsMenu from "../ActionMenu";
+import { getSmartImageUrl } from "../../utils/imagekit";
 
 export default function CustomerTable({
   customers,
@@ -45,7 +46,7 @@ export default function CustomerTable({
                     <div className="flex items-center gap-3">
                       {customer.profile ? (
                         <img
-                          src={customer.profile}
+                          src={getSmartImageUrl(customer.profile, { width: 80, height: 80 })}
                           alt={customer.name || customer.full_name}
                           className="h-8 w-8 rounded-full object-cover"
                         />
@@ -54,7 +55,33 @@ export default function CustomerTable({
                           {(customer.name || customer.full_name || "C").charAt(0).toUpperCase()}
                         </div>
                       )}
-                      {customer.name || customer.full_name || "Unnamed Client"}
+                      <div>
+                        <div className="font-medium text-foreground flex items-center gap-2 flex-wrap">
+                          <span>{customer.companyName || customer.name || customer.full_name || "Unnamed Client"}</span>
+                          {customer.gstin && (
+                            <span className="font-mono text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded">
+                              GSTIN: {customer.gstin}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                          {customer.customerCode && (
+                            <span className="font-mono">{customer.customerCode}</span>
+                          )}
+                          {customer.companyName && customer.name && (
+                            <>
+                              <span>•</span>
+                              <span>Contact: {customer.name}</span>
+                            </>
+                          )}
+                          {customer.paymentTerms && (
+                            <>
+                              <span>•</span>
+                              <span>{customer.paymentTerms}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-4 text-sm text-muted-foreground sm:px-6">

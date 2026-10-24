@@ -1,5 +1,7 @@
 import React from "react";
+import { Package } from "lucide-react";
 import RowActionsMenu from "../ActionMenu";
+import { getSmartImageUrl } from "../../utils/imagekit";
 
 export default function ProductTable({ products, onEdit, onDelete, onView }) {
   return (
@@ -31,23 +33,73 @@ export default function ProductTable({ products, onEdit, onDelete, onView }) {
                 >
                   <td className="px-4 py-4 sm:px-6">
                     <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-xl border border-border bg-surface">
-                        <img
-                          className="h-full w-full object-cover"
-                          src={item.imageUrl}
-                          alt={item.title}
-                        />
+                      <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-xl border border-border bg-surface flex items-center justify-center">
+                        {item.imageUrl ? (
+                          <img
+                            className="h-full w-full object-cover"
+                            src={getSmartImageUrl(item.imageUrl, { width: 120, height: 120 })}
+                            alt={item.title}
+                          />
+                        ) : (
+                          <Package size={24} className="text-muted-foreground/60" />
+                        )}
                       </div>
-                      <p className="max-w-md font-medium text-foreground leading-snug line-clamp-1">
-                        {item.title}
-                      </p>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="max-w-md font-medium text-foreground leading-snug line-clamp-1">
+                            {item.title}
+                          </p>
+                          {item.type && (
+                            <span
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                                item.type === "Service"
+                                  ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                                  : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              }`}
+                            >
+                              {item.type}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
+                          {item.itemCode && (
+                            <span className="font-mono">{item.itemCode}</span>
+                          )}
+                          {item.hsn && (
+                            <>
+                              <span>•</span>
+                              <span className="font-mono">
+                                {item.type === "Service" ? "SAC" : "HSN"}: {item.hsn}
+                              </span>
+                            </>
+                          )}
+                          {item.stockQuantity !== undefined && item.type !== "Service" && (
+                            <>
+                              <span>•</span>
+                              <span>Stock: {item.stockQuantity}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-4 text-right font-medium text-foreground tabular-nums whitespace-nowrap sm:px-6">
-                    {Number(item.price).toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    <div>
+                      {Number(item.price).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                      {item.unit && (
+                        <span className="text-xs font-normal text-muted-foreground ml-1">
+                          / {item.unit}
+                        </span>
+                      )}
+                    </div>
+                    {item.taxRate !== undefined && (
+                      <span className="text-[10px] text-muted-foreground font-normal">
+                        ({item.taxRate}% GST)
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-4 text-center sm:px-6">
                     <span className="inline-block rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground capitalize">

@@ -30,6 +30,7 @@ Every AI agent and human contributor MUST follow this file.
 2. **No scope creep.** Do only the task explicitly requested. No drive-by refactors, renames, dependency changes, or "improvements".
 3. **Ask before architecture changes.** New collections, new auth flows, tenancy changes, and global state refactors need explicit user approval first.
 4. **Update `PROGRESS.md`** in the same change whenever behavior it describes changes (rules, auth flow, collections, routes, env vars).
+5. **NEVER PUSH CODE TO GITHUB (`git push`).** All work remains local. The AI agent MUST NEVER execute `git push` or push code to remote repositories under any circumstances unless explicitly ordered by the user.
 
 ---
 
@@ -98,7 +99,7 @@ This section is authoritative for business logic. AI agents MUST follow these ru
 ---
 
 ## 7. Stack Invariants
-1. **Tailwind CSS v4:** use `@tailwindcss/vite` and the `@theme` block in `src/index.css`. No `tailwind.config.js`.
+1. **Tailwind CSS v4 & Canonical Classes:** use `@tailwindcss/vite` and the `@theme` block in `src/index.css`. No `tailwind.config.js`. **Always apply standard Tailwind v4 canonical scale and utility classes** (e.g. use `shrink-0` instead of `flex-shrink-0`, `grow` instead of `flex-grow`, `max-w-35` instead of `max-w-[140px]`, `max-w-45` instead of `max-w-[180px]`, `max-w-28` instead of `max-w-[110px]`).
 2. **React 19 & React Router v7:** follow current hook rules; routing is centralized in `src/App.jsx`.
 3. **Component isolation:** domain components live in `src/components/{domain}/`; generic UI in `src/components/` or `src/components/modals/`.
 4. **Service layer:** Firestore calls live in `src/firebase/`; pages and components do not call low-level Firestore primitives directly.

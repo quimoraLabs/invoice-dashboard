@@ -69,13 +69,43 @@ Tenancy is scoped by **workspace** (`workspaceId`):
    - **Multi-Resolution Icons:** Generated 192x192, 512x512, maskable, and SVG vector app icons.
    - **Offline Service Worker (`public/sw.js`):** Pre-caches app shell, stale-while-revalidate for static assets, network-first for SPA navigation with offline cache fallback, and explicit bypass for `/api/*`, Clerk, and Firebase.
    - **Install Prompt Banner (`PWAInstallBanner.jsx`):** Detects `beforeinstallprompt` to offer seamless native desktop and mobile installation.
+10. **Unified Single & Bulk (Excel/CSV) Import with Unique Codes & Image Fallback:**
+   - **Segmented Top Switcher:** Integrated `[Single Entry]` and `[Multiple (Bulk Excel/CSV)]` tabs in both `CustomerForm.jsx` and `ProductForm.jsx`.
+   - **Collision-Resistant Unique Codes:** Automatic generation of unique item codes (`PRD-XXXX`) and customer codes (`CUST-XXXX`) with display in tables and forms, preventing name collisions.
+   - **Spreadsheet Parser & Template Generator (`src/utils/excelHelper.js`):** SheetJS (`xlsx`) integration for flexible header detection, template `.xlsx` downloads, and row validation.
+   - **Interactive Bulk Import Hub (`BulkImportView.jsx`):** Live preview table, error line filtering, progress indicators, and safe 400-item Firestore `writeBatch` chunking.
+   - **Image Fallback Display:** Graceful placeholder handling in `ProductTable.jsx` and `CustomerTable.jsx` when images are absent.
+11. **ImageKit Smart Media Pipeline & Dual Storage Engine:**
+   - **Serverless Authentication Endpoint (`/api/imagekit-auth.js`):** Generates HMAC-SHA1 signed upload credentials using `IMAGEKIT_PRIVATE_KEY`.
+   - **Smart Transformation Adapter (`src/utils/imagekit.js`):** `getSmartImageUrl` with `cm-pad_resize` and `bg-blurred` preventing odd-ratio, half-cut, or stretched images.
+   - **Folder Isolation & Duplicate Prevention:** Scoped folders (`/invomora/products`, `/invomora/customers`) with `useUniqueFileName: false` so re-uploads overwrite cleanly without duplicate files.
+   - **Dual Engine Compatibility:** Cloudinary seamlessly retained as primary fallback for reports, invoices, and legacy media.
+12. **Bulk Invoices Spreadsheet Ingestion with Line-by-Line Mismatch Resolver:**
+   - **Interactive Resolver Modal (`BulkInvoiceImportModal.jsx`):** Pre-flight checks uploaded spreadsheet rows against workspace customers and products.
+   - **Line-by-Line Error Identification:** Flags exact Excel row numbers (e.g. Line #4, Line #12) for unrecognized customers or inventory items.
+   - **On-the-Fly Resolutions:** 1-click auto-creation of missing customers or catalog items, dropdown mapping to existing records, or individual row skipping.
+   - **Atomic Transactional Batch Writes:** Scoped sequential numbering (`INV-001`) guaranteed via atomic counter increments, safe 400-item batch commits (`createBulkInvoices`), and immutable audit logging.
+13. **Shadcn UI Foundation & AI Camera Receipt Scanner:**
+   - **Shadcn/UI Canonical Foundation:** Integrated `cn()` utility (`clsx` + `tailwind-merge`) and core accessible primitives in `src/components/ui/` (`DropdownMenu`, `Drawer`, `Dialog`, `Tabs`, `Button`, `Badge`) fully mapped to Tailwind v4 canonical scale (`shrink-0`, `data-disabled:`, and design tokens).
+   - **AI Camera Receipt Scanner (`CameraReceiptScannerModal.jsx`):** Allows mobile users to snap receipts via device camera (`capture="environment"`), desktop users to capture via webcam viewfinder, or upload bill screenshots.
+   - **Multimodal AI OCR Pipeline (`api/scan-receipt.js`, `src/utils/receiptScanner.js`):** Client-side image auto-compression to max 1200px, serverless Groq Vision extraction (`llama-3.2-11b-vision-preview`), client-side offline heuristic fallback, and 1-click auto-population into `InvoiceForm`.
+
+14. **B2B Customer & Product Master Data & Multimodal AI Ingestion:**
+   - **B2B Customer Master:** Full support for `companyName`, `displayTradingName`, `industryType`, `gstin`, `pan`, `shippingAddress` (with toggle for same-as-billing), `paymentTerms` (Due on Receipt, Net 15, Net 30, Net 60), `currency`, and `openingBalance`.
+   - **B2B Product & Service Master:** Segmented toggle for `Physical Product` vs `Professional Service`, unit selector (`Pcs`, `Hours`, `Days`, `Month`, `Project`, `Box`, `Kg`, `License`), `costPrice`, `stockQuantity` (hidden for services), GST `taxRate` (0%, 5%, 12%, 18%, 28%), and `hsn`/`sac` codes.
+   - **Multimodal AI Camera Ingestion on All 3 Entities:** Unified `CameraReceiptScannerModal` across Invoices (receipt/bill scan), Customers (visiting card / business letterhead scan), and Products (packaging label / spec sheet scan) with live camera viewfinder, mobile autofocus rear camera, image drop, and instant OCR auto-population.
+   - **Table & Modal Upgrades:** B2B badges (Type pill, GSTIN, Company Name, HSN/SAC, Unit, and Stock) rendered in `CustomerTable`, `ProductTable`, `CustomerViewModal`, and `ProductViewModal`.
+   - **B2B Search:** Fast real-time multi-field search across Company Name, GSTIN, Customer Code, Item Code, HSN/SAC, and Item Classification.
 
 ---
 
 ## 5. Active Verification Checklist
 
-- [x] 40/40 Unit tests pass (`npm run test:unit`)
+- [x] 44/44 Unit tests pass (`npm run test:unit`)
 - [x] 23/23 Security rules emulator tests pass (`npm run test:rules`)
 - [x] 0 ESLint errors (`npm run lint`)
 - [x] Production build clean (`npm run build`)
-- [x] Gmail SMTP handshake verified (`scratch/test-email.cjs`)
+- [x] Tailwind CSS v4 canonical classes applied (`shrink-0`, `grow`, `max-w-35`, `data-disabled:`)
+- [x] No protected auth files modified
+- [x] Local work only (no `git push`)
+

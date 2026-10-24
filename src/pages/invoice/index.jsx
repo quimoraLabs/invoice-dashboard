@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { listenToInvoices } from "../../firebase/invoice";
+import { listenToCustomers } from "../../firebase/customer";
+import { listenToProducts } from "../../firebase/product";
 import { useAuth } from "../../contexts/authContext/useAuth";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useDebounce } from "../../hooks/useDebounce";
@@ -8,14 +10,22 @@ import InvoiceListHeader from "../../components/invoice/InvoiceListHeader";
 import InvoiceFilters from "../../components/invoice/InvoiceFilters";
 import InvoiceTable from "../../components/invoice/InvoiceTable";
 import InvoicePagination from "../../components/invoice/InvoicePagination";
+import BulkInvoiceImportModal from "../../components/invoice/BulkInvoiceImportModal";
+import CameraReceiptScannerModal from "../../components/invoice/CameraReceiptScannerModal";
 import Loader from "../../components/Loader";
 
 function Invoice() {
   const { currentUser } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [invoices, setInvoices] = useState([]);
+  const [allCustomers, setAllCustomers] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+
   const targetUid = currentUser?.uid || currentUser?.id || currentUser?.clerkUser?.id;
   const workspaceId = activeWorkspace?.id;
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -34,16 +44,23 @@ function Invoice() {
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const debouncedSearch = useDebounce(searchTerm, 300);
 
-  // Real-time listener for user invoices
+  // Real-time listeners for invoices, customers, and products
   useEffect(() => {
     if (!targetUid && !workspaceId) return;
     setDataLoaded(false);
     const targetScope = { workspaceId, userId: targetUid };
-    const unsubscribe = listenToInvoices((data) => {
+    const unsubscribeInv = listenToInvoices((data) => {
       setInvoices(data);
       setDataLoaded(true);
     }, targetScope);
-    return () => unsubscribe();
+    const unsubscribeCust = listenToCustomers(setAllCustomers, targetScope);
+    const unsubscribeProd = listenToProducts(setAllProducts, targetScope);
+
+    return () => {
+      unsubscribeInv();
+      unsubscribeCust();
+      unsubscribeProd();
+    };
   }, [targetUid, workspaceId]);
 
   const loading = Boolean((targetUid || workspaceId) && !dataLoaded);
@@ -244,7 +261,10 @@ function Invoice() {
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 md:p-10 space-y-6 mx-auto max-w-7xl">
       {/* Structural dashboard layout container blocks */}
-      <InvoiceListHeader />
+      <InvoiceListHeader
+        onOpenBulkImport={() => setIsBulkModalOpen(true)}
+        onOpenScanner={() => setIsCameraModalOpen(true)}
+      />
 
       <InvoiceFilters
         filter={filter}
@@ -282,6 +302,28 @@ function Invoice() {
         pageSize={pageSize}
         onPageSizeChange={handlePageSizeChange}
         totalItems={totalItems}
+      />
+
+      <CameraReceiptScannerModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onApply={(extracted) => {
+          setIsCameraModalOpen(false);
+          navigate("/invoice/create", { state: { scannedInvoice: extracted } });
+        }}
+        allCustomers={allCustomers}
+        allProducts={allProducts}
+      />
+
+      <BulkInvoiceImportModal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        allCustomers={allCustomers}
+        allProducts={allProducts}
+        scope={{ workspaceId, userId: targetUid }}
+        onSuccess={() => {
+          setIsBulkModalOpen(false);
+        }}
       />
     </div>
   );
